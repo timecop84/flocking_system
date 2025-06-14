@@ -1,0 +1,5 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$class_g_l_window.html#a5ad01fa8235b0f9d6b55082d1d5b21d5" title="GLWindow::setSimSeparation" alt="" coords="384,5,587,35"/>
+<area shape="rect" id="node5" href="$class_flock.html#a2d40e8ae4f8751ebf776c10f73cc82c0" title="Flock::setSimSeparation" alt="" coords="636,5,804,35"/>
+<area shape="rect" id="node7" href="$class_behaviours.html#abfb65b47975e260710d9202f5056f687" title="Behaviours::setSeparationForce" alt="" coords="853,5,1069,35"/>
+</map>

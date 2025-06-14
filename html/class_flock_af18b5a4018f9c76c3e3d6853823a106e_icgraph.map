@@ -1,0 +1,6 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$class_g_l_window.html#aab696d74b39ce0977624c56f3adcdfc8" title="GLWindow::resetFlock" alt="" coords="197,5,355,35"/>
+<area shape="rect" id="node7" href="$class_g_l_window.html#a5ae3d70697d02d27ff69f1450800892d" title="GLWindow::applyFlock" alt="" coords="196,58,356,89"/>
+<area shape="rect" id="node5" href="$class_main_window.html#a8dfb030df11f8584963944f10d97e8d8" title="MainWindow::on_m_resetFlock_clicked" alt="" coords="407,5,668,35"/>
+<area shape="rect" id="node9" href="$class_main_window.html#a0a347cbc00a44fa904cd58bbf9480633" title="MainWindow::on_m_applyFlock_clicked" alt="" coords="407,58,668,89"/>
+</map>

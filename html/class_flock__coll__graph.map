@@ -1,0 +1,5 @@
+<map id="G" name="G">
+<area shape="rect" id="node2" href="$class_boid.html" title="stores information about the boid and its linked to the flock class." alt="" coords="5,6,269,506"/>
+<area shape="rect" id="node7" href="$class_behaviours.html" title="stores the information of the behaviours and sets the final velocity for the flock taking into accoun..." alt="" coords="151,574,324,1074"/>
+<area shape="rect" id="node4" href="$class_obstacle.html" title="create the obstacle and its properties to be used by the flock collision." alt="" coords="348,667,529,981"/>
+</map>

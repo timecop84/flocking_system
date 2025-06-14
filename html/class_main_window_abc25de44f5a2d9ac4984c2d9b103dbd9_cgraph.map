@@ -1,0 +1,5 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$class_g_l_window.html#af2deeb524342828f03ae07c96d86bc33" title="GLWindow::setBoidColor" alt="" coords="372,5,545,35"/>
+<area shape="rect" id="node5" href="$class_flock.html#a0f3621a1305b0ee4ed6ccb6b065abb60" title="Flock::setColour" alt="" coords="596,5,716,35"/>
+<area shape="rect" id="node7" href="$class_boid.html#a1eef7261aeca472a4a24d28db2afbcfb" title="sets the color of the boids" alt="" coords="767,5,881,35"/>
+</map>

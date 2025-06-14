@@ -1,0 +1,7 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$class_g_l_window.html#ac7381c1d4824c494671ecd1b3157fd8a" title="GUI releated methods." alt="" coords="197,85,411,115"/>
+<area shape="rect" id="node5" href="$class_main_window.html#acd5aaf9d1bc76cbb340b5ff77b7da583" title="MainWindow::on_m_flockDensity_valueChanged" alt="" coords="459,5,776,35"/>
+<area shape="rect" id="node7" href="$class_main_window.html#a0a347cbc00a44fa904cd58bbf9480633" title="MainWindow::on_m_applyFlock_clicked" alt="" coords="487,58,748,89"/>
+<area shape="rect" id="node9" href="$class_main_window.html#aac847187e2dc4c0c9ca860a5fc8b348a" title="MainWindow::on_m_addBoids_clicked" alt="" coords="489,111,745,142"/>
+<area shape="rect" id="node11" href="$class_main_window.html#a374d60fc88961e82adaf318c8b229136" title="MainWindow::on_m_removeBoids_clicked" alt="" coords="479,165,756,195"/>
+</map>

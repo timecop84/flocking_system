@@ -1,0 +1,23 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$class_flock.html#ab1c74f7c0e571903e0de9ea6eb85d8d7" title="the update method to do all the updates. Then the update is called in the GLWindow in the time event..." alt="" coords="211,218,315,249"/>
+<area shape="rect" id="node5" href="$class_behaviours.html#aa4bbe217055f08d450c87a9686d331f3" title="Calculates the alignmenth behaviour of the flock." alt="" coords="381,5,539,35"/>
+<area shape="rect" id="node7" href="$class_behaviours.html#a64a9ab0d6d438f9e9d5bd65d09d2db5b" title="Behaviours::BehaviourSetup" alt="" coords="364,58,556,89"/>
+<area shape="rect" id="node9" href="$class_boid.html#a2f3a917924a7f93907a0b0e2a36fe0a2" title="updates the boid direction." alt="" coords="392,111,528,142"/>
+<area shape="rect" id="node11" href="$class_flock.html#af877447abb9cdf62c7aff00f94af7520" title="a function to caclulate if the collision is true." alt="" coords="381,165,539,195"/>
+<area shape="rect" id="node35" href="$class_behaviours.html#adc183607803a321765be2ff6b87dff50" title="Calculates the cohesion behaviour of the flock." alt="" coords="383,218,537,249"/>
+<area shape="rect" id="node37" href="$class_behaviours.html#a71e6ad13337b90e24a3c9c13a75ff08a" title="Calculates the destination behaviour of the flock." alt="" coords="377,271,543,302"/>
+<area shape="rect" id="node39" href="$class_behaviours.html#abcad8bd5066c95fc459b90e0dc3bff94" title="Calculates the seperation behaviour of the flock." alt="" coords="379,325,541,355"/>
+<area shape="rect" id="node41" href="$class_boid.html#a93bed649329c529e612ef03cec0b9445" title="updates the velocity." alt="" coords="387,378,533,409"/>
+<area shape="rect" id="node43" href="$class_boid.html#a6af22023eff676f72cf58deddc50a190" title="updates the velocity constraints." alt="" coords="379,431,541,462"/>
+<area shape="rect" id="node13" href="$class_flock.html#adc561e65c45982f15468b0b24416fd98" title="our sphere collision method." alt="" coords="628,85,828,115"/>
+<area shape="rect" id="node21" href="$class_flock.html#ab20c9a416c1a7519c73c482c058fa8fe" title="our function to do the bounding box collision between the boids and the box." alt="" coords="607,271,849,302"/>
+<area shape="rect" id="node15" href="$class_obstacle.html#a678ec944c605f2f5e61b27821e600c62" title="variable to store the obstacle position" alt="" coords="903,5,1095,35"/>
+<area shape="rect" id="node17" href="$class_obstacle.html#ae0215c0137c73af2ddb5766e996d5b35" title="gets the obstacle size" alt="" coords="905,58,1092,89"/>
+<area shape="rect" id="node19" href="$class_flock.html#a16498dcd51b512fa1c6473997a1912d6" title="do the actual sphereSphere collisions" alt="" coords="900,111,1097,142"/>
+<area shape="rect" id="node23" href="$class_boid.html#abd397e7cfd0b915b8cc4faec70d738bb" title="stores the next position of the boid." alt="" coords="924,165,1073,195"/>
+<area shape="rect" id="node25" href="$class_boid.html#a57d4dd13f9fb24eab86df3bc23db6795" title="returns the current position of the boid" alt="" coords="937,218,1060,249"/>
+<area shape="rect" id="node27" href="$class_boid.html#a80de2a6a234e64adf3478b51f33610ea" title="gets the velocity." alt="" coords="947,271,1051,302"/>
+<area shape="rect" id="node29" href="$class_boid.html#a4f327244e3bd50f07dc916b78cd0b02a" title="variable to get the velocity value of the boid." alt="" coords="937,325,1060,355"/>
+<area shape="rect" id="node31" href="$class_boid.html#ab554ea5aec009f839de9a90c0f7604a0" title="sets the hit function of the boid" alt="" coords="957,378,1040,409"/>
+<area shape="rect" id="node33" href="$class_boid.html#aa23f6b754ba9964087685a48e1e50850" title="stores the velocity of the boid." alt="" coords="937,431,1060,462"/>
+</map>

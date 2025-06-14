@@ -1,0 +1,4 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$class_g_l_window.html#a0f71fe71999ddfaa5a314dabe73048ec" title="GLWindow::setBoidSize" alt="" coords="191,5,359,35"/>
+<area shape="rect" id="node5" href="$class_main_window.html#ad5e4ac339639527043f085304a890209" title="MainWindow::on_m_changeBoidSize_valueChanged" alt="" coords="408,5,752,35"/>
+</map>

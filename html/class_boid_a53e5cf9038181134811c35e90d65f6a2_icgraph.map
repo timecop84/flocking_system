@@ -1,0 +1,5 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$class_flock.html#a2c3ac59800d99bd50c1e84081ee51acc" title="Flock::setBoidSize" alt="" coords="165,5,301,35"/>
+<area shape="rect" id="node5" href="$class_g_l_window.html#a0f71fe71999ddfaa5a314dabe73048ec" title="GLWindow::setBoidSize" alt="" coords="351,5,519,35"/>
+<area shape="rect" id="node7" href="$class_main_window.html#ad5e4ac339639527043f085304a890209" title="MainWindow::on_m_changeBoidSize_valueChanged" alt="" coords="568,5,912,35"/>
+</map>
