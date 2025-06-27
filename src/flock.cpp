@@ -1,8 +1,8 @@
 #include "flock.h"
-#include "boost/foreach.hpp"
-#include "ngl/Random.h"
+#include "ngl_compat/Matrix.h"
+#include "ngl_compat/ShaderLib.h"
+#include "ngl_compat/Random.h"
 #include "QDebug"
-#include <ngl/Util.h>
 
 
 
@@ -30,7 +30,7 @@ void Flock::draw(const std::string &_shaderName, ngl::TransformStack &_transform
     loadMatricesToShader(_transformStack, _cam);
 
 
-    BOOST_FOREACH(Boid *b, m_boidList)
+    for(Boid *b : m_boidList)
     {
         b->draw(_shaderName,_transformStack,_cam);
     }
@@ -109,7 +109,7 @@ void Flock::update()
 {
     checkCollisions();
     int count = 0;
-    BOOST_FOREACH(Boid *s,m_boidList)
+    for(Boid *s : m_boidList)
     {
         m_behaviours->Cohesion(count, m_boidList);
         m_behaviours->Alignment(count, m_boidList);
@@ -125,15 +125,15 @@ void Flock::update()
 //----------------------------------------------------------------------------------------------------------------------
 void Flock::setBoidSize(double size)
 {
-    BOOST_FOREACH(Boid *s,m_boidList)
+    for(Boid *s : m_boidList)
     {
-        s->setScale(size);
+        s->setScale(ngl::Vector(size, size, size));
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Flock::setColour(ngl::Colour colour)
 {
-    BOOST_FOREACH(Boid *s,m_boidList)
+    for(Boid *s : m_boidList)
     {
         s->setColour(colour);
     }
@@ -141,7 +141,7 @@ void Flock::setColour(ngl::Colour colour)
 //----------------------------------------------------------------------------------------------------------------------
 void Flock::setWireframe(bool value)
 {
-    BOOST_FOREACH(Boid *s,m_boidList)
+    for(Boid *s : m_boidList)
     {
         s->setWireframe(value);
     }
@@ -190,7 +190,7 @@ void Flock::validateBoundingBoxCollision()
     // no collision
     GLfloat Distance;
     // Loop for each sphere in the vector list
-    BOOST_FOREACH(Boid *s, m_boidList)
+    for(Boid *s : m_boidList)
     {
         point=s->getPosition();
         //Now we need to check the Sphere agains all 6 planes of the BBOx

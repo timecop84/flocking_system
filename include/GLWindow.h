@@ -1,20 +1,23 @@
 #ifndef __GL_WINDOW_H__
 #define __GL_WINDOW_H__
 
+#include <QOpenGLWidget>
+#include <QOpenGLFunctions>
+#include <QMouseEvent>
+#include <QWheelEvent>
+#include <QTimerEvent>
+#include "ngl_compat/Camera.h"
+#include "ngl_compat/Light.h"
+#include "ngl_compat/Vector.h"
+#include "ngl_compat/Colour.h"
+#include "ngl_compat/TransformStack.h"
+#include "ngl_compat/ShaderLib.h"
+#include "ngl_compat/BBox.h"
 
-#include <ngl/Camera.h>
-#include <ngl/Colour.h>
-#include <ngl/Light.h>
-#include <ngl/TransformStack.h>
-#include <ngl/Text.h>
-
-
-// must be included after our stuff becuase GLEW needs to be first
-#include <QtOpenGL>
+// must be included after our stuff because GLEW needs to be first
 #include <QTime>
 #include "boid.h"
 #include "flock.h"
-#include "ngl/BBox.h"
 #include "obstacle.h"
 
 /// @file GLWindow.h
@@ -26,7 +29,7 @@
 /// @class GLWindow
 /// @brief the main glwindow widget for our flock application using NGL.
 /// put in this file
-class GLWindow : public QGLWidget
+class GLWindow : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT        // must include this if you use Qt signals/slots
 public :
@@ -53,7 +56,7 @@ public :
     void setBoidColor(QColor colour);
     void setFlockWireframe(bool value);
 
-    void setObstaclePosition(ngl::Vector position);
+    void setObstaclePosition(glm::vec3 position);
     void setObstacleSize(double size);
     void setObstacleColour(QColor colour);
     void setObstacleWireframe(bool value);
@@ -65,7 +68,7 @@ public :
     void setSimAlignment(double alignment);
 
     void setBackgroundColour(ngl::Colour colour);
-    void setBBoxSize(ngl::Vector size);
+    void setBBoxSize(glm::vec3 size);
     //-----------------------------------
     /// @brief
     //void update();
@@ -89,6 +92,10 @@ private :
     //----------------------------------------------------------------------------------------------------------------------
     bool m_translate;
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief flag to indicate if the Middle mouse button is pressed when panning
+    //----------------------------------------------------------------------------------------------------------------------
+    bool m_pan;
+    //----------------------------------------------------------------------------------------------------------------------
     /// @brief the previous x mouse value
     //----------------------------------------------------------------------------------------------------------------------
     int m_origX;
@@ -105,13 +112,16 @@ private :
     //----------------------------------------------------------------------------------------------------------------------
     int m_origYPos;
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief Our Camera
+    /// @brief Camera matrices and vectors
     //----------------------------------------------------------------------------------------------------------------------
     ngl::Camera *m_cam;
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief transformation stack for the gl transformations etc
+    /// @brief camera orbital controls
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::TransformStack m_transformStack;
+    float m_cameraDistance;
+    float m_cameraAzimuth;
+    float m_cameraElevation;
+    ngl::Vector m_cameraTarget;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief the model position for mouse movement
     //----------------------------------------------------------------------------------------------------------------------
@@ -121,7 +131,15 @@ private :
     //----------------------------------------------------------------------------------------------------------------------
     ngl::Light *m_light;
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief a bounding box to have our boids collide and confine them within a designated space
+    /// @brief shader lib instance
+    //----------------------------------------------------------------------------------------------------------------------
+    ngl::ShaderLib *m_shader;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief transform stack for transformations
+    //----------------------------------------------------------------------------------------------------------------------
+    ngl::TransformStack m_transformStack;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief bbox for the flock space
     //----------------------------------------------------------------------------------------------------------------------
     ngl::BBox *bbox;
     //----------------------------------------------------------------------------------------------------------------------
@@ -133,18 +151,20 @@ private :
     Flock *flock;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the GL Depth Color
+    //----------------------------------------------------------------------------------------------------------------------
     ngl::Colour m_backgroundColour;
     //----------------------------------------------------------------------------------------------------------------------
 
 protected:
 
-    void loadMatricesToColourShader(
-            ngl::TransformStack &_tx
-            );
+    void loadMatricesToColourShader(ngl::TransformStack &_tx);
 
-    void loadMatricesToShader(
-            ngl::TransformStack &_tx
-            );
+    void loadMatricesToShader(ngl::TransformStack &_tx);
+
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief update camera position based on orbital controls
+    //----------------------------------------------------------------------------------------------------------------------
+    void updateCameraPosition();
 
     /// @brief  The following methods must be implimented in the sub class
     /// this is called when the window is created
@@ -212,8 +232,6 @@ private :
     /// @brief flag to indicate if animation is active or not
     //----------------------------------------------------------------------------------------------------------------------
     bool m_animate;
-    //----------------------------------------------------------------------------------------------------------------------
-    ngl::ShaderLib *m_shader;
     //----------------------------------------------------------------------------------------------------------------------
 
 

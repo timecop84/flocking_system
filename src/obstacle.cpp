@@ -1,6 +1,9 @@
 #include "obstacle.h"
-#include <ngl/VAOPrimitives.h>
-#include <ngl/Material.h>
+#include "ngl_compat/VAOPrimitives.h"
+#include "ngl_compat/Material.h"
+#include "ngl_compat/ShaderLib.h"
+#include "ngl_compat/Matrix.h"
+#include <GL/gl.h>
 
 Obstacle::Obstacle(ngl::Vector spherePosition, GLfloat sphereRadius)
 {
@@ -34,35 +37,44 @@ void Obstacle::loadMatricesToShader(ngl::TransformStack &_tx, ngl::Camera *_cam)
 
 void Obstacle::ObsDraw(const std::string &_shaderName, ngl::TransformStack &_transformStack, ngl::Camera *_cam) const
 {
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-    shader->use(_shaderName);
-    ngl::Material m(ngl::PEWTER);
-    m.setDiffuse(m_colour);
-    m.loadToShader("material");
-    // grab an instance of the primitives for drawing
-    ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
-    prim->createSphere("obstacle",_sphereRadius,20);
+    // Use immediate mode OpenGL instead of shader system for now
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    
+    // Set material color
+    float diffuse[] = {m_colour.m_r, m_colour.m_g, m_colour.m_b, m_colour.m_a};
+    float ambient[] = {m_colour.m_r * 0.3f, m_colour.m_g * 0.3f, m_colour.m_b * 0.3f, m_colour.m_a};
+    float specular[] = {0.8f, 0.8f, 0.8f, 1.0f};
+    float shininess = 50.0f;
+    
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+    glMaterialf(GL_FRONT, GL_SHININESS, shininess);
+    
+    // Set light position
+    float lightPos[] = {100.0f, 100.0f, 100.0f, 1.0f};
+    float lightDiffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
 
     if (m_wireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else
-        glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    _transformStack.pushTransform();
+    glPushMatrix();
     {
-
-        _transformStack.setPosition(_spherePosition);
-        _transformStack.setScale(_sphereRadius,_sphereRadius,_sphereRadius);
-        loadMatricesToShader(_transformStack,_cam);
+        // Apply transformations
+        glTranslatef(_spherePosition.m_x, _spherePosition.m_y, _spherePosition.m_z);
+        glScalef(_sphereRadius, _sphereRadius, _sphereRadius);
+        
+        // Draw sphere using VAOPrimitives
+        ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
+        prim->createSphere("obstacle", _sphereRadius, 20);
         prim->draw("obstacle");
-
-
-    } // and before a pop
-    _transformStack.popTransform();
-
-
-
-
+    }
+    glPopMatrix();
 }
 
 

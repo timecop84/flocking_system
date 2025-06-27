@@ -1,5 +1,7 @@
 #include "include/mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QColorDialog>
+#include <glm/glm.hpp>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -97,25 +99,19 @@ void MainWindow::on_m_renderFlockWireframe_toggled(bool checked)
 
 void MainWindow::on_m_obstaclePosX_valueChanged(double arg1)
 {
-    ngl::Vector pos;
-    pos.set(arg1, m_ui->m_obstaclePosY->value(), m_ui->m_obstaclePosZ->value());
-
+    glm::vec3 pos(arg1, m_ui->m_obstaclePosY->value(), m_ui->m_obstaclePosZ->value());
     m_gl->setObstaclePosition(pos);
 }
 
 void MainWindow::on_m_obstaclePosY_valueChanged(double arg1)
 {
-    ngl::Vector pos;
-    pos.set(m_ui->m_obstaclePosX->value(), arg1, m_ui->m_obstaclePosZ->value());
-
+    glm::vec3 pos(m_ui->m_obstaclePosX->value(), arg1, m_ui->m_obstaclePosZ->value());
     m_gl->setObstaclePosition(pos);
 }
 
 void MainWindow::on_m_obstaclePosZ_valueChanged(double arg1)
 {
-    ngl::Vector pos;
-    pos.set(m_ui->m_obstaclePosX->value(), m_ui->m_obstaclePosY->value(), arg1);
-
+    glm::vec3 pos(m_ui->m_obstaclePosX->value(), m_ui->m_obstaclePosY->value(), arg1);
     m_gl->setObstaclePosition(pos);
 }
 
@@ -170,8 +166,6 @@ void MainWindow::on_m_backColour_clicked()
 
 void MainWindow::on_m_bboxSize_valueChanged(double arg1)
 {
-    ngl::Vector size;
-    size.set(arg1, arg1, arg1);
-
+    glm::vec3 size(arg1, arg1, arg1);
     m_gl->setBBoxSize(size);
 }

@@ -1,5 +1,4 @@
 #include "Behaviours.h"
-#include "boost/foreach.hpp"
 
 Behaviours::Behaviours()
 {
@@ -12,8 +11,8 @@ Behaviours::Behaviours()
 //----------------------------------------------------------------------------------------------------------------------
 void Behaviours::Cohesion(int &_boidNumber, std::vector <Boid*> & _boidList)
 {
-    m_coherence = 0;
-    m_boidDistance = 0;
+    m_coherence.set(0, 0, 0);
+    m_boidDistance.set(0, 0, 0);
     int count = 1;
 
     for(int i=0;i<_boidList.size();i++)
@@ -39,7 +38,7 @@ void Behaviours::Cohesion(int &_boidNumber, std::vector <Boid*> & _boidList)
 void Behaviours::Alignment(int &_boidNumber, std::vector<Boid*> &_boidList)
 {
     int count = 1;
-    m_boidDistance = 0;
+    m_boidDistance.set(0, 0, 0);
 
     for(int i=0;i<_boidList.size();i++)
     {
@@ -68,8 +67,8 @@ void Behaviours::Alignment(int &_boidNumber, std::vector<Boid*> &_boidList)
 //----------------------------------------------------------------------------------------------------------------------
 void Behaviours::Seperation(int &_boidNumber, std::vector<Boid*> &_boidList)
 {
-    m_separation = 0;
-    m_boidDistance = 0;
+    m_separation.set(0, 0, 0);
+    m_boidDistance.set(0, 0, 0);
 
     for(int i=0;i<_boidList.size();i++)
     {
@@ -100,11 +99,11 @@ void Behaviours::Destination(int & _boidNumber, std::vector <Boid*> & _boidList)
 ngl::Vector Behaviours::BehaviourSetup()
 {
 
-    ngl::Vector m_seperationCorrection = -1;
-    m_behaviourSetup = 0.9;
+    ngl::Vector m_seperationCorrection(-1, -1, -1);
+    m_behaviourSetup.set(0, 0, 0);
 
 
-    m_seperationSet = (((m_seperationForce) * m_separation)* m_seperationCorrection);
+    m_seperationSet = (m_seperationForce * m_separation) * m_seperationCorrection;
     m_cohesionSet = m_cohesionForce * m_coherence;
     m_alighmentSet = m_alignmentForce * m_alignment;
     m_behaviourSetup = m_seperationSet + m_cohesionSet + m_alighmentSet;
@@ -112,7 +111,7 @@ ngl::Vector Behaviours::BehaviourSetup()
     if (m_behaviourSetup.length() > 0.5)
     {
         m_behaviourSetup.normalize();
-        m_behaviourSetup *=0.5;
+        m_behaviourSetup *= 0.5;
     }
 
 

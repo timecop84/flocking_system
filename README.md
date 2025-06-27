@@ -33,9 +33,9 @@ DeferredRenderer/ ├── DeferredRendering.pro # Qt project file ├── Do
 
 1. Open a terminal and navigate to the project directory.
 2. Run:
-3. qmake DeferredRendering.pro make
+3. qmake flock.pro make
 
-4. Or use Qt Creator to open `DeferredRendering.pro` and build the project.
+4. Or use Qt Creator to open `flock.pro` and build the project.
 
 ### Using Makefile
 
