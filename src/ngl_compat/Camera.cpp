@@ -1,7 +1,5 @@
 #include "../include/ngl_compat/Camera.h"
 #include "../include/ngl_compat/Vector.h"
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 namespace ngl {
 

@@ -1,5 +1,4 @@
 #include "obstacle.h"
-
 #include "GLWindow.h"
 #include <iostream>
 #include <cmath>
@@ -17,8 +16,10 @@
 #include "ngl_compat/Matrix.h"
 #include "ngl_compat/glew_compat.h"
 #include "flock.h"
+#include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 
 
 //----------------------------------------------------------------------------------------------------------------------

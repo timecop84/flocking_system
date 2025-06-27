@@ -65,6 +65,22 @@ flocking_system/
    - Make utilities (mingw32-make)
 
 3. **GLM (OpenGL Mathematics)**
+   
+   **Option A: Using vcpkg (Recommended)**
+   ```bash
+   # Install vcpkg if not already installed
+   git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+   cd C:\vcpkg
+   .\bootstrap-vcpkg.bat
+   
+   # Install GLM
+   .\vcpkg.exe install glm:x64-windows
+   
+   # Update flock.pro to use vcpkg path:
+   # INCLUDEPATH += C:/Users/[username]/vcpkg/installed/x64-windows/include
+   ```
+   
+   **Option B: Manual Installation**
    - Download from [GLM GitHub](https://github.com/g-truc/glm)
    - Extract to `C:\libs\glm\` (or adjust path in `flock.pro`)
 

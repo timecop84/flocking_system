@@ -2,7 +2,7 @@ QT += opengl gui core widgets openglwidgets
 
 INCLUDEPATH += include
 INCLUDEPATH += include/ngl_compat
-INCLUDEPATH += C:/libs/glm
+INCLUDEPATH += C:/Users/detou/vcpkg/installed/x64-windows/include
 
 OBJECTS_DIR = obj/
 MOC_DIR = moc/
@@ -52,9 +52,8 @@ DEFINES +=NGL_DEBUG
 dependencyPath += include
 macx:DEFINES += DARWIN
 
-# MinGW/Windows GLM setup
+# MinGW/Windows setup
 win32-g++: {
-    INCLUDEPATH += C:/libs/glm
     INCLUDEPATH += $$[QT_INSTALL_HEADERS]/QtWidgets
     INCLUDEPATH += $$[QT_INSTALL_HEADERS]/QtOpenGLWidgets
     LIBS += -lopengl32 -lglu32

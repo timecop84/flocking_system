@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QTimerEvent>
+#include <glm/glm.hpp>
 #include "ngl_compat/Camera.h"
 #include "ngl_compat/Light.h"
 #include "ngl_compat/Vector.h"

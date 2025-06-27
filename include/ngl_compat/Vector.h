@@ -2,7 +2,6 @@
 #define NGL_VECTOR_H
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 
 namespace ngl {
