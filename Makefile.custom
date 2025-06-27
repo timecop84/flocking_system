@@ -1,0 +1,132 @@
+# Custom Makefile for Qt6/MinGW Flocking Simulation
+# Usage: make -f Makefile.custom [target]
+# Or rename this file to 'Makefile' and delete the Qt-generated one
+# Targets: all, clean, build, rebuild, run, help
+
+# Project configuration
+PROJECT = flock
+QT_PROJECT_FILE = $(PROJECT).pro
+EXECUTABLE = release/bin/$(PROJECT).exe
+BUILD_DIR = release
+DEBUG_DIR = debug
+
+# Qt and build tools
+QMAKE = qmake
+MAKE = mingw32-make
+
+# Default target
+.PHONY: all clean build rebuild run help distclean
+
+all: build
+
+# Build the project
+build:
+	@echo "Building Qt6/MinGW Flocking Simulation..."
+	$(QMAKE) $(QT_PROJECT_FILE)
+	$(MAKE)
+	@echo "Build completed successfully!"
+	@echo "Executable: $(EXECUTABLE)"
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning build artifacts..."
+	-$(MAKE) clean 2>nul || true
+	-del /Q ui_mainwindow.h 2>nul || true
+	-rmdir /S /Q moc 2>nul || true
+	-rmdir /S /Q obj 2>nul || true
+	-rmdir /S /Q $(BUILD_DIR) 2>nul || true
+	-rmdir /S /Q $(DEBUG_DIR) 2>nul || true
+	-del /Q .qmake.stash 2>nul || true
+	-del /Q Makefile 2>nul || true
+	-del /Q Makefile.Debug 2>nul || true
+	-del /Q Makefile.Release 2>nul || true
+	-del /Q object_script.*.* 2>nul || true
+	@echo "Clean completed!"
+
+# Deep clean including Qt generated files
+distclean: clean
+	@echo "Performing deep clean..."
+	-rmdir /S /Q bin 2>nul || true
+	-rmdir /S /Q build 2>nul || true
+	@echo "Deep clean completed!"
+
+# Rebuild (clean + build)
+rebuild: clean build
+
+# Run the simulation
+run:
+	@echo "Starting flocking simulation..."
+	@if exist "$(EXECUTABLE)" ( \
+		start "" "$(EXECUTABLE)" \
+	) else ( \
+		echo ERROR: Executable not found! Please build first. && \
+		echo Run: make build \
+	)
+
+# Development targets
+debug:
+	@echo "Building debug version..."
+	$(QMAKE) $(QT_PROJECT_FILE) CONFIG+=debug
+	$(MAKE)
+	@echo "Debug build completed!"
+
+release: build
+
+# Check dependencies and environment
+check:
+	@echo "Checking build environment..."
+	@echo "Qt qmake version:"
+	@$(QMAKE) --version || echo "ERROR: qmake not found in PATH"
+	@echo ""
+	@echo "MinGW make version:"
+	@$(MAKE) --version || echo "ERROR: mingw32-make not found in PATH"
+	@echo ""
+	@echo "GCC compiler version:"
+	@g++ --version || echo "ERROR: g++ not found in PATH"
+	@echo ""
+	@if exist "C:\libs\glm\glm\glm.hpp" ( \
+		echo "GLM library: Found at C:\libs\glm\" \
+	) else ( \
+		echo "WARNING: GLM library not found at C:\libs\glm\" \
+	)
+
+# Install dependencies (placeholder)
+install-deps:
+	@echo "Please install the following dependencies manually:"
+	@echo "1. Qt 6.9.1 with MinGW 64-bit"
+	@echo "2. GLM library (extract to C:\libs\glm\)"
+	@echo "3. Add Qt/bin and MinGW/bin to system PATH"
+	@echo ""
+	@echo "For detailed instructions, see README.md"
+
+# Generate documentation
+docs:
+	@echo "Generating Doxygen documentation..."
+	@if exist "Doxyfile" ( \
+		doxygen Doxyfile && echo "Documentation generated in html/" \
+	) else ( \
+		echo "ERROR: Doxyfile not found" \
+	)
+
+# Help target
+help:
+	@echo "Qt6/MinGW Flocking Simulation - Custom Makefile"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  all        - Build the project (default)"
+	@echo "  build      - Build the project"
+	@echo "  clean      - Clean build artifacts"
+	@echo "  distclean  - Deep clean including generated files"
+	@echo "  rebuild    - Clean and build"
+	@echo "  run        - Run the simulation"
+	@echo "  debug      - Build debug version"
+	@echo "  release    - Build release version"
+	@echo "  check      - Check build environment"
+	@echo "  docs       - Generate Doxygen documentation"
+	@echo "  help       - Show this help message"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make -f Makefile.custom        # Build the project"
+	@echo "  make -f Makefile.custom clean  # Clean build files"
+	@echo "  make -f Makefile.custom run    # Run the simulation"
+	@echo "  make -f Makefile.custom check  # Verify environment"
