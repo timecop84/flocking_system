@@ -1,10 +1,12 @@
 #ifndef FLOCK_H
 #define FLOCK_H
+#include <vector>
 #include "boid.h"
-#include "ngl/Vector.h"
-#include "ngl/TransformStack.h"
-#include "ngl/ShaderLib.h"
-#include "ngl/BBox.h"
+#include "ngl_compat/Vector.h"
+#include "ngl_compat/Colour.h"
+#include "ngl_compat/BBox.h"
+#include "ngl_compat/TransformStack.h"
+#include "ngl_compat/Camera.h"
 #include "avoidance.h"
 #include "obstacle.h"
 #include "Behaviours.h"

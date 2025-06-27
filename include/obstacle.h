@@ -1,10 +1,12 @@
 #ifndef OBSTACLE_H
 #define OBSTACLE_H
 
-#include <ngl/Camera.h>
-#include <ngl/ShaderLib.h>
-#include <ngl/TransformStack.h>
-#include <ngl/Vector.h>
+#include "ngl_compat/Camera.h"
+#include "ngl_compat/Vector.h"
+#include "ngl_compat/Colour.h"
+#include "ngl_compat/TransformStack.h"
+#include <string>
+#include <GL/gl.h>
 
 /*! \brief The obstacle class */
 /// @file obstacle.h
@@ -24,7 +26,7 @@ public:
     /// @param [in] spherePosition the initilized value of the obstacle position
     /// @param [in] sphereRadius the initilized value of the obstacle radius
     Obstacle(ngl::Vector spherePosition,
-             GLfloat sphereRadius
+             float sphereRadius
              );
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief drawing the VBO obstacle
@@ -53,11 +55,11 @@ public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief gets the obstacle size
     /// @param [in] _spherePosition returns the obstacle size.
-    inline GLfloat getSphereRadius()const{return _sphereRadius;}
+    inline float getSphereRadius()const{return _sphereRadius;}
     //----------------------------------------------------------------------------------------------------------------------   
     /// @brief sets the obstacle radius
     /// @param [in] _spherePosition sets the obstacle size value.
-    void setSphereRadius(GLfloat radius) {_sphereRadius = radius;}
+    void setSphereRadius(float radius) {_sphereRadius = radius;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the color of the obstacle
     /// @param [in] m_color sets color value for the obstacle
@@ -73,7 +75,7 @@ private:
     ngl::Vector _spherePosition;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a variable to store the obstacle radius
-    GLfloat _sphereRadius;
+    float _sphereRadius;
     //----------------------------------------------------------------------------------------------------------------------
     bool _hit;
     //----------------------------------------------------------------------------------------------------------------------

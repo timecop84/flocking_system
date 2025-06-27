@@ -2,19 +2,23 @@
 
 #include "GLWindow.h"
 #include <iostream>
-#include "ngl/Camera.h"
-#include "ngl/Light.h"
-#include "ngl/Transformation.h"
-#include "ngl/TransformStack.h"
-#include "ngl/Material.h"
-#include "ngl/NGLInit.h"
-#include "ngl/VAOPrimitives.h"
-#include "ngl/ShaderLib.h"
-#include "boost/foreach.hpp"
-#include"ngl/Random.h"
+#include <cmath>
+#include <QSurfaceFormat>
+#include "ngl_compat/Camera.h"
+#include "ngl_compat/Light.h"
+#include "ngl_compat/TransformStack.h"
+#include "ngl_compat/Colour.h"
+#include "ngl_compat/ShaderLib.h"
+#include "ngl_compat/BBox.h"
+#include "ngl_compat/Vector.h"
+#include "ngl_compat/NGLInit.h"
+#include "ngl_compat/VAOPrimitives.h"
+#include "ngl_compat/Material.h"
+#include "ngl_compat/Matrix.h"
+#include "ngl_compat/glew_compat.h"
 #include "flock.h"
-#include "ngl/BBox.h"
-#include <ngl/Util.h>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/constants.hpp>
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -32,8 +36,17 @@ const static float ZOOM = 10.0;
 GLWindow::GLWindow(
         QWidget *_parent
         )
-    : QGLWidget( new CreateCoreGLContext(QGLFormat::defaultFormat()), _parent )
+    : QOpenGLWidget(_parent)
 {
+    // Configure OpenGL format to use compatibility profile
+    QSurfaceFormat format;
+    format.setVersion(3, 3);
+    format.setProfile(QSurfaceFormat::CompatibilityProfile);
+    format.setDepthBufferSize(24);
+    format.setStencilBufferSize(8);
+    format.setSamples(4); // 4x MSAA
+    setFormat(format);
+    
     obstacle = new Obstacle(ngl::Vector(12,30,0), 4.0);
 
     // set this widget to have the initial keyboard focus
@@ -43,9 +56,18 @@ GLWindow::GLWindow(
     // Now set the initial GLWindow attributes to default values
     // Roate is false
     m_rotate=false;
+    m_translate=false;
+    m_pan=false;
     // mouse rotation values set to 0
     m_spinXFace = 0;
     m_spinYFace = 0;
+    
+    // Initialize orbital camera controls
+    m_cameraDistance = 250.0f;
+    m_cameraAzimuth = 45.0f;    // degrees
+    m_cameraElevation = 30.0f;  // degrees  
+    m_cameraTarget.set(0, 0, 0); // look at origin
+    
     m_sphereUpdateTimer = startTimer(1000 / 60); //run at 60FPS
     m_animate = true;
     m_backgroundColour.set(0.6f, 0.6f, 0.6f, 1.0f);
@@ -55,7 +77,6 @@ GLWindow::GLWindow(
 GLWindow::~GLWindow()
 {
     ngl::NGLInit *Init = ngl::NGLInit::instance();
-    std::cout<<"Shutting down NGL, removing VAO's and Shaders\n";
     delete m_light;
     Init->NGLQuit();
 }
@@ -105,9 +126,10 @@ void GLWindow::setFlockWireframe(bool value)
     flock->setWireframe(value);
 }
 
-void GLWindow::setObstaclePosition(ngl::Vector position)
+void GLWindow::setObstaclePosition(glm::vec3 position)
 {
-    obstacle->setSpherePosition(position);
+    ngl::Vector nglPos(position.x, position.y, position.z);
+    obstacle->setSpherePosition(nglPos);
 }
 
 void GLWindow::setObstacleSize(double size)
@@ -157,12 +179,14 @@ void GLWindow::setBackgroundColour(ngl::Colour colour)
 {
     m_backgroundColour = colour;
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
+    update(); // Force a repaint to show the new background color
 }
 
-void GLWindow::setBBoxSize(ngl::Vector size)
+void GLWindow::setBBoxSize(glm::vec3 size)
 {
     delete bbox;
-    bbox = new ngl::BBox(ngl::Vector(0,0,0), size.m_x, size.m_y, size.m_z);
+    bbox = new ngl::BBox(ngl::Vector(0,0,0), size.x, size.y, size.z);
+    bbox->setDrawMode(GL_LINE); // Ensure wireframe mode is set
 }
 //----------------------------------------------------------------------------------------------------------------------
 // This virtual function is called once before the first call to paintGL() or resizeGL(),
@@ -171,9 +195,17 @@ void GLWindow::setBBoxSize(ngl::Vector size)
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::initializeGL()
 {
+    std::cout << "initializeGL called" << std::endl;
+    
+    // Initialize OpenGL functions - required for QOpenGLWidget with QOpenGLFunctions
+    initializeOpenGLFunctions();
+    
+    std::cout << "OpenGL functions initialized" << std::endl;
+    
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
     // enable depth testing for drawing
     glEnable(GL_DEPTH_TEST);
+    
     // we need to initialise the NGL lib, under windows and linux we also need to
     // initialise GLEW, under windows this needs to be done in the app as well
     // as the lib hence the WIN32 define
@@ -217,9 +249,8 @@ void GLWindow::initializeGL()
     // load our material values to the shader into the structure material (see Vertex shader)
     m.loadToShader("material");
     // Now we will create a basic Camera from the graphics library
-    // This is a static camera so it only needs to be set once
-    // First create Values for the camera position
-    ngl::Vector From(200,120,120);
+    // Create camera using orbital controls
+    ngl::Vector From(200,120,120);  // Initial position (will be updated by orbital controls)
     ngl::Vector To(0,0,0);
     ngl::Vector Up(0,1,0);
     // now load to our new camera
@@ -227,6 +258,10 @@ void GLWindow::initializeGL()
     // set the shape using FOV 45 Aspect Ratio based on Width and Height
     // The final two are near and far clipping planes of 0.5 and 10
     m_cam->setShape(45,(float)720.0/576.0,0.05,350,ngl::PERSPECTIVE);
+    
+    // Initialize camera position using orbital controls
+    updateCameraPosition();
+    
     m_shader->setShaderParam3f("viewerPos",m_cam->getEye().m_x,m_cam->getEye().m_y,m_cam->getEye().m_z);
     // now create our light this is done after the camera so we can pass the
     // transpose of the projection matrix to the light to do correct eye space
@@ -271,10 +306,30 @@ void GLWindow::resizeGL(
         int _h
         )
 {
+    std::cout << "resizeGL called: " << _w << "x" << _h << std::endl;
+    
     // set the viewport for openGL
     glViewport(0,0,_w,_h);
+    
+    // Set up projection matrix using legacy OpenGL calls
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    
+    // Simple perspective projection
+    float aspect = (float)_w / (float)_h;
+    float fovy = 45.0f;
+    float near_plane = 0.1f;
+    float far_plane = 1000.0f;
+    
+    // Use gluPerspective equivalent
+    float fH = tan(fovy * 3.14159f / 360.0f) * near_plane;
+    float fW = fH * aspect;
+    glFrustum(-fW, fW, -fH, fH, near_plane, far_plane);
+    
     // now set the camera size values as the screen size has changed
-    m_cam->setShape(45,(float)_w/_h,0.05,350,ngl::PERSPECTIVE);
+    if (m_cam) {
+        m_cam->setShape(45,(float)_w/_h,0.05,350,ngl::PERSPECTIVE);
+    }
 }
 
 
@@ -325,54 +380,94 @@ void GLWindow::loadMatricesToColourShader(
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::paintGL()
 {
+    static int frame_count = 0;
+    frame_count++;
+    
+    // Only print debug info every 60 frames to reduce spam
+    if (frame_count % 60 == 1) {
+        std::cout << "paintGL called (frame " << frame_count << ")" << std::endl;
+        std::cout << "Camera pos: (" << m_cam->getEye().m_x << ", " << m_cam->getEye().m_y << ", " << m_cam->getEye().m_z << ")" << std::endl;
+    }
+    
+    // Use the background color set by the user
+    glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
+    
     // clear the screen and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    // Enable depth testing
+    glEnable(GL_DEPTH_TEST);
 
-    // grab an instance of the shader manager
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-    (*shader)["Phong"]->use();
-    //Rotation based on the mouse position for our global transform
-    ngl::Transformation trans;
-    ngl::Matrix rotX;
-    ngl::Matrix rotY;
+    // Use the NGL-style camera and transform stack for consistent rendering
+    // Set up the view matrix for the camera
+    glm::mat4 view = m_cam->getViewMatrix();
+    glm::mat4 project = m_cam->getProjectionMatrix();
+    
+    // Load the matrices into the transform stack (for NGL compatibility)
+    ngl::Matrix nglProject(project);
+    ngl::Matrix nglView(view);
+    m_transformStack.setProjection(nglProject);
+    m_transformStack.setView(nglView);
+    
+    // Set up basic model matrix (no rotation - camera handles all movement now)
+    ngl::Matrix model;
+    model.identity();
+    model.translate(m_modelPos.m_x, m_modelPos.m_y, m_modelPos.m_z);
+    m_transformStack.setModel(model);
 
-    // create the rotation matrices
-    rotX.rotateX(m_spinXFace);
-    rotY.rotateY(m_spinYFace);
-    // multiply the rotations
-    ngl::Matrix final=rotY*rotX;
-    // add the translations
-    final.m_m[3][0] = m_modelPos.m_x;
-    final.m_m[3][1] = m_modelPos.m_y;
-    final.m_m[3][2] = m_modelPos.m_z;
-    // set this in the TX stack
-    trans.setMatrix(final);
-    m_transformStack.setGlobal(trans);
-    (*shader)["Colour"]->use();
+    // Debug: Add immediate mode test AFTER setting up matrices
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixf(glm::value_ptr(project));
+    
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixf(glm::value_ptr(view));
+    glMultMatrixf(glm::value_ptr(model.m_matrix));
 
-    loadMatricesToShader(m_transformStack);
+    // Test: Draw coordinate axes for reference (smaller now that we know rendering works)
+    glDisable(GL_LIGHTING);
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+        // X axis - Red
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(30.0f, 0.0f, 0.0f);
+        
+        // Y axis - Green
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 30.0f, 0.0f);
+        
+        // Z axis - Blue
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 30.0f);
+    glEnd();
+    glLineWidth(1.0f);
 
-    bbox->draw();
-    flock->draw("Phong",m_transformStack,m_cam);
-
-    {
-        m_transformStack.pushTransform();
-        {
-            //m_transformStack.setCurrent(0,10,0);
-            loadMatricesToShader(m_transformStack);
-            obstacle->ObsDraw("Phong",m_transformStack,m_cam);
-        }
-        m_transformStack.popTransform();
+    // Draw the bounding box (wireframe) with white color
+    if (bbox && frame_count % 60 == 1) {
+        std::cout << "Drawing bbox" << std::endl;
+    }
+    if (bbox) {
+        glColor3f(1.0f, 1.0f, 1.0f); // White color
+        bbox->draw();
     }
 
-    {
-        m_transformStack.pushTransform();
-        {
-            loadMatricesToShader(m_transformStack);
-        }
-        m_transformStack.popTransform();
+    // Draw the flock with Phong shader
+    if (flock && frame_count % 60 == 1) {
+        std::cout << "Drawing flock" << std::endl;
+    }
+    if (flock) {
+        flock->draw("Phong", m_transformStack, m_cam);
     }
 
+    // Draw the obstacle with Phong shader
+    if (obstacle && frame_count % 60 == 1) {
+        std::cout << "Drawing obstacle" << std::endl;
+    }
+    if (obstacle) {
+        obstacle->ObsDraw("Phong", m_transformStack, m_cam);
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -380,95 +475,134 @@ void GLWindow::mouseMoveEvent (
         QMouseEvent * _event
         )
 {
-    // note the method buttons() is the button state when event was called
-    // this is different from button() which is used to check which button was
-    // pressed when the mousePress/Release event is generated
+    // Left mouse button - orbital rotation
     if(m_rotate && _event->buttons() == Qt::LeftButton)
     {
-        int diffx=_event->x()-m_origX;
-        int diffy=_event->y()-m_origY;
-        m_spinXFace += (float) 0.5f * diffy;
-        m_spinYFace += (float) 0.5f * diffx;
-        m_origX = _event->x();
-        m_origY = _event->y();
-        updateGL();
-
+        int diffx=_event->position().x()-m_origX;
+        int diffy=_event->position().y()-m_origY;
+        
+        // Update azimuth and elevation for orbital camera
+        m_cameraAzimuth += diffx * 0.5f;
+        m_cameraElevation += diffy * 0.5f;
+        
+        // Clamp elevation to prevent flipping
+        if (m_cameraElevation > 85.0f) m_cameraElevation = 85.0f;
+        if (m_cameraElevation < -85.0f) m_cameraElevation = -85.0f;
+        
+        // Wrap azimuth
+        if (m_cameraAzimuth > 360.0f) m_cameraAzimuth -= 360.0f;
+        if (m_cameraAzimuth < 0.0f) m_cameraAzimuth += 360.0f;
+        
+        updateCameraPosition();
+        
+        m_origX = _event->position().x();
+        m_origY = _event->position().y();
+        update();
     }
-    // right mouse translate code
+    // Right mouse button - translate/pan target
     else if(m_translate && _event->buttons() == Qt::RightButton)
     {
-        int diffX = (int)(_event->x() - m_origXPos);
-        int diffY = (int)(_event->y() - m_origYPos);
-        m_origXPos=_event->x();
-        m_origYPos=_event->y();
-        m_modelPos.m_x += INCREMENT * diffX;
-        m_modelPos.m_y -= INCREMENT * diffY;
-        updateGL();
-
+        int diffX = (int)(_event->position().x() - m_origXPos);
+        int diffY = (int)(_event->position().y() - m_origYPos);
+        
+        // Pan the camera target
+        float panSpeed = 0.1f;
+        m_cameraTarget.m_x += panSpeed * diffX;
+        m_cameraTarget.m_y -= panSpeed * diffY; // Invert Y for natural panning
+        
+        updateCameraPosition();
+        
+        m_origXPos=_event->position().x();
+        m_origYPos=_event->position().y();
+        update();
     }
-
+    // Middle mouse button - pan camera
+    else if(m_pan && _event->buttons() == Qt::MiddleButton)
+    {
+        int diffX = (int)(_event->position().x() - m_origXPos);
+        int diffY = (int)(_event->position().y() - m_origYPos);
+        
+        // Pan the camera target
+        float panSpeed = 0.1f;
+        m_cameraTarget.m_x += panSpeed * diffX;
+        m_cameraTarget.m_y -= panSpeed * diffY;
+        
+        updateCameraPosition();
+        
+        m_origXPos=_event->position().x();
+        m_origYPos=_event->position().y();
+        update();
+    }
 }
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::mousePressEvent (
         QMouseEvent * _event
         )
 {
-    // this method is called when the mouse button is pressed in this case we
-    // store the value where the maouse was clicked (x,y) and set the Rotate flag to true
+    // Left mouse button - rotation
     if(_event->button() == Qt::LeftButton)
     {
-        m_origX = _event->x();
-        m_origY = _event->y();
-        m_rotate =true;
+        m_origX = _event->position().x();
+        m_origY = _event->position().y();
+        m_rotate = true;
     }
-    // right mouse translate mode
+    // Right mouse button - translate mode
     else if(_event->button() == Qt::RightButton)
     {
-        m_origXPos = _event->x();
-        m_origYPos = _event->y();
-        m_translate=true;
+        m_origXPos = _event->position().x();
+        m_origYPos = _event->position().y();
+        m_translate = true;
     }
-
+    // Middle mouse button - pan mode
+    else if(_event->button() == Qt::MiddleButton)
+    {
+        m_origXPos = _event->position().x();
+        m_origYPos = _event->position().y();
+        m_pan = true;
+    }
 }
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::mouseReleaseEvent (
         QMouseEvent * _event
         )
 {
-    // this event is called when the mouse button is released
-    // we then set Rotate to false
+    // Left mouse button
     if (_event->button() == Qt::LeftButton)
     {
-        m_rotate=false;
+        m_rotate = false;
     }
-    // right mouse translate mode
-    if (_event->button() == Qt::RightButton)
+    // Right mouse button
+    else if (_event->button() == Qt::RightButton)
     {
-        m_translate=false;
+        m_translate = false;
+    }
+    // Middle mouse button
+    else if (_event->button() == Qt::MiddleButton)
+    {
+        m_pan = false;
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::wheelEvent(QWheelEvent *_event)
 {
-
-    // check the diff of the wheel position (0 means no change)
-    if(_event->delta() > 0)
+    // Zoom by adjusting camera distance
+    float zoomFactor = 10.0f;
+    
+    if(_event->angleDelta().y() > 0)
     {
-        m_modelPos.m_z+=ZOOM;
+        // Zoom in - decrease camera distance
+        m_cameraDistance -= zoomFactor;
+        if (m_cameraDistance < 5.0f) m_cameraDistance = 5.0f; // Minimum distance
     }
-    else if(_event->delta() <0 )
+    else if(_event->angleDelta().y() < 0 )
     {
-        m_modelPos.m_z-=ZOOM;
+        // Zoom out - increase camera distance
+        m_cameraDistance += zoomFactor;
+        if (m_cameraDistance > 1000.0f) m_cameraDistance = 1000.0f; // Maximum distance
     }
-    updateGL();
-
-    ngl::Vector v;
-    v.set(0, 0, 0);
-
-    ngl::Vector direction;
-    direction.set(0, 0.1, 0);
-
-    v += direction;
+    
+    updateCameraPosition();
+    update();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -488,7 +622,7 @@ void GLWindow::timerEvent(
 
 
         flock->update();
-        updateGL();
+        update();
     }
 
 }
@@ -498,5 +632,22 @@ void GLWindow::timerEvent(
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateCameraPosition()
+{
+    // Convert spherical coordinates to Cartesian coordinates
+    float radAzimuth = glm::radians(m_cameraAzimuth);
+    float radElevation = glm::radians(m_cameraElevation);
+    
+    // Calculate camera position relative to target
+    float x = m_cameraDistance * cos(radElevation) * cos(radAzimuth);
+    float y = m_cameraDistance * sin(radElevation);
+    float z = m_cameraDistance * cos(radElevation) * sin(radAzimuth);
+    
+    ngl::Vector cameraPos(m_cameraTarget.m_x + x, m_cameraTarget.m_y + y, m_cameraTarget.m_z + z);
+    ngl::Vector up(0, 1, 0);
+    
+    // Update camera
+    m_cam->lookAt(cameraPos, m_cameraTarget, up);
+}
 
 

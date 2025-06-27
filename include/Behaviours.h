@@ -1,7 +1,8 @@
 #ifndef BEHAVIOURS_H
 #define BEHAVIOURS_H
+#include <vector>
 #include "boid.h"
-#include "ngl/Vector.h"
+#include "ngl_compat/Vector.h"
 
 /*! \brief the behaviour class */
 /// @file behaviours.h

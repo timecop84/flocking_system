@@ -1,7 +1,8 @@
-QT += opengl gui core
-
+QT += opengl gui core widgets openglwidgets
 
 INCLUDEPATH += include
+INCLUDEPATH += include/ngl_compat
+INCLUDEPATH += C:/libs/glm
 
 OBJECTS_DIR = obj/
 MOC_DIR = moc/
@@ -10,6 +11,7 @@ UI_HEADERS_DIR = ui/
 
 TARGET = bin/flock
 
+# Console application - will run as GUI but have console available for debugging
 CONFIG += console
 
 SOURCES += \
@@ -19,7 +21,13 @@ SOURCES += \
     src/boid.cpp \
     src/flock.cpp \
     src/obstacle.cpp \
-    src/Behaviours.cpp
+    src/Behaviours.cpp \
+    src/ngl_compat/Camera.cpp \
+    src/ngl_compat/Light.cpp \
+    src/ngl_compat/NGLInit.cpp \
+    src/ngl_compat/VAOPrimitives.cpp \
+    src/ngl_compat/TransformStack.cpp \
+    src/ngl_compat/Random.cpp
 
 HEADERS += \
     include/mainwindow.h \
@@ -41,40 +49,17 @@ linux-g++-64:QMAKE_CXXFLAGS +=  -march=native
 # define the _DEBUG flag for the graphics lib
 DEFINES +=NGL_DEBUG
 
-
-LIBS += -L/usr/local/lib
-LIBS +=  -L/$(HOME)/NGL/lib -l NGL
-INCLUDEPATH += $$(HOME)/NGL/include/
-
-# now if we are under unix and not on a Mac (i.e. linux) define GLEW
-linux-g++ {
-    DEFINES += LINUX
-    LIBS+= -lGLEW
-}
-linux-g++-64 {
-    DEFINES += LINUX
-    LIBS+= -lGLEW
-}
-DEPENDPATH+=include
-# if we are on a mac define DARWIN
+dependencyPath += include
 macx:DEFINES += DARWIN
 
-# this is where to look for includes
-INCLUDEPATH += $$(HOME)/NGL/include/
-INCLUDEPATH += $$(HOME)/boost-trunk/
-win32: {
-        DEFINES+=USING_GLEW
-        INCLUDEPATH+=-I c:/boost_1_44_0
-        INCLUDEPATH+=-I c:/boost
-
-        INCLUDEPATH+= -I C:/NGL/Support/glew
-        LIBS+= -L C:/NGL/lib
-        LIBS+= -lmingw32
-        DEFINES += WIN32
-        DEFINES += USING_GLEW
-        DEFINES +=GLEW_STATIC
-        DEFINES+=_WIN32
-        SOURCES+=C:/NGL/Support/glew/glew.c
-        INCLUDEPATH+=C:/NGL/Support/glew/
+# MinGW/Windows GLM setup
+win32-g++: {
+    INCLUDEPATH += C:/libs/glm
+    INCLUDEPATH += $$[QT_INSTALL_HEADERS]/QtWidgets
+    INCLUDEPATH += $$[QT_INSTALL_HEADERS]/QtOpenGLWidgets
+    LIBS += -lopengl32 -lglu32
+    # Exclude Qt6 Entry Point and define our own
+    LIBS -= -lQt6EntryPoint
+    DEFINES += QT_NO_ENTRYPOINT
 }
 

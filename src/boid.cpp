@@ -1,7 +1,9 @@
 #include "boid.h"
-#include <ngl/VAOPrimitives.h>
-#include <ngl/Random.h>
-#include <ngl/Material.h>
+#include "ngl_compat/VAOPrimitives.h"
+#include "ngl_compat/Material.h"
+#include "ngl_compat/ShaderLib.h"
+#include "ngl_compat/Matrix.h"
+#include <GL/gl.h>
 
 Boid::Boid(
 
@@ -51,34 +53,38 @@ void Boid::draw(
         ngl::Camera *_cam
         )const
 {
-
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-    shader->use(_shaderName);
-    ngl::Material m;
-    m.set(ngl::BLACKPLASTIC);
-    m.setDiffuse(m_colour);
-    m.loadToShader("material");
-    // grab an instance of the primitives for drawing
-    ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
+    // Use immediate mode OpenGL instead of shader system for now
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    
+    // Set material color for boid
+    float diffuse[] = {m_colour.m_r, m_colour.m_g, m_colour.m_b, m_colour.m_a};
+    float ambient[] = {m_colour.m_r * 0.3f, m_colour.m_g * 0.3f, m_colour.m_b * 0.3f, m_colour.m_a};
+    float specular[] = {0.5f, 0.5f, 0.5f, 1.0f};
+    float shininess = 20.0f;
+    
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+    glMaterialf(GL_FRONT, GL_SHININESS, shininess);
 
     if (m_wireframe)
         glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
     else
         glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 
-    _transformStack.pushTransform();
+    glPushMatrix();
     {
-
-        _transformStack.setPosition(m_position);
-        _transformStack.setScale(m_size,m_size,m_size);
-        _transformStack.setScale(m_scale);
-        loadMatricesToShader(_transformStack,_cam);
+        // Apply transformations
+        glTranslatef(m_position.m_x, m_position.m_y, m_position.m_z);
+        glScalef(m_size * m_scale.m_x, m_size * m_scale.m_y, m_size * m_scale.m_z);
+        
+        // Draw sphere using VAOPrimitives
+        ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
+        prim->createSphere("sphere", 1.0f, 12);
         prim->draw("sphere");
-
-    } // and before a pop
-    _transformStack.popTransform();
-
-
+    }
+    glPopMatrix();
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Boid::updateVelocity(ngl::Vector direction)

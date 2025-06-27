@@ -1,0 +1,100 @@
+# Qt/MinGW Build Files and Generated Content
+
+# Build directories
+build/
+bin/
+release/
+debug/
+obj/
+
+# Qt generated files
+moc/
+ui_*.h
+.qmake.stash
+Makefile
+Makefile.Debug
+Makefile.Release
+object_script.*
+
+# Documentation generated files (Doxygen)
+html/
+latex/
+*.tmp
+
+# IDE and Editor files
+.qtc_clangd/
+.vscode/
+.vs/
+*.pro.user
+*.pro.user.*
+*.vcxproj.user
+*.suo
+*.sdf
+*.opensdf
+*.sln.docstates
+
+# Compiler and build artifacts
+*.o
+*.obj
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+*.dylib
+*.pdb
+*.ilk
+*.exp
+*.idb
+*.map
+
+# Qt Creator files
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cbp
+
+# Video output files (simulation recordings)
+*.ogv
+*.avi
+*.mp4
+*.mov
+
+# Temporary files
+*~
+*.swp
+*.swo
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Archive files (unless specifically needed)
+*.zip
+*.tar.gz
+*.rar
+
+# Backup files
+*.bak
+*.backup
+*_backup.*
+
+# OS specific files
+.directory
+desktop.ini
+
+# Configuration files that might contain sensitive info
+config.ini
+settings.ini
+
+# Keep these important files:
+# - Source code (src/, include/)
+# - Project file (flock.pro)
+# - README.md
+# - Doxyfile (documentation config)
+# - UI files (ui/)
+# - Shaders (shaders/)

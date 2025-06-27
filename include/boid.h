@@ -1,10 +1,12 @@
 #ifndef BOID_H
 #define BOID_H
 
-#include "ngl/Vector.h"
-#include <ngl/ShaderLib.h>
-#include <ngl/TransformStack.h>
-#include <ngl/Camera.h>
+#include <string>
+#include <GL/gl.h>
+#include "ngl_compat/Vector.h"
+#include "ngl_compat/Colour.h"
+#include "ngl_compat/Camera.h"
+#include "ngl_compat/TransformStack.h"
 
 /*! \brief the boids class */
 /// @file boids.h
