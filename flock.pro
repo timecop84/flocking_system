@@ -2,12 +2,13 @@ QT += opengl gui core widgets openglwidgets
 
 INCLUDEPATH += include
 INCLUDEPATH += include/ngl_compat
+INCLUDEPATH += modules/math/include
+INCLUDEPATH += modules/utils/include
 INCLUDEPATH += C:/Users/detou/vcpkg/installed/x64-windows/include
 
 OBJECTS_DIR = obj/
 MOC_DIR = moc/
 UI_HEADERS_DIR = ui/
-
 
 TARGET = bin/flock
 
@@ -27,7 +28,8 @@ SOURCES += \
     src/ngl_compat/NGLInit.cpp \
     src/ngl_compat/VAOPrimitives.cpp \
     src/ngl_compat/TransformStack.cpp \
-    src/ngl_compat/Random.cpp
+    src/ngl_compat/Random.cpp \
+    modules/math/src/MathUtils.cpp
 
 HEADERS += \
     include/mainwindow.h \
@@ -35,7 +37,17 @@ HEADERS += \
     include/boid.h \
     include/flock.h \
     include/obstacle.h \
-    include/Behaviours.h
+    include/Behaviours.h \
+    include/ngl_compat/Camera.h \
+    include/ngl_compat/Light.h \
+    include/ngl_compat/NGLInit.h \
+    include/ngl_compat/VAOPrimitives.h \
+    include/ngl_compat/TransformStack.h \
+    include/ngl_compat/Random.h \
+    modules/math/include/MathUtils.h \
+    include/FlockTypes.h \
+    include/ModernRandom.h \
+    include/ModernExample.h
 
 FORMS += \
     ui/mainwindow.ui
@@ -46,8 +58,11 @@ macx:INCLUDEPATH+=/usr/local/boost/
 linux-g++:QMAKE_CXXFLAGS +=  -march=native
 linux-g++-64:QMAKE_CXXFLAGS +=  -march=native
 
-# define the _DEBUG flag for the graphics lib
-DEFINES +=NGL_DEBUG
+# define debug flag for development
+DEFINES += DEBUG_BUILD
+
+# Link with OpenGL
+LIBS += -lopengl32
 
 dependencyPath += include
 macx:DEFINES += DARWIN

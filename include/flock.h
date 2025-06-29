@@ -68,6 +68,14 @@ public:
     void setSimSeparation(double separation);
     void setSimAlignment(double alignment);
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Modern GLM-based methods for gradual migration
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Update flock using modern flocking logic
+    void updateModern();
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Demonstrate modern flocking system working alongside legacy
+    void demonstrateModernFlocking();
+    //----------------------------------------------------------------------------------------------------------------------
 private:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a dynamic array to contain the boids.

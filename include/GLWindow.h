@@ -70,6 +70,12 @@ public :
 
     void setBackgroundColour(ngl::Colour colour);
     void setBBoxSize(glm::vec3 size);
+    
+    /// @brief Toggle between legacy and modern GLM-based update methods
+    void toggleModernUpdate(bool enabled);
+    /// @brief Get current update mode
+    bool isUsingModernUpdate() const { return m_useModernUpdate; }
+    
     //-----------------------------------
     /// @brief
     //void update();
@@ -233,6 +239,10 @@ private :
     /// @brief flag to indicate if animation is active or not
     //----------------------------------------------------------------------------------------------------------------------
     bool m_animate;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief flag to indicate if modern GLM-based update should be used
+    //----------------------------------------------------------------------------------------------------------------------
+    bool m_useModernUpdate;
     //----------------------------------------------------------------------------------------------------------------------
 
 

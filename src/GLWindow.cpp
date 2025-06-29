@@ -1,5 +1,6 @@
 #include "obstacle.h"
 #include "GLWindow.h"
+#include "flock.h"
 #include <iostream>
 #include <cmath>
 #include <QSurfaceFormat>
@@ -15,7 +16,6 @@
 #include "ngl_compat/Material.h"
 #include "ngl_compat/Matrix.h"
 #include "ngl_compat/glew_compat.h"
-#include "flock.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -71,6 +71,7 @@ GLWindow::GLWindow(
     
     m_sphereUpdateTimer = startTimer(1000 / 60); //run at 60FPS
     m_animate = true;
+    m_useModernUpdate = false; // Start with legacy update, can be toggled later
     m_backgroundColour.set(0.6f, 0.6f, 0.6f, 1.0f);
 }
 
@@ -621,8 +622,35 @@ void GLWindow::timerEvent(
             return;
         }
 
-
-        flock->update();
+        // Choose between legacy and modern update methods
+        if (m_useModernUpdate) {
+            // MODERN MODE: Use actual modern flocking methods
+            static int modernCounter = 0;
+            
+            // 1. Change flock color to bright cyan to indicate modern mode
+            if (modernCounter % 60 == 0) { // Every 60 frames (~1 second)
+                ngl::Colour modernColor(0.0f, 0.7f, 1.0f, 1.0f); // Bright cyan
+                flock->setColour(modernColor);
+            }
+            
+            // 2. Use the actual modern update method
+            flock->updateModern();
+            
+            modernCounter++;
+        } else {
+            // LEGACY MODE: Normal behavior
+            static int legacyCounter = 0;
+            
+            // 1. Use normal white/light color
+            if (legacyCounter % 60 == 0) { // Every 60 frames
+                ngl::Colour legacyColor(0.8f, 0.8f, 1.0f, 1.0f); // Light blue-white
+                flock->setColour(legacyColor);
+            }
+            
+            // 2. Normal update rate and behavior
+            flock->update();
+            legacyCounter++;
+        }
         update();
     }
 
@@ -650,5 +678,22 @@ void GLWindow::updateCameraPosition()
     // Update camera
     m_cam->lookAt(cameraPos, m_cameraTarget, up);
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::toggleModernUpdate(bool enabled)
+{
+    m_useModernUpdate = enabled;
+    std::cout << "\n======================================" << std::endl;
+    std::cout << "TOGGLE ACTIVATED: Switched to " << (enabled ? "MODERN GLM-based" : "LEGACY") << " update mode" << std::endl;
+    std::cout << "======================================\n" << std::endl;
+    
+    // Optional: Call the demonstration method when switching to modern mode
+    if (enabled && flock) {
+        std::cout << "Activating modern GLM-based flocking system..." << std::endl;
+        flock->demonstrateModernFlocking();
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 

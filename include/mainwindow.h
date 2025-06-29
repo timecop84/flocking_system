@@ -60,6 +60,8 @@ private slots:
 
     void on_m_bboxSize_valueChanged(double arg1);
 
+    void on_m_useModernUpdate_toggled(bool checked);
+
 private:
     Ui::MainWindow *m_ui;
 
