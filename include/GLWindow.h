@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QTimerEvent>
+#include <QKeyEvent>
 #include <glm/glm.hpp>
 #include "ngl_compat/Camera.h"
 #include "ngl_compat/Light.h"
@@ -14,12 +15,14 @@
 #include "ngl_compat/TransformStack.h"
 #include "ngl_compat/ShaderLib.h"
 #include "ngl_compat/BBox.h"
+#include "BehaviorValidator.h"
 
 // must be included after our stuff because GLEW needs to be first
 #include <QTime>
 #include "boid.h"
 #include "flock.h"
 #include "obstacle.h"
+#include "PerformanceMonitor.h"
 
 /// @file GLWindow.h
 /// @brief a GLWindow to visualize our flock.
@@ -76,6 +79,19 @@ public :
     /// @brief Get current update mode
     bool isUsingModernUpdate() const { return m_useModernUpdate; }
     
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief print performance comparison between legacy and modern modes
+    //----------------------------------------------------------------------------------------------------------------------
+    void printPerformanceComparison();
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief enable/disable performance monitoring
+    //----------------------------------------------------------------------------------------------------------------------
+    void setPerformanceMonitoring(bool enabled);
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief validate behavior differences between legacy and modern systems
+    //----------------------------------------------------------------------------------------------------------------------
+    void validateBehaviorDifferences();
+
     //-----------------------------------
     /// @brief
     //void update();
@@ -161,6 +177,9 @@ private :
     //----------------------------------------------------------------------------------------------------------------------
     ngl::Colour m_backgroundColour;
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief performance monitor for comparing legacy vs modern algorithms
+    //----------------------------------------------------------------------------------------------------------------------
+    flock::PerformanceMonitor m_performanceMonitor;
 
 protected:
 
@@ -233,6 +252,11 @@ private :
     void timerEvent(
             QTimerEvent *_event
             );
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief key press event handler for performance monitoring and other controls
+    /// @param _event the Qt Key Event structure
+    //----------------------------------------------------------------------------------------------------------------------
+    void keyPressEvent(QKeyEvent *_event) override;
     //----------------------------------------------------------------------------------------------------------------------
     int m_sphereUpdateTimer;
     //----------------------------------------------------------------------------------------------------------------------

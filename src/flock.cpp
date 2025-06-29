@@ -304,7 +304,7 @@ void  Flock::checkCollisions()
 //----------------------------------------------------------------------------------------------------------------------
 void Flock::updateModern()
 {
-    // Modern flocking update using GLM-based calculations
+    // Modern flocking update using pure GLM that exactly replicates legacy emergent behavior
     static int modernFrameCount = 0;
     modernFrameCount++;
     
@@ -316,84 +316,112 @@ void Flock::updateModern()
     // Handle collisions using legacy system for compatibility
     checkCollisions();
     
-    // Apply modern flocking behavior to all boids using GLM-based calculations
+    // Apply modern flocking behavior to all boids using pure GLM calculations
+    // This implementation exactly replicates the legacy calculations but uses GLM
     int boidIndex = 0;
     for(Boid *boid : m_boidList)
     {
-        // Get current boid state in modern GLM format
+        // Get current boid state
         ngl::Vector currentPos = boid->getPosition();
         ngl::Vector currentVel = boid->getVelocity();
+        glm::vec3 glmCurrentPos(currentPos.m_x, currentPos.m_y, currentPos.m_z);
+        glm::vec3 glmCurrentVel(currentVel.m_x, currentVel.m_y, currentVel.m_z);
         
-        // Convert to GLM for modern calculations
-        glm::vec3 glmPos(currentPos.m_x, currentPos.m_y, currentPos.m_z);
-        glm::vec3 glmVel(currentVel.m_x, currentVel.m_y, currentVel.m_z);
+        // COHESION - exactly match legacy Behaviours::Cohesion() calculation
+        glm::vec3 coherence(0.0f, 0.0f, 0.0f);
+        int count = 1; // Legacy starts with 1
         
-        // Modern GLM-based flocking calculations
-        glm::vec3 separation(0.0f);
-        glm::vec3 alignment(0.0f);
-        glm::vec3 cohesion(0.0f);
-        int neighborCount = 0;
-        
-        // Check against all other boids for modern flocking behavior
-        for(Boid *neighbor : m_boidList) {
-            if (neighbor == boid) continue;
-            
-            ngl::Vector neighborPos = neighbor->getPosition();
-            ngl::Vector neighborVel = neighbor->getVelocity();
-            glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
-            glm::vec3 glmNeighborVel(neighborVel.m_x, neighborVel.m_y, neighborVel.m_z);
-            
-            glm::vec3 diff = glmPos - glmNeighborPos;
-            float distance = glm::length(diff);
-            
-            // Modern separation (avoid crowding)
-            if (distance > 0.0f && distance < 5.0f) {
-                separation += glm::normalize(diff) / distance;
-            }
-            
-            // Modern alignment and cohesion (neighborhood influence)
-            if (distance > 0.0f && distance < 15.0f) {
-                alignment += glmNeighborVel;
-                cohesion += glmNeighborPos;
-                neighborCount++;
+        for(int i = 0; i < static_cast<int>(m_boidList.size()); i++)
+        {
+            if(i != boidIndex)
+            {
+                ngl::Vector neighborPos = m_boidList[i]->getPosition();
+                glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
+                
+                glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
+                
+                if(glm::length(boidDistance) < m_behaviours->getBehaviourDistance())
+                {
+                    coherence += glmNeighborPos;
+                    count++;
+                }
             }
         }
         
-        // Apply modern flocking forces
-        if (neighborCount > 0) {
-            alignment /= (float)neighborCount;
-            cohesion /= (float)neighborCount;
-            cohesion = cohesion - glmPos; // Steer towards center of mass
+        coherence /= static_cast<float>(count);
+        coherence = coherence - glmCurrentPos;
+        if (glm::length(coherence) > 0.0001f) {
+            coherence = glm::normalize(coherence);
         }
         
-        // Combine forces with modern GLM math
-        glm::vec3 modernForce = separation * 0.8f + alignment * 0.3f + cohesion * 0.2f;
+        // ALIGNMENT - exactly match legacy Behaviours::Alignment() calculation
+        glm::vec3 alignmentForce(0.0f, 0.0f, 0.0f);
+        count = 1; // Reset count for alignment, legacy starts with 1
         
-        // Apply slight modification to make modern behavior distinctive
-        // Add a subtle circular motion component to make it visually different
-        float time = modernFrameCount * 0.01f;
-        glm::vec3 circularComponent(
-            sin(time + boidIndex * 0.1f) * 0.1f,
-            cos(time + boidIndex * 0.1f) * 0.05f,
-            0.0f
-        );
-        
-        modernForce += circularComponent;
-        
-        // Convert back to ngl format and apply
-        ngl::Vector nglForce(modernForce.x, modernForce.y, modernForce.z);
-        ngl::Vector newVelocity = currentVel + nglForce * 0.1f; // Damping
-        
-        // Apply velocity constraints
-        float maxSpeed = 2.0f;
-        float speed = sqrt(newVelocity.m_x * newVelocity.m_x + 
-                          newVelocity.m_y * newVelocity.m_y + 
-                          newVelocity.m_z * newVelocity.m_z);
-        if (speed > maxSpeed) {
-            newVelocity = newVelocity * (maxSpeed / speed);
+        for(int i = 0; i < static_cast<int>(m_boidList.size()); i++)
+        {
+            if(i != boidIndex)
+            {
+                ngl::Vector neighborPos = m_boidList[i]->getPosition();
+                glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
+                
+                glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
+                
+                if(glm::length(boidDistance) < m_behaviours->getBehaviourDistance())
+                {
+                    ngl::Vector neighborVel = m_boidList[i]->getVelocity();
+                    glm::vec3 glmNeighborVel(neighborVel.m_x, neighborVel.m_y, neighborVel.m_z);
+                    alignmentForce += glmNeighborVel;
+                    count++;
+                }
+            }
         }
         
-        boid->setVelocity(newVelocity);
+        if (glm::length(alignmentForce) > m_behaviours->getBehaviourDistance())
+        {
+            alignmentForce = glm::normalize(alignmentForce);
+        }
+        alignmentForce /= static_cast<float>(count);
+        alignmentForce = alignmentForce - glmCurrentVel;
+        
+        // SEPARATION - exactly match legacy Behaviours::Seperation() calculation
+        glm::vec3 separation(0.0f, 0.0f, 0.0f);
+        
+        for(int i = 0; i < static_cast<int>(m_boidList.size()); i++)
+        {
+            if(i != boidIndex)
+            {
+                ngl::Vector neighborPos = m_boidList[i]->getPosition();
+                glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
+                
+                glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
+                
+                if(glm::length(boidDistance) < m_behaviours->getFlockDistance())
+                {
+                    separation -= (glmCurrentPos - glmNeighborPos);
+                }
+            }
+        }
+        
+        // BEHAVIOR SETUP - exactly match legacy Behaviours::BehaviourSetup() calculation
+        glm::vec3 separationCorrection(-1.0f, -1.0f, -1.0f);
+        glm::vec3 separationSet = (static_cast<float>(m_behaviours->getSeparationForce()) * separation) * separationCorrection;
+        glm::vec3 cohesionSet = static_cast<float>(m_behaviours->getCohesionForce()) * coherence;
+        glm::vec3 alignmentSet = alignmentForce * static_cast<float>(m_behaviours->getAlignment());
+        
+        glm::vec3 behaviourSetup = separationSet + cohesionSet + alignmentSet;
+        
+        if (glm::length(behaviourSetup) > 0.5f)
+        {
+            behaviourSetup = glm::normalize(behaviourSetup);
+            behaviourSetup *= 0.5f;
+        }
+        
+        // Convert back to ngl format and apply using exact legacy sequence
+        ngl::Vector nglBehaviourSetup(behaviourSetup.x, behaviourSetup.y, behaviourSetup.z);
+        
+        // Update boid using exact legacy interface sequence
+        boid->updateVelocity(nglBehaviourSetup);
         boid->velocityConstraint();
         boid->boidDirection();
         
@@ -401,7 +429,7 @@ void Flock::updateModern()
     }
     
     if (modernFrameCount % 300 == 1) {
-        std::cout << "Modern GLM-based update completed for " << m_boidList.size() << " boids" << std::endl;
+        std::cout << "Modern GLM-based update completed using pure GLM calculations for " << m_boidList.size() << " boids" << std::endl;
     }
 }
 //----------------------------------------------------------------------------------------------------------------------

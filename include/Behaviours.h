@@ -69,6 +69,15 @@ public:
     double getCohesionForce() const {return m_cohesionForce;}
     double getSeparationForce() const {return m_seperationForce;}
     double getAlignment() const {return m_alignment;}
+    
+    // Getters for validation - access calculated forces
+    ngl::Vector getCoherence() const {return m_coherence;}
+    ngl::Vector getAlignmentForce() const {return m_alignmentForce;}
+    ngl::Vector getSeparation() const {return m_separation;}
+    ngl::Vector getBehaviourSetup() const {return m_behaviourSetup;}
+    ngl::Vector getCohesionSet() const {return m_cohesionSet;}
+    ngl::Vector getSeparationSet() const {return m_seperationSet;}
+    ngl::Vector getAlignmentSet() const {return m_alighmentSet;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our ctor
     ~Behaviours();

@@ -29,7 +29,8 @@ SOURCES += \
     src/ngl_compat/VAOPrimitives.cpp \
     src/ngl_compat/TransformStack.cpp \
     src/ngl_compat/Random.cpp \
-    modules/math/src/MathUtils.cpp
+    modules/math/src/MathUtils.cpp \
+    src/BehaviorValidator.cpp
 
 HEADERS += \
     include/mainwindow.h \
@@ -47,7 +48,9 @@ HEADERS += \
     modules/math/include/MathUtils.h \
     include/FlockTypes.h \
     include/ModernRandom.h \
-    include/ModernExample.h
+    include/ModernExample.h \
+    include/PerformanceMonitor.h \
+    include/BehaviorValidator.h
 
 FORMS += \
     ui/mainwindow.ui

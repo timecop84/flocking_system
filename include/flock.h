@@ -76,6 +76,12 @@ public:
     /// @brief Demonstrate modern flocking system working alongside legacy
     void demonstrateModernFlocking();
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Get the boid list for validation and testing
+    const std::vector<Boid*>& getBoidList() const { return m_boidList; }
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Get the behaviors instance for validation and testing  
+    Behaviours* getBehaviours() const { return m_behaviours; }
+    //----------------------------------------------------------------------------------------------------------------------
 private:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a dynamic array to contain the boids.
