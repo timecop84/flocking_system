@@ -7,6 +7,8 @@
 #include "ngl_compat/Colour.h"
 #include "ngl_compat/Camera.h"
 #include "ngl_compat/TransformStack.h"
+// Modern includes for gradual migration
+#include "FlockTypes.h"
 
 /*! \brief the boids class */
 /// @file boids.h
@@ -65,6 +67,10 @@ public:
     /// @param [in] direction gets the value of direction of the boid
     void updateVelocity(ngl::Vector direction);
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief adds to the current velocity.
+    /// @param [in] force force to add to the current velocity
+    inline void addVelocity(const ngl::Vector& force) { m_velocity += force; }
+    //----------------------------------------------------------------------------------------------------------------------
     /// @brief updates the boid direction.
     void boidDirection();
     //----------------------------------------------------------------------------------------------------------------------
@@ -97,13 +103,66 @@ public:
     /// @param [in] m_hit passed from boids for the value of collisions
     inline bool isHit()const {return m_hit;}
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief sets the color of the boids
-    /// @param [in] m_colour sets the color of the boids.
-    void setColour(ngl::Colour colour) {m_colour = colour;}
+    /// @brief sets the colour of the boid
+    /// @param [in] colour the new colour for the boid
+    inline void setColour(const ngl::Colour& colour) {m_colour = colour;}
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief sets the wireframe for the boids
-    /// @param [in] m_wireframe sets the wireframe on/off.
-    void setWireframe(bool value) {m_wireframe = value;}
+    /// @brief sets the wireframe mode of the boid
+    /// @param [in] value true for wireframe, false for solid
+    inline void setWireframe(bool value) {m_wireframe = value;}
+
+    //----------------------------------------------------------------------------------------------------------------------
+    // Modern GLM-based accessors for gradual migration
+    //----------------------------------------------------------------------------------------------------------------------
+    
+    /// @brief Get position as modern GLM vector
+    flock::Vec3 getPositionModern() const { 
+        return flock::Vec3(m_position.m_x, m_position.m_y, m_position.m_z); 
+    }
+    
+    /// @brief Set position from modern GLM vector
+    void setPositionModern(const flock::Vec3& pos) { 
+        m_position.set(pos.x, pos.y, pos.z); 
+    }
+    
+    /// @brief Get velocity as modern GLM vector
+    flock::Vec3 getVelocityModern() const { 
+        return flock::Vec3(m_velocity.m_x, m_velocity.m_y, m_velocity.m_z); 
+    }
+    
+    /// @brief Set velocity from modern GLM vector
+    void setVelocityModern(const flock::Vec3& vel) { 
+        m_velocity.set(vel.x, vel.y, vel.z); 
+    }
+    
+    /// @brief Get direction as modern GLM vector
+    flock::Vec3 getDirectionModern() const { 
+        return flock::Vec3(m_direction.m_x, m_direction.m_y, m_direction.m_z); 
+    }
+    
+    /// @brief Set direction from modern GLM vector
+    void setDirectionModern(const flock::Vec3& dir) { 
+        m_direction.set(dir.x, dir.y, dir.z); 
+    }
+    
+    /// @brief Get color as modern GLM vector
+    flock::Color getColorModern() const { 
+        return flock::Color(m_colour.m_r, m_colour.m_g, m_colour.m_b, m_colour.m_a); 
+    }
+    
+    /// @brief Set color from modern GLM vector
+    void setColorModern(const flock::Color& color) { 
+        m_colour.set(color.r, color.g, color.b, color.a); 
+    }
+    
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Modern flocking calculation using GLM (demonstration)
+    /// @param [in] neighborPositions positions of neighboring boids
+    /// @param [in] neighborVelocities velocities of neighboring boids
+    /// @return combined flocking force as GLM vector
+    flock::Vec3 calculateModernFlocking(const std::vector<flock::Vec3>& neighborPositions,
+                                       const std::vector<flock::Vec3>& neighborVelocities) const;
+
     //----------------------------------------------------------------------------------------------------------------------
 
 

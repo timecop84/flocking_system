@@ -1,4 +1,5 @@
 #include "Behaviours.h"
+#include "FlockTypes.h"  // Add modern types
 
 Behaviours::Behaviours()
 {
@@ -123,3 +124,113 @@ ngl::Vector Behaviours::BehaviourSetup()
 
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// Modern flocking helper using GLM-based calculations
+//----------------------------------------------------------------------------------------------------------------------
+void Behaviours::applyModernFlockingForce(int &_boidNumber, std::vector<Boid*> &_boidList)
+{
+    if (_boidList.empty() || _boidNumber < 0 || _boidNumber >= static_cast<int>(_boidList.size())) {
+        return;
+    }
+    
+    // Collect neighbor data using modern accessors
+    std::vector<flock::Vec3> neighborPositions;
+    std::vector<flock::Vec3> neighborVelocities;
+    
+    Boid* currentBoid = _boidList[_boidNumber];
+    flock::Vec3 currentPos = currentBoid->getPositionModern();
+    
+    for (size_t i = 0; i < _boidList.size(); ++i) {
+        if (static_cast<int>(i) != _boidNumber) {
+            flock::Vec3 neighborPos = _boidList[i]->getPositionModern();
+            float distance = flock::Utils::distance(currentPos, neighborPos);
+            
+            if (distance < m_BehaviourDistance) {
+                neighborPositions.push_back(neighborPos);
+                neighborVelocities.push_back(_boidList[i]->getVelocityModern());
+            }
+        }
+    }
+    
+    // Use modern flocking calculation
+    if (!neighborPositions.empty()) {
+        flock::Vec3 modernForce = currentBoid->calculateModernFlocking(neighborPositions, neighborVelocities);
+        
+        // Apply the modern force back to legacy velocity
+        // Scale down the force to prevent overly dramatic changes
+        modernForce *= 0.1f;  
+        
+        ngl::Vector legacyForce(modernForce.x, modernForce.y, modernForce.z);
+        currentBoid->addVelocity(legacyForce);
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Modern GLM-based method implementations
+//----------------------------------------------------------------------------------------------------------------------
+
+flock::Vec3 Behaviours::calculateCohesionModern(const flock::Vec3& boidPos, 
+                                               const std::vector<flock::Vec3>& neighborPositions) const
+{
+    if (neighborPositions.empty()) {
+        return flock::Vec3(0.0f);
+    }
+    
+    // Calculate center of mass of neighbors
+    flock::Vec3 centerOfMass(0.0f);
+    for (const auto& pos : neighborPositions) {
+        centerOfMass += pos;
+    }
+    centerOfMass /= static_cast<float>(neighborPositions.size());
+    
+    // Return force towards center of mass, scaled by cohesion strength
+    return (centerOfMass - boidPos) * static_cast<float>(m_cohesionForce);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+flock::Vec3 Behaviours::calculateSeparationModern(const flock::Vec3& boidPos, 
+                                                 const std::vector<flock::Vec3>& neighborPositions) const
+{
+    flock::Vec3 separationForce(0.0f);
+    int count = 0;
+    
+    for (const auto& neighborPos : neighborPositions) {
+        float distance = glm::length(neighborPos - boidPos);
+        if (distance > 0.0f && distance < m_flockDistance) {
+            // Calculate repulsion force (inversely proportional to distance)
+            flock::Vec3 diff = boidPos - neighborPos;
+            diff = glm::normalize(diff);
+            diff /= distance; // Weight by distance
+            separationForce += diff;
+            count++;
+        }
+    }
+    
+    if (count > 0) {
+        separationForce /= static_cast<float>(count);
+        separationForce *= static_cast<float>(m_seperationForce);
+    }
+    
+    return separationForce;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+flock::Vec3 Behaviours::calculateAlignmentModern(const flock::Vec3& boidVel, 
+                                                const std::vector<flock::Vec3>& neighborVelocities) const
+{
+    if (neighborVelocities.empty()) {
+        return flock::Vec3(0.0f);
+    }
+    
+    // Calculate average velocity of neighbors
+    flock::Vec3 averageVelocity(0.0f);
+    for (const auto& vel : neighborVelocities) {
+        averageVelocity += vel;
+    }
+    averageVelocity /= static_cast<float>(neighborVelocities.size());
+    
+    // Return force to align with average velocity
+    return (averageVelocity - boidVel) * static_cast<float>(m_alignment);
+}
+
+//----------------------------------------------------------------------------------------------------------------------

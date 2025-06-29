@@ -3,6 +3,8 @@
 #include <vector>
 #include "boid.h"
 #include "ngl_compat/Vector.h"
+// Modern includes for gradual migration
+#include "FlockTypes.h"
 
 /*! \brief the behaviour class */
 /// @file behaviours.h
@@ -47,6 +49,11 @@ public:
     /// @param [in] _boidList a dynamic array of all the boids.
     void Destination(int & _boidNumber, std::vector <Boid*> & _boidList);
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Modern flocking calculation using GLM (demonstration of gradual migration)
+    /// @param [in] _boidNumber the current boid.
+    /// @param [in] _boidList a dynamic array of all the boids.
+    void applyModernFlockingForce(int &_boidNumber, std::vector<Boid*> &_boidList);
+    //----------------------------------------------------------------------------------------------------------------------
     ngl::Vector BehaviourSetup();
     /// @brief GUI related sets for the simulation
     //----------------------------------------------------------------------------------------------------------------------
@@ -55,9 +62,51 @@ public:
     void setCohesionForce(double cohesion) {m_cohesionForce = cohesion;}
     void setSeparationForce(double separation) {m_seperationForce = separation;}
     void setAlignment(double alignment) {m_alignment = alignment;}
+    
+    // Getters for modern system
+    double getFlockDistance() const {return m_flockDistance;}
+    double getBehaviourDistance() const {return m_BehaviourDistance;}
+    double getCohesionForce() const {return m_cohesionForce;}
+    double getSeparationForce() const {return m_seperationForce;}
+    double getAlignment() const {return m_alignment;}
+    
+    // Getters for validation - access calculated forces
+    ngl::Vector getCoherence() const {return m_coherence;}
+    ngl::Vector getAlignmentForce() const {return m_alignmentForce;}
+    ngl::Vector getSeparation() const {return m_separation;}
+    ngl::Vector getBehaviourSetup() const {return m_behaviourSetup;}
+    ngl::Vector getCohesionSet() const {return m_cohesionSet;}
+    ngl::Vector getSeparationSet() const {return m_seperationSet;}
+    ngl::Vector getAlignmentSet() const {return m_alighmentSet;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our ctor
     ~Behaviours();
+    
+    //----------------------------------------------------------------------------------------------------------------------
+    // Modern GLM-based methods for gradual migration
+    //----------------------------------------------------------------------------------------------------------------------
+    
+    /// @brief Calculate cohesion force using modern GLM types
+    /// @param [in] boidPos current boid position
+    /// @param [in] neighborPositions positions of neighboring boids
+    /// @return cohesion force as GLM vector
+    flock::Vec3 calculateCohesionModern(const flock::Vec3& boidPos, 
+                                       const std::vector<flock::Vec3>& neighborPositions) const;
+    
+    /// @brief Calculate separation force using modern GLM types
+    /// @param [in] boidPos current boid position
+    /// @param [in] neighborPositions positions of neighboring boids
+    /// @return separation force as GLM vector
+    flock::Vec3 calculateSeparationModern(const flock::Vec3& boidPos, 
+                                         const std::vector<flock::Vec3>& neighborPositions) const;
+    
+    /// @brief Calculate alignment force using modern GLM types
+    /// @param [in] boidVel current boid velocity
+    /// @param [in] neighborVelocities velocities of neighboring boids
+    /// @return alignment force as GLM vector
+    flock::Vec3 calculateAlignmentModern(const flock::Vec3& boidVel, 
+                                        const std::vector<flock::Vec3>& neighborVelocities) const;
+    
     //----------------------------------------------------------------------------------------------------------------------
 
 private:

@@ -84,10 +84,10 @@ check:
 	@echo "GCC compiler version:"
 	@g++ --version || echo "ERROR: g++ not found in PATH"
 	@echo ""
-	@if exist "C:\libs\glm\glm\glm.hpp" ( \
-		echo "GLM library: Found at C:\libs\glm\" \
+	@if exist "C:\Users\detou\vcpkg\installed\x64-windows\include\glm\glm.hpp" ( \
+		echo "GLM library: Found via vcpkg at C:\Users\detou\vcpkg\installed\x64-windows\include\" \
 	) else ( \
-		echo "WARNING: GLM library not found at C:\libs\glm\" \
+		echo "WARNING: GLM library not found via vcpkg" \
 	)
 
 # Install dependencies (placeholder)

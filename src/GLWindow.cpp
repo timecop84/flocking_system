@@ -1,6 +1,6 @@
 #include "obstacle.h"
-
 #include "GLWindow.h"
+#include "flock.h"
 #include <iostream>
 #include <cmath>
 #include <QSurfaceFormat>
@@ -16,9 +16,12 @@
 #include "ngl_compat/Material.h"
 #include "ngl_compat/Matrix.h"
 #include "ngl_compat/glew_compat.h"
-#include "flock.h"
+#include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include "PerformanceMonitor.h"
+#include "BehaviorValidator.h"
+
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -51,6 +54,8 @@ GLWindow::GLWindow(
 
     // set this widget to have the initial keyboard focus
     setFocus();
+    // Make sure this widget can accept keyboard focus
+    setFocusPolicy(Qt::StrongFocus);
     // re-size the widget to that of the parent (in this case the GLFrame passed in on construction)
     this->resize(_parent->size());
     // Now set the initial GLWindow attributes to default values
@@ -70,6 +75,7 @@ GLWindow::GLWindow(
     
     m_sphereUpdateTimer = startTimer(1000 / 60); //run at 60FPS
     m_animate = true;
+    m_useModernUpdate = false; // Start with legacy update, can be toggled later
     m_backgroundColour.set(0.6f, 0.6f, 0.6f, 1.0f);
 }
 
@@ -620,8 +626,41 @@ void GLWindow::timerEvent(
             return;
         }
 
-
-        flock->update();
+        // Choose between legacy and modern update methods
+        if (m_useModernUpdate) {
+            // MODERN MODE: Use actual modern flocking methods
+            static int modernCounter = 0;
+            
+            // 1. Change flock color to bright cyan to indicate modern mode
+            if (modernCounter % 60 == 0) { // Every 60 frames (~1 second)
+                ngl::Colour modernColor(0.0f, 0.7f, 1.0f, 1.0f); // Bright cyan
+                flock->setColour(modernColor);
+            }
+            
+            // 2. Use the actual modern update method with performance monitoring
+            {
+                FLOCK_TIMER(m_performanceMonitor, "Modern GLM Update");
+                flock->updateModern();
+            }
+            
+            modernCounter++;
+        } else {
+            // LEGACY MODE: Normal behavior
+            static int legacyCounter = 0;
+            
+            // 1. Use normal white/light color
+            if (legacyCounter % 60 == 0) { // Every 60 frames
+                ngl::Colour legacyColor(0.8f, 0.8f, 1.0f); // Light blue-white
+                flock->setColour(legacyColor);
+            }
+            
+            // 2. Normal update rate and behavior with performance monitoring
+            {
+                FLOCK_TIMER(m_performanceMonitor, "Legacy NGL Update");
+                flock->update();
+            }
+            legacyCounter++;
+        }
         update();
     }
 
@@ -649,5 +688,100 @@ void GLWindow::updateCameraPosition()
     // Update camera
     m_cam->lookAt(cameraPos, m_cameraTarget, up);
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::toggleModernUpdate(bool enabled)
+{
+    m_useModernUpdate = enabled;
+    std::cout << "\n======================================" << std::endl;
+    std::cout << "TOGGLE ACTIVATED: Switched to " << (enabled ? "MODERN GLM-based" : "LEGACY") << " update mode" << std::endl;
+    std::cout << "======================================" << std::endl;
+    std::cout << "Performance Controls:" << std::endl;
+    std::cout << "  P - Print performance comparison" << std::endl;
+    std::cout << "  M - Toggle performance monitoring" << std::endl;
+    std::cout << "  C - Clear performance data" << std::endl;
+    std::cout << "  V - Validate behavior differences" << std::endl;
+    std::cout << "  Space - Toggle animation" << std::endl;
+    std::cout << "======================================\n" << std::endl;
+    
+    // Call the demonstration method when switching to modern mode
+    if (enabled && flock) {
+        std::cout << "Activating modern GLM-based flocking system..." << std::endl;
+        flock->demonstrateModernFlocking();
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::printPerformanceComparison()
+{
+    m_performanceMonitor.printComparison();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::setPerformanceMonitoring(bool enabled)
+{
+    m_performanceMonitor.setEnabled(enabled);
+    if (enabled) {
+        std::cout << "Performance monitoring ENABLED" << std::endl;
+    } else {
+        std::cout << "Performance monitoring DISABLED" << std::endl;
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::keyPressEvent(QKeyEvent *_event)
+{
+    switch (_event->key()) {
+        case Qt::Key_P:
+            // Print performance comparison
+            printPerformanceComparison();
+            break;
+        case Qt::Key_M:
+            // Toggle performance monitoring
+            setPerformanceMonitoring(!m_performanceMonitor.isEnabled());
+            break;
+        case Qt::Key_C:
+            // Clear performance data
+            m_performanceMonitor.clear();
+            std::cout << "Performance data cleared" << std::endl;
+            break;
+        case Qt::Key_Space:
+            // Toggle animation
+            m_animate = !m_animate;
+            std::cout << "Animation " << (m_animate ? "ENABLED" : "DISABLED") << std::endl;
+            break;
+        case Qt::Key_V:
+            // Validate behavior differences
+            validateBehaviorDifferences();
+            break;
+        default:
+            QOpenGLWidget::keyPressEvent(_event);
+            break;
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::validateBehaviorDifferences()
+{
+    if (!flock) {
+        std::cout << "No flock available for validation" << std::endl;
+        return;
+    }
+    
+    std::cout << "\n=== BEHAVIOR VALIDATION STARTED ===" << std::endl;
+    std::cout << "Current mode: " << (m_useModernUpdate ? "Modern GLM" : "Legacy NGL") << std::endl;
+    
+    // Validate the first few boids to get a sample
+    int boidsToValidate = std::min(5, flock->getFlockSize());
+    
+    for (int i = 0; i < boidsToValidate; i++) {
+        BehaviorValidator::logDetailedComparison(i, flock->getBoidList(), flock->getBehaviours());
+    }
+    
+    std::cout << "Validation completed for " << boidsToValidate << " boids" << std::endl;
+    std::cout << "===================================\n" << std::endl;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 

@@ -5,6 +5,8 @@
 #include "ngl_compat/Vector.h"
 #include "ngl_compat/Colour.h"
 #include "ngl_compat/TransformStack.h"
+// Modern includes for gradual migration
+#include "FlockTypes.h"
 #include <string>
 #include <GL/gl.h>
 
@@ -68,6 +70,41 @@ public:
     /// @brief sets the wireframe for the obstacle
     /// @param [in] m_wireframe sets the wireframe value on/off.
     void setWireframe(bool value) {m_wireframe = value;}
+    
+    //----------------------------------------------------------------------------------------------------------------------
+    // Modern GLM-based accessors for gradual migration
+    //----------------------------------------------------------------------------------------------------------------------
+    
+    /// @brief Get obstacle position as modern GLM vector
+    flock::Vec3 getPositionModern() const { 
+        return flock::Vec3(_spherePosition.m_x, _spherePosition.m_y, _spherePosition.m_z); 
+    }
+    
+    /// @brief Set obstacle position from modern GLM vector
+    void setPositionModern(const flock::Vec3& pos) { 
+        _spherePosition.set(pos.x, pos.y, pos.z); 
+    }
+    
+    /// @brief Get obstacle color as modern GLM vector
+    flock::Color getColorModern() const { 
+        return flock::Color(m_colour.m_r, m_colour.m_g, m_colour.m_b, m_colour.m_a); 
+    }
+    
+    /// @brief Set obstacle color from modern GLM vector
+    void setColorModern(const flock::Color& color) { 
+        m_colour.set(color.r, color.g, color.b, color.a); 
+    }
+    
+    /// @brief Get obstacle radius (same for modern, no conversion needed)
+    float getRadiusModern() const {
+        return _sphereRadius;
+    }
+    
+    /// @brief Set obstacle radius (same for modern, no conversion needed)
+    void setRadiusModern(float radius) {
+        _sphereRadius = radius;
+    }
+    
     //----------------------------------------------------------------------------------------------------------------------
 
 private:

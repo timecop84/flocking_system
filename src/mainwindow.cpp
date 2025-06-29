@@ -169,3 +169,8 @@ void MainWindow::on_m_bboxSize_valueChanged(double arg1)
     glm::vec3 size(arg1, arg1, arg1);
     m_gl->setBBoxSize(size);
 }
+
+void MainWindow::on_m_useModernUpdate_toggled(bool checked)
+{
+    m_gl->toggleModernUpdate(checked);
+}

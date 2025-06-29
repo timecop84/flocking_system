@@ -3,6 +3,7 @@
 #include "ngl_compat/Material.h"
 #include "ngl_compat/ShaderLib.h"
 #include "ngl_compat/Matrix.h"
+#include "ModernExample.h"
 #include <GL/gl.h>
 
 Boid::Boid(
@@ -53,38 +54,54 @@ void Boid::draw(
         ngl::Camera *_cam
         )const
 {
-    // Use immediate mode OpenGL instead of shader system for now
+    // ENABLE PROPER LIGHTING AND DEPTH TEST for shading
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_NORMALIZE); // Ensure normals are normalized for proper lighting
     
-    // Set material color for boid
-    float diffuse[] = {m_colour.m_r, m_colour.m_g, m_colour.m_b, m_colour.m_a};
+    // Set polygon mode based on wireframe setting
+    if (m_wireframe) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glDisable(GL_LIGHTING); // Disable lighting for wireframe to see structure clearly
+    } else {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glEnable(GL_LIGHTING); // Enable lighting for solid rendering
+    }
+    
+    // Set material properties for Phong shading
     float ambient[] = {m_colour.m_r * 0.3f, m_colour.m_g * 0.3f, m_colour.m_b * 0.3f, m_colour.m_a};
+    float diffuse[] = {m_colour.m_r * 0.8f, m_colour.m_g * 0.8f, m_colour.m_b * 0.8f, m_colour.m_a};
     float specular[] = {0.5f, 0.5f, 0.5f, 1.0f};
-    float shininess = 20.0f;
+    float shininess = 32.0f;
     
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
-    glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-    glMaterialf(GL_FRONT, GL_SHININESS, shininess);
-
-    if (m_wireframe)
-        glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-    else
-        glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
-
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+    
+    // Also set color for wireframe mode
+    glColor3f(m_colour.m_r, m_colour.m_g, m_colour.m_b);
+    
+    // Draw sphere using VAOPrimitives
     glPushMatrix();
     {
-        // Apply transformations
+        // Translate to boid position
         glTranslatef(m_position.m_x, m_position.m_y, m_position.m_z);
-        glScalef(m_size * m_scale.m_x, m_size * m_scale.m_y, m_size * m_scale.m_z);
         
-        // Draw sphere using VAOPrimitives
+        // Scale the sphere to a reasonable size based on m_size
+        float sphereSize = 0.3f * m_size; // Use boid size setting
+        glScalef(sphereSize, sphereSize, sphereSize);
+        
+        // Draw a sphere using the VAOPrimitives
         ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
-        prim->createSphere("sphere", 1.0f, 12);
+        prim->createSphere("sphere", 1.0f, 16);
         prim->draw("sphere");
     }
     glPopMatrix();
+    
+    // Restore depth test
+    glEnable(GL_DEPTH_TEST);
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Boid::updateVelocity(ngl::Vector direction)
@@ -126,3 +143,20 @@ void Boid::velocityConstraint()
     }
 }
 Boid::~Boid(){}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Modern flocking calculation using GLM
+//----------------------------------------------------------------------------------------------------------------------
+flock::Vec3 Boid::calculateModernFlocking(const std::vector<flock::Vec3>& neighborPositions,
+                                          const std::vector<flock::Vec3>& neighborVelocities) const
+{
+    // Use the modern flocking calculation from ModernExample.h
+    auto result = flock::examples::ModernFlocking::calculateFlocking(
+        getPositionModern(),
+        getVelocityModern(),
+        neighborPositions,
+        neighborVelocities
+    );
+    
+    return result.combined;
+}
