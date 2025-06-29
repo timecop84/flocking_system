@@ -1,30 +1,31 @@
 #include "flock.h"
-#include "ngl_compat/Matrix.h"
-#include "ngl_compat/ShaderLib.h"
-#include "ngl_compat/Random.h"
+#include "Matrix.h"
+#include "ShaderLib.h"
+#include "LegacyRandom.h"
 #include "QDebug"
 #include <iostream>
 
 
 
 //----------------------------------------------------------------------------------------------------------------------
-const static int s_extents=5;
+const static int s_extents=5;  // Original legacy value - spawn in small central area
 //----------------------------------------------------------------------------------------------------------------------
-Flock::Flock(ngl::BBox *bbox, Obstacle *obstacle)
+Flock::Flock(BBox *bbox, Obstacle *obstacle)
 {
     m_behaviours = new Behaviours();
     m_bbox = bbox;
     m_numberOfBoids = 200;
     m_checkSphereSphere=true;
     m_obstacle = obstacle;
+    m_speedMultiplier = 1.0f;  // Default speed multiplier
 
     resetBoids();
 }
 //----------------------------------------------------------------------------------------------------------------------
 
-void Flock::draw(const std::string &_shaderName, ngl::TransformStack &_transformStack, ngl::Camera *_cam)const
+void Flock::draw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam)const
 {
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
+    ShaderLib *shader=ShaderLib::instance();
     shader->use(_shaderName);
     _transformStack.pushTransform();
 
@@ -41,16 +42,16 @@ void Flock::draw(const std::string &_shaderName, ngl::TransformStack &_transform
 
 }
 //----------------------------------------------------------------------------------------------------------------------
-void Flock::loadMatricesToShader(ngl::TransformStack &_tx, ngl::Camera *_cam) const
+void Flock::loadMatricesToShader(TransformStack &_tx, Camera *_cam) const
 
 {
-    ngl::ShaderLib *shader = ngl::ShaderLib::instance();
-    ngl::Matrix MV;
-    ngl::Matrix MVP;
-    ngl::Mat3x3 normalMatrix;
-    ngl::Matrix M;
+    ShaderLib *shader = ShaderLib::instance();
+    Matrix MV;
+    Matrix MVP;
+    Mat3x3 normalMatrix;
+    Matrix M;
 
-    M = _tx.getCurrentTransform().getMatrix();
+    M = _tx.getCurrentTransform();
     MV = _tx.getCurrAndGlobal().getMatrix() *_cam->getViewMatrix();
     MVP = MV * _cam->getProjectionMatrix();
     normalMatrix = MV;
@@ -66,8 +67,8 @@ void Flock::addBoids()
 {
     if (m_numberOfBoids <= 1990)
     {
-        ngl::Random *rng=ngl::Random::instance();
-        ngl::Vector dir;
+        Random *rng=Random::instance();
+        Vector dir;
         dir=rng->getRandomVector();
         // add the spheres to the end of the particle list
         for(int i=0; i<10; i++)
@@ -96,8 +97,8 @@ void Flock::removeBoids()
 void Flock::resetBoids()
 {
     m_boidList.clear();
-    ngl::Vector dir;
-    ngl::Random *rng=ngl::Random::instance();
+    Vector dir;
+    Random *rng=Random::instance();
     for(int i=0; i<m_numberOfBoids; ++i)
     {
         dir=rng->getRandomVector();
@@ -108,19 +109,145 @@ void Flock::resetBoids()
 
 void Flock::update()
 {
+    // Modern flocking update using pure GLM that exactly replicates legacy emergent behavior
+    static int modernFrameCount = 0;
+    modernFrameCount++;
+    
+    // Only print debug info every 300 frames to reduce spam
+    if (modernFrameCount % 300 == 1) {
+        std::cout << "Using modern GLM-based flocking update (frame " << modernFrameCount << ")..." << std::endl;
+    }
+    
+    // Handle collisions using legacy system for compatibility
     checkCollisions();
-    int count = 0;
-    for(Boid *s : m_boidList)
+    
+    // Apply modern flocking behavior to all boids using pure GLM calculations
+    // This implementation exactly replicates the legacy calculations but uses GLM
+    int boidIndex = 0;
+    for(Boid *boid : m_boidList)
     {
-        m_behaviours->Cohesion(count, m_boidList);
-        m_behaviours->Alignment(count, m_boidList);
-        m_behaviours->Seperation(count, m_boidList);
-        m_behaviours->Destination(count,m_boidList);
-        s->updateVelocity(m_behaviours->BehaviourSetup());
-        s->velocityConstraint();
-        s->boidDirection();
-
-        count++;
+        // Get current boid state
+        Vector currentPos = boid->getPosition();
+        Vector currentVel = boid->getVelocity();
+        glm::vec3 glmCurrentPos(currentPos.m_x, currentPos.m_y, currentPos.m_z);
+        glm::vec3 glmCurrentVel(currentVel.m_x, currentVel.m_y, currentVel.m_z);
+        
+        // COHESION - exactly match legacy Behaviours::Cohesion() calculation
+        glm::vec3 coherence(0.0f, 0.0f, 0.0f);
+        int count = 1; // Legacy starts with 1
+        
+        for(int i = 0; i < static_cast<int>(m_boidList.size()); i++)
+        {
+            if(i != boidIndex)
+            {
+                Vector neighborPos = m_boidList[i]->getPosition();
+                glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
+                
+                glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
+                
+                if(glm::length(boidDistance) < m_behaviours->getBehaviourDistance())
+                {
+                    coherence += glmNeighborPos;
+                    count++;
+                }
+            }
+        }
+        
+        coherence /= static_cast<float>(count);
+        coherence = coherence - glmCurrentPos;
+        if (glm::length(coherence) > 0.0001f) {
+            coherence = glm::normalize(coherence);
+        } else {
+            coherence = glm::vec3(0.0f); // Avoid normalizing zero vector
+        }
+        
+        // ALIGNMENT - exactly match legacy Behaviours::Alignment() calculation
+        glm::vec3 alignmentForce(0.0f, 0.0f, 0.0f);
+        count = 1; // Reset count for alignment, legacy starts with 1
+        
+        for(int i = 0; i < static_cast<int>(m_boidList.size()); i++)
+        {
+            if(i != boidIndex)
+            {
+                Vector neighborPos = m_boidList[i]->getPosition();
+                glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
+                
+                glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
+                
+                if(glm::length(boidDistance) < m_behaviours->getBehaviourDistance())
+                {
+                    Vector neighborVel = m_boidList[i]->getVelocity();
+                    glm::vec3 glmNeighborVel(neighborVel.m_x, neighborVel.m_y, neighborVel.m_z);
+                    alignmentForce += glmNeighborVel;
+                    count++;
+                }
+            }
+        }
+        
+        if (glm::length(alignmentForce) > m_behaviours->getBehaviourDistance())
+        {
+            if (glm::length(alignmentForce) > 0.0001f) {
+                alignmentForce = glm::normalize(alignmentForce);
+            } else {
+                alignmentForce = glm::vec3(0.0f); // Avoid normalizing zero vector
+            }
+        }
+        alignmentForce /= static_cast<float>(count);
+        alignmentForce = alignmentForce - glmCurrentVel;
+        
+        // SEPARATION - exactly match legacy Behaviours::Seperation() calculation
+        glm::vec3 separation(0.0f, 0.0f, 0.0f);
+        
+        for(int i = 0; i < static_cast<int>(m_boidList.size()); i++)
+        {
+            if(i != boidIndex)
+            {
+                Vector neighborPos = m_boidList[i]->getPosition();
+                glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
+                
+                glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
+                
+                if(glm::length(boidDistance) < m_behaviours->getFlockDistance())
+                {
+                    separation -= (glmCurrentPos - glmNeighborPos);
+                }
+            }
+        }
+        
+        // BEHAVIOR SETUP - exactly match legacy Behaviours::BehaviourSetup() calculation
+        glm::vec3 separationCorrection(-1.0f, -1.0f, -1.0f);
+        glm::vec3 separationSet = (static_cast<float>(m_behaviours->getSeparationForce()) * separation) * separationCorrection;
+        glm::vec3 cohesionSet = static_cast<float>(m_behaviours->getCohesionForce()) * coherence;
+        glm::vec3 alignmentSet = alignmentForce * static_cast<float>(m_behaviours->getAlignment());
+        
+        glm::vec3 behaviourSetup = separationSet + cohesionSet + alignmentSet;
+        
+        if (glm::length(behaviourSetup) > 0.5f)
+        {
+            if (glm::length(behaviourSetup) > 0.0001f) {
+                behaviourSetup = glm::normalize(behaviourSetup);
+                behaviourSetup *= 0.5f;
+            } else {
+                behaviourSetup = glm::vec3(0.0f); // Avoid normalizing zero vector
+            }
+        }
+        
+        // Convert back to ngl format and apply using exact legacy sequence
+        Vector nglBehaviourSetup(behaviourSetup.x, behaviourSetup.y, behaviourSetup.z);
+        
+        // Apply speed multiplier to the behavior forces
+        nglBehaviourSetup = nglBehaviourSetup * m_speedMultiplier;
+        
+        // Update boid using exact legacy interface sequence
+        boid->updateVelocity(nglBehaviourSetup);
+        boid->velocityConstraint();
+        boid->boidDirection();
+        
+        boidIndex++;
+    }
+    
+    if (modernFrameCount % 300 == 1) {
+        std::cout << "Modern GLM-based update completed using pure GLM calculations for " << m_boidList.size() << " boids" << std::endl;
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -128,11 +255,11 @@ void Flock::setBoidSize(double size)
 {
     for(Boid *s : m_boidList)
     {
-        s->setScale(ngl::Vector(size, size, size));
+        s->setScale(Vector(size, size, size));
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
-void Flock::setColour(ngl::Colour colour)
+void Flock::setColour(Colour colour)
 {
     for(Boid *s : m_boidList)
     {
@@ -146,6 +273,11 @@ void Flock::setWireframe(bool value)
     {
         s->setWireframe(value);
     }
+}
+//----------------------------------------------------------------------------------------------------------------------
+void Flock::setSpeedMultiplier(float multiplier)
+{
+    m_speedMultiplier = multiplier;
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Flock::setSimDistance(double distance)
@@ -186,7 +318,7 @@ void Flock::validateBoundingBoxCollision()
     ext[4]=ext[5]=(m_bbox->depth()/2.0f);
     // Dot product needs a Vector so we convert The Point Temp into a Vector so we can
     // do a dot product on it
-    ngl::Vector point;
+    Vector point;
     // D is the distance of the Agent from the Plane. If it is less than ext[i] then there is
     // no collision
     GLfloat Distance;
@@ -210,7 +342,7 @@ void Flock::validateBoundingBoxCollision()
                 //We use the same calculation as in raytracing to determine the
                 // the new direction
                 GLfloat x= 2*( s->getVelocity().dot((m_bbox->getNormalArray()[i])));
-                ngl::Vector d =m_bbox->getNormalArray()[i]*x;
+                Vector d =m_bbox->getNormalArray()[i]*x;
                 s->setVelocity(s->getNextPosition()-d * 5.0);
                 s->isHit();
             }//end of hit test
@@ -223,14 +355,14 @@ void Flock::validateBoundingBoxCollision()
 /// John Macey(2011).Collisions Example, BoundingBox. [Accessed 2012]
 /// Available from: bzr branch http://nccastaff.bournemouth.ac.uk/jmacey/Code/Collisions
 bool Flock::sphereSphereCollision(
-        ngl::Vector _pos,
+        Vector _pos,
         GLfloat _rad,
-        ngl::Vector _pos1,
+        Vector _pos1,
         GLfloat _rad1
         )
 {
     // the relative position of the spheres
-    ngl::Vector relPos;
+    Vector relPos;
     //min an max distances of the spheres
     GLfloat dist;
     GLfloat minDist;
@@ -254,39 +386,38 @@ bool Flock::sphereSphereCollision(
 //----------------------------------------------------------------------------------------------------------------------
 void  Flock::checkSphereCollisions()
 {
-    bool collide;
     unsigned int size=m_boidList.size();
+    GLfloat obstacleRadius = m_obstacle->getSphereRadius();
+    Vector obstaclePos = m_obstacle->getSpherePosition();
 
+    for(unsigned int Current=0; Current<size; ++Current)
     {
-        for(unsigned int Current=0; Current<size; ++Current)
-        {
-            if(Current)
-
-            {
-                collide =sphereSphereCollision(
-
-                            m_boidList.at(Current)->getPosition(),m_boidList.at(Current)->getSize(),
-                            m_obstacle->getSpherePosition(),m_obstacle->getSphereRadius() * 3.0
-
-                            );
-
-                if(collide)
-                {
-                    m_boidList.at(Current)->reverse();
-                    m_boidList.at(Current)->setHit();
-
-                    ngl::Vector v = m_boidList.at(Current)->getPosition() - m_obstacle->getSpherePosition();
-                    GLfloat l = v.length();
-
-
-                    if (l <m_obstacle->getSphereRadius())
-                    {
-
-                        m_boidList.at(Current)->setPosition(v * (m_obstacle->getSphereRadius() - l));
-                        v.normalize();
-                    }
-                }
-
+        Vector boidPos = m_boidList.at(Current)->getPosition();
+        Vector toObstacle = obstaclePos - boidPos;
+        GLfloat distance = toObstacle.length();
+        
+        // Define avoidance zones
+        GLfloat avoidanceRadius = obstacleRadius * 2.5f;  // Start avoiding at this distance
+        GLfloat collisionRadius = obstacleRadius * 1.2f;  // Hard collision boundary
+        
+        if (distance < avoidanceRadius && distance > 0.0001f) {
+            // Calculate smooth repulsion force
+            Vector repulsionDir = boidPos - obstaclePos;
+            repulsionDir.normalize();
+            
+            // Force strength inversely proportional to distance (stronger when closer)
+            GLfloat forceStrength = (avoidanceRadius - distance) / avoidanceRadius;
+            forceStrength = forceStrength * forceStrength; // Quadratic falloff for smoother transition
+            
+            // Apply gentle repulsion force (add to existing velocity, don't replace it)
+            Vector repulsionForce = repulsionDir * (forceStrength * 0.3f);
+            m_boidList.at(Current)->addVelocity(repulsionForce);
+            
+            // Hard collision: push boid away if too close
+            if (distance < collisionRadius) {
+                Vector newPos = obstaclePos + (repulsionDir * collisionRadius);
+                m_boidList.at(Current)->setPosition(newPos);
+                m_boidList.at(Current)->setHit();
             }
         }
     }
@@ -302,136 +433,6 @@ void  Flock::checkCollisions()
     validateBoundingBoxCollision();
 }
 //----------------------------------------------------------------------------------------------------------------------
-void Flock::updateModern()
-{
-    // Modern flocking update using pure GLM that exactly replicates legacy emergent behavior
-    static int modernFrameCount = 0;
-    modernFrameCount++;
-    
-    // Only print debug info every 300 frames to reduce spam
-    if (modernFrameCount % 300 == 1) {
-        std::cout << "Using modern GLM-based flocking update (frame " << modernFrameCount << ")..." << std::endl;
-    }
-    
-    // Handle collisions using legacy system for compatibility
-    checkCollisions();
-    
-    // Apply modern flocking behavior to all boids using pure GLM calculations
-    // This implementation exactly replicates the legacy calculations but uses GLM
-    int boidIndex = 0;
-    for(Boid *boid : m_boidList)
-    {
-        // Get current boid state
-        ngl::Vector currentPos = boid->getPosition();
-        ngl::Vector currentVel = boid->getVelocity();
-        glm::vec3 glmCurrentPos(currentPos.m_x, currentPos.m_y, currentPos.m_z);
-        glm::vec3 glmCurrentVel(currentVel.m_x, currentVel.m_y, currentVel.m_z);
-        
-        // COHESION - exactly match legacy Behaviours::Cohesion() calculation
-        glm::vec3 coherence(0.0f, 0.0f, 0.0f);
-        int count = 1; // Legacy starts with 1
-        
-        for(int i = 0; i < static_cast<int>(m_boidList.size()); i++)
-        {
-            if(i != boidIndex)
-            {
-                ngl::Vector neighborPos = m_boidList[i]->getPosition();
-                glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
-                
-                glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
-                
-                if(glm::length(boidDistance) < m_behaviours->getBehaviourDistance())
-                {
-                    coherence += glmNeighborPos;
-                    count++;
-                }
-            }
-        }
-        
-        coherence /= static_cast<float>(count);
-        coherence = coherence - glmCurrentPos;
-        if (glm::length(coherence) > 0.0001f) {
-            coherence = glm::normalize(coherence);
-        }
-        
-        // ALIGNMENT - exactly match legacy Behaviours::Alignment() calculation
-        glm::vec3 alignmentForce(0.0f, 0.0f, 0.0f);
-        count = 1; // Reset count for alignment, legacy starts with 1
-        
-        for(int i = 0; i < static_cast<int>(m_boidList.size()); i++)
-        {
-            if(i != boidIndex)
-            {
-                ngl::Vector neighborPos = m_boidList[i]->getPosition();
-                glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
-                
-                glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
-                
-                if(glm::length(boidDistance) < m_behaviours->getBehaviourDistance())
-                {
-                    ngl::Vector neighborVel = m_boidList[i]->getVelocity();
-                    glm::vec3 glmNeighborVel(neighborVel.m_x, neighborVel.m_y, neighborVel.m_z);
-                    alignmentForce += glmNeighborVel;
-                    count++;
-                }
-            }
-        }
-        
-        if (glm::length(alignmentForce) > m_behaviours->getBehaviourDistance())
-        {
-            alignmentForce = glm::normalize(alignmentForce);
-        }
-        alignmentForce /= static_cast<float>(count);
-        alignmentForce = alignmentForce - glmCurrentVel;
-        
-        // SEPARATION - exactly match legacy Behaviours::Seperation() calculation
-        glm::vec3 separation(0.0f, 0.0f, 0.0f);
-        
-        for(int i = 0; i < static_cast<int>(m_boidList.size()); i++)
-        {
-            if(i != boidIndex)
-            {
-                ngl::Vector neighborPos = m_boidList[i]->getPosition();
-                glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
-                
-                glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
-                
-                if(glm::length(boidDistance) < m_behaviours->getFlockDistance())
-                {
-                    separation -= (glmCurrentPos - glmNeighborPos);
-                }
-            }
-        }
-        
-        // BEHAVIOR SETUP - exactly match legacy Behaviours::BehaviourSetup() calculation
-        glm::vec3 separationCorrection(-1.0f, -1.0f, -1.0f);
-        glm::vec3 separationSet = (static_cast<float>(m_behaviours->getSeparationForce()) * separation) * separationCorrection;
-        glm::vec3 cohesionSet = static_cast<float>(m_behaviours->getCohesionForce()) * coherence;
-        glm::vec3 alignmentSet = alignmentForce * static_cast<float>(m_behaviours->getAlignment());
-        
-        glm::vec3 behaviourSetup = separationSet + cohesionSet + alignmentSet;
-        
-        if (glm::length(behaviourSetup) > 0.5f)
-        {
-            behaviourSetup = glm::normalize(behaviourSetup);
-            behaviourSetup *= 0.5f;
-        }
-        
-        // Convert back to ngl format and apply using exact legacy sequence
-        ngl::Vector nglBehaviourSetup(behaviourSetup.x, behaviourSetup.y, behaviourSetup.z);
-        
-        // Update boid using exact legacy interface sequence
-        boid->updateVelocity(nglBehaviourSetup);
-        boid->velocityConstraint();
-        boid->boidDirection();
-        
-        boidIndex++;
-    }
-    
-    if (modernFrameCount % 300 == 1) {
-        std::cout << "Modern GLM-based update completed using pure GLM calculations for " << m_boidList.size() << " boids" << std::endl;
-    }
-}
 //----------------------------------------------------------------------------------------------------------------------
 void Flock::demonstrateModernFlocking()
 {
@@ -443,8 +444,8 @@ void Flock::demonstrateModernFlocking()
     if (!m_boidList.empty()) {
         // Demonstrate accessing boid data in modern format
         Boid* firstBoid = m_boidList[0];
-        ngl::Vector pos = firstBoid->getPosition();
-        ngl::Vector vel = firstBoid->getVelocity();
+        Vector pos = firstBoid->getPosition();
+        Vector vel = firstBoid->getVelocity();
         
         std::cout << "Sample boid position: (" << pos.m_x << ", " << pos.m_y << ", " << pos.m_z << ")" << std::endl;
         std::cout << "Sample boid velocity: (" << vel.m_x << ", " << vel.m_y << ", " << vel.m_z << ")" << std::endl;

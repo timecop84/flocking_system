@@ -11,7 +11,6 @@ SOURCES += \
 
 INCLUDEPATH += ./
 INCLUDEPATH += include/
-INCLUDEPATH += include/ngl_compat
 INCLUDEPATH += modules
 INCLUDEPATH += modules/math/include
 INCLUDEPATH += modules/graphics/include

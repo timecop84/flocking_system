@@ -34,6 +34,8 @@ private slots:
 
     void on_m_renderFlockWireframe_toggled(bool checked);
 
+    void on_m_flockSpeedSlider_valueChanged(int value);
+
     void on_m_obstaclePosX_valueChanged(double arg1);
 
     void on_m_obstaclePosY_valueChanged(double arg1);
@@ -59,8 +61,6 @@ private slots:
     void on_m_backColour_clicked();
 
     void on_m_bboxSize_valueChanged(double arg1);
-
-    void on_m_useModernUpdate_toggled(bool checked);
 
 private:
     Ui::MainWindow *m_ui;

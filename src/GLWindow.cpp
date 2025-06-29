@@ -4,23 +4,24 @@
 #include <iostream>
 #include <cmath>
 #include <QSurfaceFormat>
-#include "ngl_compat/Camera.h"
-#include "ngl_compat/Light.h"
-#include "ngl_compat/TransformStack.h"
-#include "ngl_compat/Colour.h"
-#include "ngl_compat/ShaderLib.h"
-#include "ngl_compat/BBox.h"
-#include "ngl_compat/Vector.h"
-#include "ngl_compat/NGLInit.h"
-#include "ngl_compat/VAOPrimitives.h"
-#include "ngl_compat/Material.h"
-#include "ngl_compat/Matrix.h"
-#include "ngl_compat/glew_compat.h"
+#include "Camera.h"
+#include "Light.h"
+#include "TransformStack.h"
+#include "Colour.h"
+#include "ShaderLib.h"
+#include "BBox.h"
+#include "Vector.h"
+#include "NGLInit.h"
+#include "VAOPrimitives.h"
+#include "Material.h"
+#include "Matrix.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "PerformanceMonitor.h"
 #include "BehaviorValidator.h"
+#include "glew_compat.h"
+#include "shader_constants.h"
 
 
 
@@ -50,7 +51,7 @@ GLWindow::GLWindow(
     format.setSamples(4); // 4x MSAA
     setFormat(format);
     
-    obstacle = new Obstacle(ngl::Vector(12,30,0), 4.0);
+    obstacle = new Obstacle(Vector(12,30,0), 4.0);
 
     // set this widget to have the initial keyboard focus
     setFocus();
@@ -68,21 +69,20 @@ GLWindow::GLWindow(
     m_spinYFace = 0;
     
     // Initialize orbital camera controls
-    m_cameraDistance = 250.0f;
+    m_cameraDistance = 120.0f;  // Reduced from 250.0f for better view of the simulation
     m_cameraAzimuth = 45.0f;    // degrees
     m_cameraElevation = 30.0f;  // degrees  
     m_cameraTarget.set(0, 0, 0); // look at origin
     
     m_sphereUpdateTimer = startTimer(1000 / 60); //run at 60FPS
     m_animate = true;
-    m_useModernUpdate = false; // Start with legacy update, can be toggled later
     m_backgroundColour.set(0.6f, 0.6f, 0.6f, 1.0f);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 GLWindow::~GLWindow()
 {
-    ngl::NGLInit *Init = ngl::NGLInit::instance();
+    NGLInit *Init = NGLInit::instance();
     delete m_light;
     Init->NGLQuit();
 }
@@ -121,7 +121,7 @@ void GLWindow::setBoidSize(double size)
 
 void GLWindow::setBoidColor(QColor colour)
 {
-    ngl::Colour colourToSet;
+    Colour colourToSet;
     colourToSet.set(colour.redF(), colour.greenF(), colour.blueF());
 
     flock->setColour(colourToSet);
@@ -132,9 +132,14 @@ void GLWindow::setFlockWireframe(bool value)
     flock->setWireframe(value);
 }
 
+void GLWindow::setFlockSpeedMultiplier(float multiplier)
+{
+    flock->setSpeedMultiplier(multiplier);
+}
+
 void GLWindow::setObstaclePosition(glm::vec3 position)
 {
-    ngl::Vector nglPos(position.x, position.y, position.z);
+    Vector nglPos(position.x, position.y, position.z);
     obstacle->setSpherePosition(nglPos);
 }
 
@@ -145,7 +150,7 @@ void GLWindow::setObstacleSize(double size)
 
 void GLWindow::setObstacleColour(QColor colour)
 {
-    ngl::Colour colourToSet;
+    Colour colourToSet;
     colourToSet.set(colour.redF(), colour.greenF(), colour.blueF());
 
     obstacle->setColour(colourToSet);
@@ -181,7 +186,7 @@ void GLWindow::setSimAlignment(double alignment)
     flock->setSimAlignment(alignment);
 }
 
-void GLWindow::setBackgroundColour(ngl::Colour colour)
+void GLWindow::setBackgroundColour(Colour colour)
 {
     m_backgroundColour = colour;
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
@@ -191,7 +196,7 @@ void GLWindow::setBackgroundColour(ngl::Colour colour)
 void GLWindow::setBBoxSize(glm::vec3 size)
 {
     delete bbox;
-    bbox = new ngl::BBox(ngl::Vector(0,0,0), size.x, size.y, size.z);
+    bbox = new BBox(Vector(0,0,0), size.x, size.y, size.z);
     bbox->setDrawMode(GL_LINE); // Ensure wireframe mode is set
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -215,19 +220,19 @@ void GLWindow::initializeGL()
     // we need to initialise the NGL lib, under windows and linux we also need to
     // initialise GLEW, under windows this needs to be done in the app as well
     // as the lib hence the WIN32 define
-    ngl::NGLInit *Init = ngl::NGLInit::instance();
+    NGLInit *Init = NGLInit::instance();
     Init->initGlew();
 #ifdef WIN32
     glewInit(); // need a local glew init as well as lib one for windows
 #endif
     // now to load the shader and set the values
     // grab an instance of shader manager
-    m_shader = ngl::ShaderLib::instance();
+    m_shader = ShaderLib::instance();
     // we are creating a shader called Phong
     m_shader->createShaderProgram("Phong");
     // now we are going to create empty shaders for Frag and Vert
-    m_shader->attachShader("PhongVertex",ngl::VERTEX);
-    m_shader->attachShader("PhongFragment",ngl::FRAGMENT);
+    m_shader->attachShader("PhongVertex",VERTEX);
+    m_shader->attachShader("PhongFragment",FRAGMENT);
     // attach the source
     m_shader->loadShaderSource("PhongVertex","shaders/Phong.vs");
     m_shader->loadShaderSource("PhongFragment","shaders/Phong.fs");
@@ -251,37 +256,37 @@ void GLWindow::initializeGL()
     (*m_shader)["Phong"]->use();
 
     // the shader will use the currently active material and light0 so set them
-    ngl::Material m(ngl::GOLD);
+    Material m(GOLD);
     // load our material values to the shader into the structure material (see Vertex shader)
     m.loadToShader("material");
     // Now we will create a basic Camera from the graphics library
     // Create camera using orbital controls
-    ngl::Vector From(200,120,120);  // Initial position (will be updated by orbital controls)
-    ngl::Vector To(0,0,0);
-    ngl::Vector Up(0,1,0);
+    Vector From(200,120,120);  // Initial position (will be updated by orbital controls)
+    Vector To(0,0,0);
+    Vector Up(0,1,0);
     // now load to our new camera
-    m_cam= new ngl::Camera(From,To,Up,ngl::PERSPECTIVE);
+    m_cam= new Camera(From,To,Up,PERSPECTIVE);
     // set the shape using FOV 45 Aspect Ratio based on Width and Height
     // The final two are near and far clipping planes of 0.5 and 10
-    m_cam->setShape(45,(float)720.0/576.0,0.05,350,ngl::PERSPECTIVE);
+    m_cam->setShape(45,(float)720.0/576.0,0.05,350,PERSPECTIVE);
     
     // Initialize camera position using orbital controls
     updateCameraPosition();
     
-    m_shader->setShaderParam3f("viewerPos",m_cam->getEye().m_x,m_cam->getEye().m_y,m_cam->getEye().m_z);
+    m_shader->setShaderParam3f("viewerPos",m_cam->getEye().x,m_cam->getEye().y,m_cam->getEye().z);
     // now create our light this is done after the camera so we can pass the
     // transpose of the projection matrix to the light to do correct eye space
     // transformations
-    ngl::Matrix iv=m_cam->getViewMatrix();
+    Matrix iv=m_cam->getViewMatrix();
     iv.transpose();
-    m_light = new ngl::Light(ngl::Vector(120,120,120,1),ngl::Colour(1,1,1,1),ngl::Colour(1,1,1,1),ngl::POINTLIGHT);
+    m_light = new Light(Vector(120,120,120,1),Colour(1,1,1,1),Colour(1,1,1,1),POINTLIGHT);
     m_light->setTransform(iv);
     // load these values to the shader as well
     m_light->loadToShader("light");
     m_shader->createShaderProgram("Colour");
 
-    m_shader->attachShader("ColourVertex",ngl::VERTEX);
-    m_shader->attachShader("ColourFragment",ngl::FRAGMENT);
+    m_shader->attachShader("ColourVertex",VERTEX);
+    m_shader->attachShader("ColourFragment",FRAGMENT);
     m_shader->loadShaderSource("ColourVertex","shaders/Colour.vs");
     m_shader->loadShaderSource("ColourFragment","shaders/Colour.fs");
 
@@ -296,9 +301,9 @@ void GLWindow::initializeGL()
     (*m_shader)["Colour"]->use();
     m_shader->setShaderParam4f("Colour",1,1,1,1);
     glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
-    ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
+    VAOPrimitives *prim=VAOPrimitives::instance();
     prim->createSphere("sphere",0.8,1);
-    bbox = new ngl::BBox(ngl::Vector(0,0,0),120,120,120);
+    bbox = new BBox(Vector(0,0,0),120,120,120);
     bbox->setDrawMode(GL_LINE);
     flock = new Flock(bbox, obstacle);
 
@@ -334,21 +339,21 @@ void GLWindow::resizeGL(
     
     // now set the camera size values as the screen size has changed
     if (m_cam) {
-        m_cam->setShape(45,(float)_w/_h,0.05,350,ngl::PERSPECTIVE);
+        m_cam->setShape(45,(float)_w/_h,0.05,350,PERSPECTIVE);
     }
 }
 
 
 void GLWindow::loadMatricesToShader(
-        ngl::TransformStack &_tx
+        TransformStack &_tx
         )
 {
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
+    ShaderLib *shader=ShaderLib::instance();
 
-    ngl::Matrix MV;
-    ngl::Matrix MVP;
-    ngl::Mat3x3 normalMatrix;
-    ngl::Matrix M;
+    Matrix MV;
+    Matrix MVP;
+    Mat3x3 normalMatrix;
+    Matrix M;
     M=_tx.getCurrAndGlobal().getMatrix();
     MV=  _tx.getCurrAndGlobal().getMatrix()*m_cam->getViewMatrix();
     MVP= M*m_cam->getVPMatrix(); //MV*m_cam->getProjectionMatrix();
@@ -360,16 +365,16 @@ void GLWindow::loadMatricesToShader(
     //  shader->setShaderParamFromMatrix("M",M);
 }
 void GLWindow::loadMatricesToColourShader(
-        ngl::TransformStack &_tx
+        TransformStack &_tx
         )
 
 {
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
+    ShaderLib *shader=ShaderLib::instance();
     (*shader)["Colour"]->use();
-    ngl::Matrix MV;
-    ngl::Matrix MVP;
-    ngl::Matrix M;
-    ngl::Mat3x3 normalMatrix;
+    Matrix MV;
+    Matrix MVP;
+    Matrix M;
+    Mat3x3 normalMatrix;
     normalMatrix=MV;
     normalMatrix.inverse();
 
@@ -392,7 +397,7 @@ void GLWindow::paintGL()
     // Only print debug info every 60 frames to reduce spam
     if (frame_count % 60 == 1) {
         std::cout << "paintGL called (frame " << frame_count << ")" << std::endl;
-        std::cout << "Camera pos: (" << m_cam->getEye().m_x << ", " << m_cam->getEye().m_y << ", " << m_cam->getEye().m_z << ")" << std::endl;
+        std::cout << "Camera pos: (" << m_cam->getEye().x << ", " << m_cam->getEye().y << ", " << m_cam->getEye().z << ")" << std::endl;
     }
     
     // Use the background color set by the user
@@ -410,13 +415,13 @@ void GLWindow::paintGL()
     glm::mat4 project = m_cam->getProjectionMatrix();
     
     // Load the matrices into the transform stack (for NGL compatibility)
-    ngl::Matrix nglProject(project);
-    ngl::Matrix nglView(view);
+    Matrix nglProject(project);
+    Matrix nglView(view);
     m_transformStack.setProjection(nglProject);
     m_transformStack.setView(nglView);
     
     // Set up basic model matrix (no rotation - camera handles all movement now)
-    ngl::Matrix model;
+    Matrix model;
     model.identity();
     model.translate(m_modelPos.m_x, m_modelPos.m_y, m_modelPos.m_z);
     m_transformStack.setModel(model);
@@ -429,8 +434,28 @@ void GLWindow::paintGL()
     glLoadMatrixf(glm::value_ptr(view));
     glMultMatrixf(glm::value_ptr(model.m_matrix));
 
-    // Test: Draw coordinate axes for reference (smaller now that we know rendering works)
+    // Set up lighting for immediate mode rendering
+    // Position the light in world space
+    GLfloat lightPos[] = {120.0f, 120.0f, 120.0f, 1.0f}; // Positional light
+    GLfloat lightAmbient[] = {0.3f, 0.3f, 0.3f, 1.0f};   // Ambient light
+    GLfloat lightDiffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};   // Diffuse light
+    GLfloat lightSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};  // Specular light
+    
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular);
+    
+    // Enable lighting (will be disabled/enabled per object as needed)
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_NORMALIZE); // Normalize normals automatically
+    glShadeModel(GL_SMOOTH); // Smooth shading
+    
+    // Temporarily disable lighting for axes
     glDisable(GL_LIGHTING);
+
+    // Test: Draw coordinate axes for reference (smaller now that we know rendering works)
     glLineWidth(2.0f);
     glBegin(GL_LINES);
         // X axis - Red
@@ -626,40 +651,10 @@ void GLWindow::timerEvent(
             return;
         }
 
-        // Choose between legacy and modern update methods
-        if (m_useModernUpdate) {
-            // MODERN MODE: Use actual modern flocking methods
-            static int modernCounter = 0;
-            
-            // 1. Change flock color to bright cyan to indicate modern mode
-            if (modernCounter % 60 == 0) { // Every 60 frames (~1 second)
-                ngl::Colour modernColor(0.0f, 0.7f, 1.0f, 1.0f); // Bright cyan
-                flock->setColour(modernColor);
-            }
-            
-            // 2. Use the actual modern update method with performance monitoring
-            {
-                FLOCK_TIMER(m_performanceMonitor, "Modern GLM Update");
-                flock->updateModern();
-            }
-            
-            modernCounter++;
-        } else {
-            // LEGACY MODE: Normal behavior
-            static int legacyCounter = 0;
-            
-            // 1. Use normal white/light color
-            if (legacyCounter % 60 == 0) { // Every 60 frames
-                ngl::Colour legacyColor(0.8f, 0.8f, 1.0f); // Light blue-white
-                flock->setColour(legacyColor);
-            }
-            
-            // 2. Normal update rate and behavior with performance monitoring
-            {
-                FLOCK_TIMER(m_performanceMonitor, "Legacy NGL Update");
-                flock->update();
-            }
-            legacyCounter++;
+        // Use modern GLM-based update with performance monitoring
+        {
+            FLOCK_TIMER(m_performanceMonitor, "Modern GLM Update");
+            flock->update();
         }
         update();
     }
@@ -682,33 +677,11 @@ void GLWindow::updateCameraPosition()
     float y = m_cameraDistance * sin(radElevation);
     float z = m_cameraDistance * cos(radElevation) * sin(radAzimuth);
     
-    ngl::Vector cameraPos(m_cameraTarget.m_x + x, m_cameraTarget.m_y + y, m_cameraTarget.m_z + z);
-    ngl::Vector up(0, 1, 0);
+    Vector cameraPos(m_cameraTarget.m_x + x, m_cameraTarget.m_y + y, m_cameraTarget.m_z + z);
+    Vector up(0, 1, 0);
     
     // Update camera
     m_cam->lookAt(cameraPos, m_cameraTarget, up);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void GLWindow::toggleModernUpdate(bool enabled)
-{
-    m_useModernUpdate = enabled;
-    std::cout << "\n======================================" << std::endl;
-    std::cout << "TOGGLE ACTIVATED: Switched to " << (enabled ? "MODERN GLM-based" : "LEGACY") << " update mode" << std::endl;
-    std::cout << "======================================" << std::endl;
-    std::cout << "Performance Controls:" << std::endl;
-    std::cout << "  P - Print performance comparison" << std::endl;
-    std::cout << "  M - Toggle performance monitoring" << std::endl;
-    std::cout << "  C - Clear performance data" << std::endl;
-    std::cout << "  V - Validate behavior differences" << std::endl;
-    std::cout << "  Space - Toggle animation" << std::endl;
-    std::cout << "======================================\n" << std::endl;
-    
-    // Call the demonstration method when switching to modern mode
-    if (enabled && flock) {
-        std::cout << "Activating modern GLM-based flocking system..." << std::endl;
-        flock->demonstrateModernFlocking();
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -769,7 +742,7 @@ void GLWindow::validateBehaviorDifferences()
     }
     
     std::cout << "\n=== BEHAVIOR VALIDATION STARTED ===" << std::endl;
-    std::cout << "Current mode: " << (m_useModernUpdate ? "Modern GLM" : "Legacy NGL") << std::endl;
+    std::cout << "Current mode: Modern GLM" << std::endl;
     
     // Validate the first few boids to get a sample
     int boidsToValidate = std::min(5, flock->getFlockSize());

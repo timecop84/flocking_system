@@ -5,7 +5,7 @@
 #include <iostream>
 #include <iomanip>
 #include <glm/glm.hpp>
-#include "ngl_compat/Vector.h"
+#include "Vector.h"
 #include "boid.h"
 
 /**

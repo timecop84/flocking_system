@@ -1,15 +1,17 @@
 #include "boid.h"
-#include "ngl_compat/VAOPrimitives.h"
-#include "ngl_compat/Material.h"
-#include "ngl_compat/ShaderLib.h"
-#include "ngl_compat/Matrix.h"
+#include "VAOPrimitives.h"
+#include "Material.h"
+#include "ShaderLib.h"
+#include "Matrix.h"
 #include "ModernExample.h"
 #include <GL/gl.h>
+#include <GL/glu.h>
+#include <cmath>
 
 Boid::Boid(
 
-        ngl::Vector position,
-        ngl::Vector direction
+        Vector position,
+        Vector direction
 
         )
 {
@@ -17,7 +19,7 @@ Boid::Boid(
     m_direction = direction;
     m_scale.set(1.0f, 1.0f, 1.0f);
     m_colour.set(1.0f, 0.0f, 0.5f, 1.0f);
-    m_velocity.set(8.0f, 8.0f, 0.0f);
+    m_velocity.set(0.3f, 0.3f, 0.1f);  // Initialize at min velocity level
     m_maxVelocity = 0.9;
     m_minVelocity = 0.3;
     m_wireframe = false;
@@ -26,17 +28,17 @@ Boid::Boid(
 
 //----------------------------------------------------------------------------------------------------------------------
 void Boid::loadMatricesToShader(
-        ngl::TransformStack &_tx,
-        ngl::Camera *_cam
+        TransformStack &_tx,
+        Camera *_cam
         )const
 {
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
+    ShaderLib *shader=ShaderLib::instance();
 
-    ngl::Matrix MV;
-    ngl::Matrix MVP;
-    ngl::Mat3x3 normalMatrix;
-    ngl::Matrix M;
-    M=_tx.getCurrentTransform().getMatrix();
+    Matrix MV;
+    Matrix MVP;
+    Mat3x3 normalMatrix;
+    Matrix M;
+    M=_tx.getCurrentTransform();
     MV=_tx.getCurrAndGlobal().getMatrix()*_cam->getViewMatrix() ;
     MVP=MV*_cam->getProjectionMatrix();
     normalMatrix=MV;
@@ -50,96 +52,118 @@ void Boid::loadMatricesToShader(
 //----------------------------------------------------------------------------------------------------------------------
 void Boid::draw(
         const std::string &_shaderName,
-        ngl::TransformStack &_transformStack,
-        ngl::Camera *_cam
+        TransformStack &_transformStack,
+        Camera *_cam
         )const
 {
-    // ENABLE PROPER LIGHTING AND DEPTH TEST for shading
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_NORMALIZE); // Ensure normals are normalized for proper lighting
+    // Use immediate mode OpenGL with lighting for better visual appearance
     
-    // Set polygon mode based on wireframe setting
-    if (m_wireframe) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glDisable(GL_LIGHTING); // Disable lighting for wireframe to see structure clearly
-    } else {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glEnable(GL_LIGHTING); // Enable lighting for solid rendering
-    }
-    
-    // Set material properties for Phong shading
-    float ambient[] = {m_colour.m_r * 0.3f, m_colour.m_g * 0.3f, m_colour.m_b * 0.3f, m_colour.m_a};
-    float diffuse[] = {m_colour.m_r * 0.8f, m_colour.m_g * 0.8f, m_colour.m_b * 0.8f, m_colour.m_a};
-    float specular[] = {0.5f, 0.5f, 0.5f, 1.0f};
-    float shininess = 32.0f;
-    
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
-    
-    // Also set color for wireframe mode
-    glColor3f(m_colour.m_r, m_colour.m_g, m_colour.m_b);
-    
-    // Draw sphere using VAOPrimitives
     glPushMatrix();
     {
         // Translate to boid position
         glTranslatef(m_position.m_x, m_position.m_y, m_position.m_z);
         
-        // Scale the sphere to a reasonable size based on m_size
-        float sphereSize = 0.3f * m_size; // Use boid size setting
-        glScalef(sphereSize, sphereSize, sphereSize);
+        // Scale the boid 
+        float boidSize = 2.0f;
+        glScalef(boidSize, boidSize, boidSize);
         
-        // Draw a sphere using the VAOPrimitives
-        ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
-        prim->createSphere("sphere", 1.0f, 16);
-        prim->draw("sphere");
+        // Enable lighting for this object
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
+        
+        // Set material properties for the boid
+        GLfloat ambient[] = {m_colour.m_r * 0.3f, m_colour.m_g * 0.3f, m_colour.m_b * 0.3f, 1.0f};
+        GLfloat diffuse[] = {m_colour.m_r, m_colour.m_g, m_colour.m_b, 1.0f};
+        GLfloat specular[] = {0.8f, 0.8f, 0.8f, 1.0f};
+        GLfloat shininess[] = {64.0f};
+        
+        glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
+        
+        // Draw a sphere using GLU quadrics for smooth appearance
+        GLUquadric* quad = gluNewQuadric();
+        gluQuadricNormals(quad, GLU_SMOOTH);
+        gluQuadricDrawStyle(quad, GLU_FILL);
+        gluSphere(quad, 0.5, 16, 16);  // radius, slices, stacks
+        gluDeleteQuadric(quad);
+        
+        glDisable(GL_LIGHTING);
     }
     glPopMatrix();
-    
-    // Restore depth test
-    glEnable(GL_DEPTH_TEST);
 }
 //----------------------------------------------------------------------------------------------------------------------
-void Boid::updateVelocity(ngl::Vector direction)
+void Boid::updateVelocity(Vector direction)
 {
     m_velocity += direction;
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Boid::boidDirection()
 {
-
     m_newDirection = m_position - m_lastPosition;
-    //ngl::Vector position (m_position);
-    m_position += (m_velocity + m_newDirection) * 2.2;
+    
+    // Safety check for NaN values in velocity and direction
+    if (std::isnan(m_velocity.m_x) || std::isnan(m_velocity.m_y) || std::isnan(m_velocity.m_z))
+    {
+        m_velocity.set(0.1f, 0.1f, 0.0f);
+    }
+    if (std::isnan(m_newDirection.m_x) || std::isnan(m_newDirection.m_y) || std::isnan(m_newDirection.m_z))
+    {
+        m_newDirection.set(0.0f, 0.0f, 0.0f);
+    }
+    
+    Vector nextMovement = (m_velocity + m_newDirection) * 0.5f;  // More reasonable multiplier
+    
+    // Safety check for NaN values in the final movement calculation
+    if (std::isnan(nextMovement.m_x) || std::isnan(nextMovement.m_y) || std::isnan(nextMovement.m_z))
+    {
+        nextMovement.set(0.1f, 0.1f, 0.0f);
+    }
+    
+    m_position += nextMovement;
     m_lastPosition.set(m_position);
+    
+    // Final safety check for position
+    if (std::isnan(m_position.m_x) || std::isnan(m_position.m_y) || std::isnan(m_position.m_z))
+    {
+        // Reset to a safe position near origin
+        m_position.set(0.0f, 0.0f, 0.0f);
+        m_velocity.set(0.1f, 0.1f, 0.0f);
+    }
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Boid::velocityConstraint()
 {
-    if (m_velocity.length() > m_maxVelocity)
+    float velocityLength = m_velocity.length();
+    
+    if (velocityLength > m_maxVelocity)
     {
-        if(abs(m_velocity.length())>0)
+        if(velocityLength > 0.0001f)  // Avoid division by zero
         {
             m_velocity.normalize();
-            m_velocity.lengthSquared();
+            m_velocity = m_velocity * m_maxVelocity;
         }
-        //
-        m_velocity =  m_velocity * m_maxVelocity;
     }
-
-    if (m_velocity.length() < m_minVelocity)
+    else if (velocityLength < m_minVelocity)  // Remove the extra condition
     {
-        if(abs(m_velocity.length() < 0))
+        if(velocityLength > 0.0001f)  // Avoid division by zero
         {
-            m_velocity.lengthSquared();
             m_velocity.normalize();
+            m_velocity = m_velocity * m_minVelocity;
         }
-        //_velocity.lengthSquared();
-        m_velocity =  m_velocity * m_minVelocity;
+        else
+        {
+            // If velocity is essentially zero, give it a small default velocity
+            m_velocity.set(0.1f, 0.1f, 0.0f);
+        }
+    }
+    
+    // Safety check for NaN values
+    if (std::isnan(m_velocity.m_x) || std::isnan(m_velocity.m_y) || std::isnan(m_velocity.m_z))
+    {
+        // Reset to a small default velocity if NaN detected
+        m_velocity.set(0.1f, 0.1f, 0.0f);
     }
 }
 Boid::~Boid(){}

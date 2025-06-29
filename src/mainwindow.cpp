@@ -97,6 +97,18 @@ void MainWindow::on_m_renderFlockWireframe_toggled(bool checked)
     m_gl->setFlockWireframe(checked);
 }
 
+void MainWindow::on_m_flockSpeedSlider_valueChanged(int value)
+{
+    // Update the label to show the percentage
+    m_ui->m_flockSpeedLabel->setText(QString("%1%").arg(value));
+    
+    // Convert slider value (10-300) to a speed multiplier (0.1-3.0)
+    float speedMultiplier = value / 100.0f;
+    
+    // Pass the speed multiplier to the GL window
+    m_gl->setFlockSpeedMultiplier(speedMultiplier);
+}
+
 void MainWindow::on_m_obstaclePosX_valueChanged(double arg1)
 {
     glm::vec3 pos(arg1, m_ui->m_obstaclePosY->value(), m_ui->m_obstaclePosZ->value());
@@ -159,7 +171,7 @@ void MainWindow::on_m_simAlignment_valueChanged(double arg1)
 void MainWindow::on_m_backColour_clicked()
 {
     QColor colour = QColorDialog::getColor();
-    ngl::Colour c;
+    Colour c;
     c.set(colour.redF(), colour.greenF(), colour.blueF());
     m_gl->setBackgroundColour(c);
 }
@@ -168,9 +180,4 @@ void MainWindow::on_m_bboxSize_valueChanged(double arg1)
 {
     glm::vec3 size(arg1, arg1, arg1);
     m_gl->setBBoxSize(size);
-}
-
-void MainWindow::on_m_useModernUpdate_toggled(bool checked)
-{
-    m_gl->toggleModernUpdate(checked);
 }

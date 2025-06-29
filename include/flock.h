@@ -2,11 +2,11 @@
 #define FLOCK_H
 #include <vector>
 #include "boid.h"
-#include "ngl_compat/Vector.h"
-#include "ngl_compat/Colour.h"
-#include "ngl_compat/BBox.h"
-#include "ngl_compat/TransformStack.h"
-#include "ngl_compat/Camera.h"
+#include "Vector.h"
+#include "Colour.h"
+#include "BBox.h"
+#include "TransformStack.h"
+#include "Camera.h"
 #include "avoidance.h"
 #include "obstacle.h"
 #include "Behaviours.h"
@@ -27,7 +27,7 @@ class Flock
 public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief ctor
-    Flock(ngl::BBox *bbox, Obstacle *obstacle);
+    Flock(BBox *bbox, Obstacle *obstacle);
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief dtor
     ~Flock();
@@ -42,7 +42,7 @@ public:
     void resetBoids();
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our flock draw function
-    void draw(const std::string &_shaderName, ngl::TransformStack &_transformStack, ngl::Camera *_cam) const;
+    void draw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our function to do the bounding box collision between the boids and the box.
     void validateBoundingBoxCollision();
@@ -51,29 +51,25 @@ public:
     void checkCollisions();
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a function to calculate the final velocity for the flock.
-    ngl::Vector finalFlockVelocity();
+    Vector finalFlockVelocity();
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief the update method to do all the updates. Then the update is called in the GLWindow in the time event.
+    /// @brief the update method using modern GLM-based flocking logic
     void update();
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief GUI related functions.
     int getFlockSize() {return m_numberOfBoids;}
     void setFlockSize(int size) {m_numberOfBoids = size;}
     void setBoidSize(double size);
-    void setColour(ngl::Colour colour);
+    void setColour(Colour colour);
     void setWireframe(bool value);
+    void setSpeedMultiplier(float multiplier);
     void setSimDistance(double distance);
     void setSimFlockDistance(double distance);
     void setSimCohesion(double cohesion);
     void setSimSeparation(double separation);
     void setSimAlignment(double alignment);
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief Modern GLM-based methods for gradual migration
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief Update flock using modern flocking logic
-    void updateModern();
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief Demonstrate modern flocking system working alongside legacy
+    /// @brief Demonstrate modern flocking system
     void demonstrateModernFlocking();
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief Get the boid list for validation and testing
@@ -106,10 +102,10 @@ private:
     Boid *_boid;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a pointer to the bbox.
-    ngl::BBox *m_bbox;
+    BBox *m_bbox;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief shader method
-    void loadMatricesToShader(ngl::TransformStack &_tx, ngl::Camera *_cam) const;
+    void loadMatricesToShader(TransformStack &_tx, Camera *_cam) const;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our sphere collision method.
     void  checkSphereCollisions();
@@ -123,7 +119,10 @@ private:
     double m_boidScale;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the color of the boid.
-    ngl::Colour m_boidColour;
+    Colour m_boidColour;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief speed multiplier for controlling flock movement speed
+    float m_speedMultiplier;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief do the actual sphereSphere collisions
     /// @param[in] _pos1 the position of the first sphere
@@ -131,9 +130,9 @@ private:
     /// @param[in] _pos2 the position of the second sphere
     ///	@param[in] _radius2 the radius of the second sphere
     bool sphereSphereCollision(
-                                     ngl::Vector _pos1,
+                                     Vector _pos1,
                                      GLfloat _radius1,
-                                     ngl::Vector _pos2,
+                                     Vector _pos2,
                                      GLfloat _radius2
                                  );
 

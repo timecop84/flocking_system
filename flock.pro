@@ -1,7 +1,6 @@
 QT += opengl gui core widgets openglwidgets
 
 INCLUDEPATH += include
-INCLUDEPATH += include/ngl_compat
 INCLUDEPATH += modules/math/include
 INCLUDEPATH += modules/utils/include
 INCLUDEPATH += C:/Users/detou/vcpkg/installed/x64-windows/include
@@ -23,12 +22,17 @@ SOURCES += \
     src/flock.cpp \
     src/obstacle.cpp \
     src/Behaviours.cpp \
-    src/ngl_compat/Camera.cpp \
-    src/ngl_compat/Light.cpp \
-    src/ngl_compat/NGLInit.cpp \
-    src/ngl_compat/VAOPrimitives.cpp \
-    src/ngl_compat/TransformStack.cpp \
-    src/ngl_compat/Random.cpp \
+    src/Camera.cpp \
+    src/Light.cpp \
+    src/TransformStack.cpp \
+    src/Vector.cpp \
+    src/Colour.cpp \
+    src/ShaderLib.cpp \
+    src/BBox.cpp \
+    src/NGLInit.cpp \
+    src/VAOPrimitives.cpp \
+    src/Material.cpp \
+    src/LegacyRandom.cpp \
     modules/math/src/MathUtils.cpp \
     src/BehaviorValidator.cpp
 
@@ -39,12 +43,18 @@ HEADERS += \
     include/flock.h \
     include/obstacle.h \
     include/Behaviours.h \
-    include/ngl_compat/Camera.h \
-    include/ngl_compat/Light.h \
-    include/ngl_compat/NGLInit.h \
-    include/ngl_compat/VAOPrimitives.h \
-    include/ngl_compat/TransformStack.h \
-    include/ngl_compat/Random.h \
+    include/Camera.h \
+    include/Light.h \
+    include/TransformStack.h \
+    include/Vector.h \
+    include/Colour.h \
+    include/ShaderLib.h \
+    include/BBox.h \
+    include/NGLInit.h \
+    include/VAOPrimitives.h \
+    include/Material.h \
+    include/Matrix.h \
+    include/LegacyRandom.h \
     modules/math/include/MathUtils.h \
     include/FlockTypes.h \
     include/ModernRandom.h \

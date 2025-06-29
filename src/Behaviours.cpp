@@ -91,16 +91,16 @@ void Behaviours::Seperation(int &_boidNumber, std::vector<Boid*> &_boidList)
 //----------------------------------------------------------------------------------------------------------------------
 void Behaviours::Destination(int & _boidNumber, std::vector <Boid*> & _boidList)
 {
-    ngl::Vector targeting(1,0,1);
+    Vector targeting(1,0,1);
 
     targeting = ((targeting   - _boidList.at(_boidNumber)->getNextPosition()) * - 100);
 }
 //----------------------------------------------------------------------------------------------------------------------
 
-ngl::Vector Behaviours::BehaviourSetup()
+Vector Behaviours::BehaviourSetup()
 {
 
-    ngl::Vector m_seperationCorrection(-1, -1, -1);
+    Vector m_seperationCorrection(-1, -1, -1);
     m_behaviourSetup.set(0, 0, 0);
 
 
@@ -160,7 +160,7 @@ void Behaviours::applyModernFlockingForce(int &_boidNumber, std::vector<Boid*> &
         // Scale down the force to prevent overly dramatic changes
         modernForce *= 0.1f;  
         
-        ngl::Vector legacyForce(modernForce.x, modernForce.y, modernForce.z);
+        Vector legacyForce(modernForce.x, modernForce.y, modernForce.z);
         currentBoid->addVelocity(legacyForce);
     }
 }

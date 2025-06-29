@@ -3,10 +3,10 @@
 
 #include <string>
 #include <GL/gl.h>
-#include "ngl_compat/Vector.h"
-#include "ngl_compat/Colour.h"
-#include "ngl_compat/Camera.h"
-#include "ngl_compat/TransformStack.h"
+#include "Vector.h"
+#include "Colour.h"
+#include "Camera.h"
+#include "TransformStack.h"
 // Modern includes for gradual migration
 #include "FlockTypes.h"
 
@@ -33,27 +33,27 @@ public:
     /// @param [in] position the position of the boid
     /// @param [in] direction the direction of the boid
     //----------------------------------------------------------------------------------------------------------------------
-    Boid(ngl::Vector position,ngl::Vector direction);
+    Boid(Vector position,Vector direction);
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief returns the current position of the boid
     /// @param [in] m_position passed and gets the value of the current position.
-    inline ngl::Vector getPosition()const {return m_position;}
+    inline Vector getPosition()const {return m_position;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief takes the current position of the boid
     /// @param [in] m_position sets the value of the current position. Used in Collision method.
-    inline void setPosition(ngl::Vector Position) {m_position = Position;}
+    inline void setPosition(Vector Position) {m_position = Position;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief stores the next position of the boid.
     /// @param [in] m_nextPosition returns the value for the nextPosition. Used for Direction.
-    inline ngl::Vector getNextPosition()const {return m_nextPosition;}
+    inline Vector getNextPosition()const {return m_nextPosition;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief stores the velocity of the boid.
     /// @param [in] m_velocity sets the velocity of the boid. Used by Direction in Boid class.
-    inline void setVelocity(ngl::Vector _d){m_velocity=_d;}
+    inline void setVelocity(Vector _d){m_velocity=_d;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to get the velocity value of the boid.
     /// @param [in] m_velocity gets and gets the value of the current velocity. Used for the BBox collision.
-    inline ngl::Vector getVelocity () {return m_velocity;}
+    inline Vector getVelocity () {return m_velocity;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief stores the maximum velocity.
     /// @param [in] m_velocity maxValue sets the maximum velocity of the boid
@@ -65,11 +65,11 @@ public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief updates the velocity.
     /// @param [in] direction gets the value of direction of the boid
-    void updateVelocity(ngl::Vector direction);
+    void updateVelocity(Vector direction);
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief adds to the current velocity.
     /// @param [in] force force to add to the current velocity
-    inline void addVelocity(const ngl::Vector& force) { m_velocity += force; }
+    inline void addVelocity(const Vector& force) { m_velocity += force; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief updates the boid direction.
     void boidDirection();
@@ -80,7 +80,7 @@ public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable for boid Scale
     /// @param [in] m_scale sets the scale of the boid.
-    void setScale(ngl::Vector scale) { m_scale = scale; }
+    void setScale(Vector scale) { m_scale = scale; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief updates the velocity constraints.
     void velocityConstraint();
@@ -89,7 +89,7 @@ public:
     /// @param [in] _shaderName value
     /// @param [in] _transformStack  values
     /// @param [in] _cam camera values
-    void draw(const std::string &_shaderName,ngl::TransformStack &_transformStack,ngl::Camera *_cam)const;
+    void draw(const std::string &_shaderName,TransformStack &_transformStack,Camera *_cam)const;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief reverse function
     /// @param [in] m_velocity sets the velocity to have a new direction plus the next position. Called during boid to obstacle collision.
@@ -105,7 +105,7 @@ public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the colour of the boid
     /// @param [in] colour the new colour for the boid
-    inline void setColour(const ngl::Colour& colour) {m_colour = colour;}
+    inline void setColour(const Colour& colour) {m_colour = colour;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the wireframe mode of the boid
     /// @param [in] value true for wireframe, false for solid
@@ -172,25 +172,25 @@ private:
     bool m_hit;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief member to store the newDirection of the boid
-    ngl::Vector m_newDirection;
+    Vector m_newDirection;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief member to store the current direction of the boids
-    ngl::Vector m_direction;
+    Vector m_direction;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a member to store the current position of the boid
-    ngl::Vector m_position;
+    Vector m_position;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a member to store the last position of the boid in the world
-    ngl::Vector m_lastPosition;
+    Vector m_lastPosition;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a member to store the next position of the boid within the world
-    ngl::Vector m_nextPosition;
+    Vector m_nextPosition;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a member to store the initial velocity of the boid
-    ngl::Vector m_velocity;
+    Vector m_velocity;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a member to store the scale of the boid
-    ngl::Vector m_scale;
+    Vector m_scale;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a member to store a maximum allowed velocity (used as a velocity constraint)
     GLfloat m_maxVelocity;
@@ -199,7 +199,7 @@ private:
     GLfloat m_minVelocity;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a member to store the colour
-    ngl::Colour m_colour;
+    Colour m_colour;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a member to store the size of the boid
     GLfloat m_size;
@@ -209,8 +209,8 @@ private:
 
 protected:
     void loadMatricesToShader(
-            ngl::TransformStack &_tx,
-            ngl::Camera *_cam
+            TransformStack &_tx,
+            Camera *_cam
             )const;
 
 

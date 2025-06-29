@@ -17,9 +17,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QDoubleSpinBox, QFrame,
     QGridLayout, QGroupBox, QLabel, QMainWindow,
-    QMenuBar, QPushButton, QSizePolicy, QSpacerItem,
-    QSpinBox, QStatusBar, QToolBox, QVBoxLayout,
-    QWidget)
+    QMenuBar, QPushButton, QSizePolicy, QSlider,
+    QSpacerItem, QSpinBox, QStatusBar, QToolBox,
+    QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -83,12 +83,6 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.m_removeBoids, 3, 2, 1, 1)
 
-        self.m_useModernUpdate = QCheckBox(self.groupBox)
-        self.m_useModernUpdate.setObjectName(u"m_useModernUpdate")
-        self.m_useModernUpdate.setChecked(False)
-
-        self.gridLayout.addWidget(self.m_useModernUpdate, 4, 1, 1, 2)
-
 
         self.verticalLayout.addWidget(self.groupBox)
 
@@ -117,6 +111,33 @@ class Ui_MainWindow(object):
 
 
         self.verticalLayout.addWidget(self.groupBox_2)
+
+        self.groupBox_4 = QGroupBox(self.m_page1_flock)
+        self.groupBox_4.setObjectName(u"groupBox_4")
+        self.gridLayout_4 = QGridLayout(self.groupBox_4)
+        self.gridLayout_4.setObjectName(u"gridLayout_4")
+        self.label_4 = QLabel(self.groupBox_4)
+        self.label_4.setObjectName(u"label_4")
+
+        self.gridLayout_4.addWidget(self.label_4, 0, 0, 1, 1)
+
+        self.m_flockSpeedSlider = QSlider(self.groupBox_4)
+        self.m_flockSpeedSlider.setObjectName(u"m_flockSpeedSlider")
+        self.m_flockSpeedSlider.setMinimum(10)
+        self.m_flockSpeedSlider.setMaximum(300)
+        self.m_flockSpeedSlider.setValue(100)
+        self.m_flockSpeedSlider.setOrientation(Qt.Horizontal)
+
+        self.gridLayout_4.addWidget(self.m_flockSpeedSlider, 0, 1, 1, 1)
+
+        self.m_flockSpeedLabel = QLabel(self.groupBox_4)
+        self.m_flockSpeedLabel.setObjectName(u"m_flockSpeedLabel")
+        self.m_flockSpeedLabel.setMinimumSize(QSize(40, 0))
+
+        self.gridLayout_4.addWidget(self.m_flockSpeedLabel, 0, 2, 1, 1)
+
+
+        self.verticalLayout.addWidget(self.groupBox_4)
 
         self.m_renderFlockWireframe = QCheckBox(self.m_page1_flock)
         self.m_renderFlockWireframe.setObjectName(u"m_renderFlockWireframe")
@@ -180,17 +201,17 @@ class Ui_MainWindow(object):
 
         self.groupBox_5 = QGroupBox(self.m_page2_obstacle)
         self.groupBox_5.setObjectName(u"groupBox_5")
-        self.gridLayout_4 = QGridLayout(self.groupBox_5)
-        self.gridLayout_4.setObjectName(u"gridLayout_4")
+        self.gridLayout_41 = QGridLayout(self.groupBox_5)
+        self.gridLayout_41.setObjectName(u"gridLayout_41")
         self.m_obstacleColour = QPushButton(self.groupBox_5)
         self.m_obstacleColour.setObjectName(u"m_obstacleColour")
 
-        self.gridLayout_4.addWidget(self.m_obstacleColour, 0, 0, 1, 1)
+        self.gridLayout_41.addWidget(self.m_obstacleColour, 0, 0, 1, 1)
 
         self.m_obstacleWireframe = QCheckBox(self.groupBox_5)
         self.m_obstacleWireframe.setObjectName(u"m_obstacleWireframe")
 
-        self.gridLayout_4.addWidget(self.m_obstacleWireframe, 1, 0, 1, 1)
+        self.gridLayout_41.addWidget(self.m_obstacleWireframe, 1, 0, 1, 1)
 
 
         self.verticalLayout_2.addWidget(self.groupBox_5)
@@ -273,16 +294,16 @@ class Ui_MainWindow(object):
         self.m_page4_environment.setGeometry(QRect(0, 0, 308, 529))
         self.verticalLayout_3 = QVBoxLayout(self.m_page4_environment)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.groupBox_4 = QGroupBox(self.m_page4_environment)
-        self.groupBox_4.setObjectName(u"groupBox_4")
-        self.gridLayout_5 = QGridLayout(self.groupBox_4)
+        self.groupBox_41 = QGroupBox(self.m_page4_environment)
+        self.groupBox_41.setObjectName(u"groupBox_41")
+        self.gridLayout_5 = QGridLayout(self.groupBox_41)
         self.gridLayout_5.setObjectName(u"gridLayout_5")
-        self.label_4 = QLabel(self.groupBox_4)
-        self.label_4.setObjectName(u"label_4")
+        self.label_41 = QLabel(self.groupBox_41)
+        self.label_41.setObjectName(u"label_41")
 
-        self.gridLayout_5.addWidget(self.label_4, 0, 0, 1, 1)
+        self.gridLayout_5.addWidget(self.label_41, 0, 0, 1, 1)
 
-        self.m_bboxSize = QDoubleSpinBox(self.groupBox_4)
+        self.m_bboxSize = QDoubleSpinBox(self.groupBox_41)
         self.m_bboxSize.setObjectName(u"m_bboxSize")
         self.m_bboxSize.setMinimum(50.000000000000000)
         self.m_bboxSize.setMaximum(220.000000000000000)
@@ -291,7 +312,7 @@ class Ui_MainWindow(object):
         self.gridLayout_5.addWidget(self.m_bboxSize, 0, 1, 1, 1)
 
 
-        self.verticalLayout_3.addWidget(self.groupBox_4)
+        self.verticalLayout_3.addWidget(self.groupBox_41)
 
         self.groupBox_6 = QGroupBox(self.m_page4_environment)
         self.groupBox_6.setObjectName(u"groupBox_6")
@@ -324,8 +345,9 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(shortcut)
         self.label.setBuddy(self.m_flockDensity)
         self.label_2.setBuddy(self.m_changeBoidSize)
+        self.label_4.setBuddy(self.m_flockSpeedSlider)
         self.label_3.setBuddy(self.m_obstacleSize)
-        self.label_4.setBuddy(self.m_bboxSize)
+        self.label_41.setBuddy(self.m_bboxSize)
 #endif // QT_CONFIG(shortcut)
         QWidget.setTabOrder(self.m_flockDensity, self.m_resetFlock)
         QWidget.setTabOrder(self.m_resetFlock, self.m_applyFlock)
@@ -387,13 +409,6 @@ class Ui_MainWindow(object):
         self.m_removeBoids.setStatusTip(QCoreApplication.translate("MainWindow", u"Removes 10 boids from the current flock", None))
 #endif // QT_CONFIG(statustip)
         self.m_removeBoids.setText(QCoreApplication.translate("MainWindow", u"- Remove Boids", None))
-#if QT_CONFIG(tooltip)
-        self.m_useModernUpdate.setToolTip(QCoreApplication.translate("MainWindow", u"Toggle between legacy and modern GLM-based flocking algorithms", None))
-#endif // QT_CONFIG(tooltip)
-#if QT_CONFIG(statustip)
-        self.m_useModernUpdate.setStatusTip(QCoreApplication.translate("MainWindow", u"Use modern GLM-based flocking calculations instead of legacy system", None))
-#endif // QT_CONFIG(statustip)
-        self.m_useModernUpdate.setText(QCoreApplication.translate("MainWindow", u"Use Modern GLM Flocking", None))
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Appearence", None))
 #if QT_CONFIG(tooltip)
         self.m_changeFlockColour.setToolTip(QCoreApplication.translate("MainWindow", u"Change the flock colour", None))
@@ -409,6 +424,15 @@ class Ui_MainWindow(object):
 #if QT_CONFIG(statustip)
         self.m_changeBoidSize.setStatusTip(QCoreApplication.translate("MainWindow", u"Changes the size of each boid in the flock", None))
 #endif // QT_CONFIG(statustip)
+        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Movement", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Flock Speed:", None))
+#if QT_CONFIG(tooltip)
+        self.m_flockSpeedSlider.setToolTip(QCoreApplication.translate("MainWindow", u"Controls how fast the flock moves", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(statustip)
+        self.m_flockSpeedSlider.setStatusTip(QCoreApplication.translate("MainWindow", u"Controls how fast the flock moves", None))
+#endif // QT_CONFIG(statustip)
+        self.m_flockSpeedLabel.setText(QCoreApplication.translate("MainWindow", u"100%", None))
 #if QT_CONFIG(tooltip)
         self.m_renderFlockWireframe.setToolTip(QCoreApplication.translate("MainWindow", u"Renders the boids in wireframe mode if checked", None))
 #endif // QT_CONFIG(tooltip)
@@ -431,8 +455,8 @@ class Ui_MainWindow(object):
         self.label_9.setText(QCoreApplication.translate("MainWindow", u"Alignment Weight :", None))
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"Flock Distance", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.m_page3_simulation), QCoreApplication.translate("MainWindow", u"Simulation", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Bounding Box", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Size :", None))
+        self.groupBox_41.setTitle(QCoreApplication.translate("MainWindow", u"Bounding Box", None))
+        self.label_41.setText(QCoreApplication.translate("MainWindow", u"Size :", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Appearence", None))
         self.m_backColour.setText(QCoreApplication.translate("MainWindow", u"Background Colour", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.m_page4_environment), QCoreApplication.translate("MainWindow", u"Environment", None))

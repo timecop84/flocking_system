@@ -1,30 +1,22 @@
-#ifndef NGL_TRANSFORMSTACK_H
-#define NGL_TRANSFORMSTACK_H
+#ifndef TRANSFORMSTACK_H
+#define TRANSFORMSTACK_H
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <stack>
+#include "Matrix.h"
 
-namespace ngl {
-
-// Forward declaration to avoid circular includes
-class Vector;
-
-class Transformation {
-public:
-    Transformation() : m_matrix(1.0f) {}
-    
-    void setMatrix(const glm::mat4& matrix) { m_matrix = matrix; }
-    glm::mat4 getMatrix() const { return m_matrix; }
-    
-private:
-    glm::mat4 m_matrix;
-};
-
+//----------------------------------------------------------------------------------------------------------------------
+/// @brief Modern TransformStack using GLM instead of ngl_compat
+/// @details Pure C++ transform stack implementation with modern GLM math
+//----------------------------------------------------------------------------------------------------------------------
 class TransformStack {
 public:
     TransformStack() {
         m_stack.push(glm::mat4(1.0f));
+        m_projection = glm::mat4(1.0f);
+        m_view = glm::mat4(1.0f);
+        m_globalTransform = glm::mat4(1.0f);
     }
     
     void pushTransform() {
@@ -37,11 +29,11 @@ public:
         }
     }
     
-    void setPosition(const Vector& pos);
+    void setPosition(const glm::vec3& pos);
     void setScale(float x, float y, float z);
-    void setScale(const Vector& scale);
+    void setScale(const glm::vec3& scale);
     
-    // Methods for modern NGL compatibility
+    // Matrix management for modern OpenGL compatibility
     void setProjection(const glm::mat4& projection) {
         m_projection = projection;
     }
@@ -62,20 +54,17 @@ public:
     glm::mat4 getViewMatrix() const { return m_view; }
     glm::mat4 getModelMatrix() const { return m_stack.empty() ? glm::mat4(1.0f) : m_stack.top(); }
     
-    void setGlobal(const Transformation& transform) {
-        m_globalTransform = transform.getMatrix();
+    void setGlobal(const glm::mat4& transform) {
+        m_globalTransform = transform;
     }
     
-    Transformation getCurrentTransform() const {
-        Transformation result;
-        result.setMatrix(m_stack.top());
-        return result;
+    glm::mat4 getCurrentTransform() const {
+        return m_stack.empty() ? glm::mat4(1.0f) : m_stack.top();
     }
     
-    Transformation getCurrAndGlobal() const {
-        Transformation result;
-        result.setMatrix(m_stack.top() * m_globalTransform);
-        return result;
+    Matrix getCurrAndGlobal() const {
+        glm::mat4 current = getCurrentTransform();
+        return Matrix(m_globalTransform * current);
     }
     
 private:
@@ -85,6 +74,4 @@ private:
     glm::mat4 m_view;
 };
 
-} // namespace ngl
-
-#endif // NGL_TRANSFORMSTACK_H
+#endif // TRANSFORMSTACK_H

@@ -1,10 +1,10 @@
 #ifndef OBSTACLE_H
 #define OBSTACLE_H
 
-#include "ngl_compat/Camera.h"
-#include "ngl_compat/Vector.h"
-#include "ngl_compat/Colour.h"
-#include "ngl_compat/TransformStack.h"
+#include "Camera.h"
+#include "Vector.h"
+#include "Colour.h"
+#include "TransformStack.h"
 // Modern includes for gradual migration
 #include "FlockTypes.h"
 #include <string>
@@ -27,7 +27,7 @@ public:
     /// @ ctor
     /// @param [in] spherePosition the initilized value of the obstacle position
     /// @param [in] sphereRadius the initilized value of the obstacle radius
-    Obstacle(ngl::Vector spherePosition,
+    Obstacle(Vector spherePosition,
              float sphereRadius
              );
     //----------------------------------------------------------------------------------------------------------------------
@@ -36,24 +36,24 @@ public:
     /// @param [in] _transformStack  values
     /// @param [in] _cam camera values
     void ObsDraw(const std::string &_shaderName,
-                 ngl::TransformStack &_transformStack,
-                 ngl::Camera *_cam
+                 TransformStack &_transformStack,
+                 Camera *_cam
                  )const ;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief load our matrices to shader
     /// @param [in] transformationStack valus
     /// @param [in] camera value
-    void loadMatricesToShader(ngl::TransformStack &_tx,
-                              ngl::Camera *_cam
+    void loadMatricesToShader(TransformStack &_tx,
+                              Camera *_cam
                               )const;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the obstacle position
     /// @param [in] _spherePosition the obstacle Position within the space.
-    inline ngl::Vector getSpherePosition()const{return _spherePosition;}
+    inline Vector getSpherePosition()const{return _spherePosition;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the obstacle position
     /// @param [in] _spherePosition returns the obstacle position.
-    void setSpherePosition(ngl::Vector position) {_spherePosition = position;}
+    void setSpherePosition(Vector position) {_spherePosition = position;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief gets the obstacle size
     /// @param [in] _spherePosition returns the obstacle size.
@@ -65,7 +65,7 @@ public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the color of the obstacle
     /// @param [in] m_color sets color value for the obstacle
-    void setColour(ngl::Colour colour) {m_colour = colour;}
+    void setColour(Colour colour) {m_colour = colour;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the wireframe for the obstacle
     /// @param [in] m_wireframe sets the wireframe value on/off.
@@ -109,7 +109,7 @@ public:
 
 private:
     /// @brief a variable to store the obstacle position
-    ngl::Vector _spherePosition;
+    Vector _spherePosition;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a variable to store the obstacle radius
     float _sphereRadius;
@@ -120,7 +120,7 @@ private:
     bool m_wireframe;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the color value
-    ngl::Colour m_colour;
+    Colour m_colour;
     //----------------------------------------------------------------------------------------------------------------------
 
 };

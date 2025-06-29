@@ -8,13 +8,13 @@
 #include <QTimerEvent>
 #include <QKeyEvent>
 #include <glm/glm.hpp>
-#include "ngl_compat/Camera.h"
-#include "ngl_compat/Light.h"
-#include "ngl_compat/Vector.h"
-#include "ngl_compat/Colour.h"
-#include "ngl_compat/TransformStack.h"
-#include "ngl_compat/ShaderLib.h"
-#include "ngl_compat/BBox.h"
+#include "Camera.h"
+#include "Light.h"
+#include "Vector.h"
+#include "Colour.h"
+#include "TransformStack.h"
+#include "ShaderLib.h"
+#include "BBox.h"
 #include "BehaviorValidator.h"
 
 // must be included after our stuff because GLEW needs to be first
@@ -59,6 +59,7 @@ public :
     void setBoidSize(double size);
     void setBoidColor(QColor colour);
     void setFlockWireframe(bool value);
+    void setFlockSpeedMultiplier(float multiplier);
 
     void setObstaclePosition(glm::vec3 position);
     void setObstacleSize(double size);
@@ -71,13 +72,8 @@ public :
     void setSimSeparation(double separation);
     void setSimAlignment(double alignment);
 
-    void setBackgroundColour(ngl::Colour colour);
+    void setBackgroundColour(Colour colour);
     void setBBoxSize(glm::vec3 size);
-    
-    /// @brief Toggle between legacy and modern GLM-based update methods
-    void toggleModernUpdate(bool enabled);
-    /// @brief Get current update mode
-    bool isUsingModernUpdate() const { return m_useModernUpdate; }
     
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief print performance comparison between legacy and modern modes
@@ -137,34 +133,34 @@ private :
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief Camera matrices and vectors
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Camera *m_cam;
+    Camera *m_cam;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief camera orbital controls
     //----------------------------------------------------------------------------------------------------------------------
     float m_cameraDistance;
     float m_cameraAzimuth;
     float m_cameraElevation;
-    ngl::Vector m_cameraTarget;
+    Vector m_cameraTarget;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief the model position for mouse movement
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Vector m_modelPos;
+    Vector m_modelPos;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a simple light use to illuminate the screen
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Light *m_light;
+    Light *m_light;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief shader lib instance
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::ShaderLib *m_shader;
+    ShaderLib *m_shader;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief transform stack for transformations
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::TransformStack m_transformStack;
+    TransformStack m_transformStack;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief bbox for the flock space
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::BBox *bbox;
+    BBox *bbox;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a sphere obstacle within the boid space
     //----------------------------------------------------------------------------------------------------------------------
@@ -175,7 +171,7 @@ private :
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the GL Depth Color
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Colour m_backgroundColour;
+    Colour m_backgroundColour;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief performance monitor for comparing legacy vs modern algorithms
     //----------------------------------------------------------------------------------------------------------------------
@@ -183,9 +179,9 @@ private :
 
 protected:
 
-    void loadMatricesToColourShader(ngl::TransformStack &_tx);
+    void loadMatricesToColourShader(TransformStack &_tx);
 
-    void loadMatricesToShader(ngl::TransformStack &_tx);
+    void loadMatricesToShader(TransformStack &_tx);
 
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief update camera position based on orbital controls
@@ -263,10 +259,6 @@ private :
     /// @brief flag to indicate if animation is active or not
     //----------------------------------------------------------------------------------------------------------------------
     bool m_animate;
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief flag to indicate if modern GLM-based update should be used
-    //----------------------------------------------------------------------------------------------------------------------
-    bool m_useModernUpdate;
     //----------------------------------------------------------------------------------------------------------------------
 
 
