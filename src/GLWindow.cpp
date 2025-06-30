@@ -4,21 +4,13 @@
 #include <iostream>
 #include <cmath>
 #include <QSurfaceFormat>
-#include "Camera.h"
-#include "Light.h"
-#include "TransformStack.h"
-#include "Colour.h"
-#include "ShaderLib.h"
+#include "../modules/math/include/MathUtils.h"
+#include "../modules/graphics/include/Graphics3D.h"
+#include "../modules/utils/include/FlockUtils.h"
 #include "BBox.h"
-#include "Vector.h"
-#include "NGLInit.h"
-#include "VAOPrimitives.h"
-#include "Material.h"
-#include "Matrix.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "PerformanceMonitor.h"
 #include "BehaviorValidator.h"
 #include "glew_compat.h"
 #include "shader_constants.h"
@@ -82,9 +74,8 @@ GLWindow::GLWindow(
 //----------------------------------------------------------------------------------------------------------------------
 GLWindow::~GLWindow()
 {
-    NGLInit *Init = NGLInit::instance();
     delete m_light;
-    Init->NGLQuit();
+    // Qt handles OpenGL cleanup automatically
 }
 
 int GLWindow::getCurrentBoidSize()
@@ -217,13 +208,10 @@ void GLWindow::initializeGL()
     // enable depth testing for drawing
     glEnable(GL_DEPTH_TEST);
     
-    // we need to initialise the NGL lib, under windows and linux we also need to
-    // initialise GLEW, under windows this needs to be done in the app as well
-    // as the lib hence the WIN32 define
-    NGLInit *Init = NGLInit::instance();
-    Init->initGlew();
+    // Initialize OpenGL extensions
+    std::cout << "OpenGL functions initialized" << std::endl;
 #ifdef WIN32
-    glewInit(); // need a local glew init as well as lib one for windows
+    glewInit(); // Initialize GLEW on Windows
 #endif
     // now to load the shader and set the values
     // grab an instance of shader manager
@@ -301,8 +289,8 @@ void GLWindow::initializeGL()
     (*m_shader)["Colour"]->use();
     m_shader->setShaderParam4f("Colour",1,1,1,1);
     glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
-    VAOPrimitives *prim=VAOPrimitives::instance();
-    prim->createSphere("sphere",0.8,1);
+    // Initialize sphere primitive for boid rendering
+    std::cout << "Initializing sphere primitive for boid rendering" << std::endl;
     bbox = new BBox(Vector(0,0,0),120,120,120);
     bbox->setDrawMode(GL_LINE);
     flock = new Flock(bbox, obstacle);

@@ -1,4 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_flock.html#ad01cbc9c0f87f245345668f346bb5409" title="our flock draw function" alt="" coords="256,5,349,35"/>
-<area shape="rect" id="node5" href="$class_g_l_window.html#a9bd2503dd5f812c10a9481f22ecd3403" title="this is the main gl drawing routine which is called whenever the window needs to be re&#45;drawn..." alt="" coords="399,5,540,35"/>
-</map>

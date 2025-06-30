@@ -6,8 +6,7 @@ QT += opengl gui core widgets openglwidgets
 
 SOURCES += \
     full_test.cpp \
-    modules/math/src/MathUtils.cpp \
-    modules/graphics/src/ShaderManager.cpp
+    modules/math/src/MathUtils.cpp
 
 INCLUDEPATH += ./
 INCLUDEPATH += include/

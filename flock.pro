@@ -2,6 +2,7 @@ QT += opengl gui core widgets openglwidgets
 
 INCLUDEPATH += include
 INCLUDEPATH += modules/math/include
+INCLUDEPATH += modules/graphics/include
 INCLUDEPATH += modules/utils/include
 INCLUDEPATH += C:/Users/detou/vcpkg/installed/x64-windows/include
 
@@ -22,19 +23,17 @@ SOURCES += \
     src/flock.cpp \
     src/obstacle.cpp \
     src/Behaviours.cpp \
-    src/Camera.cpp \
-    src/Light.cpp \
-    src/TransformStack.cpp \
-    src/Vector.cpp \
-    src/Colour.cpp \
-    src/ShaderLib.cpp \
     src/BBox.cpp \
-    src/NGLInit.cpp \
-    src/VAOPrimitives.cpp \
-    src/Material.cpp \
-    src/LegacyRandom.cpp \
+    src/BehaviorValidator.cpp \
+    modules/math/src/Vector.cpp \
     modules/math/src/MathUtils.cpp \
-    src/BehaviorValidator.cpp
+    modules/graphics/src/Camera.cpp \
+    modules/graphics/src/TransformStack.cpp \
+    modules/graphics/src/Colour.cpp \
+    modules/graphics/src/Material.cpp \
+    modules/graphics/src/Light.cpp \
+    modules/graphics/src/ShaderLib.cpp \
+    modules/utils/src/Random.cpp
 
 HEADERS += \
     include/mainwindow.h \
@@ -43,24 +42,23 @@ HEADERS += \
     include/flock.h \
     include/obstacle.h \
     include/Behaviours.h \
-    include/Camera.h \
-    include/Light.h \
-    include/TransformStack.h \
-    include/Vector.h \
-    include/Colour.h \
-    include/ShaderLib.h \
     include/BBox.h \
-    include/NGLInit.h \
-    include/VAOPrimitives.h \
-    include/Material.h \
-    include/Matrix.h \
-    include/LegacyRandom.h \
-    modules/math/include/MathUtils.h \
     include/FlockTypes.h \
-    include/ModernRandom.h \
     include/ModernExample.h \
-    include/PerformanceMonitor.h \
-    include/BehaviorValidator.h
+    include/BehaviorValidator.h \
+    modules/math/include/Vector.h \
+    modules/math/include/Matrix.h \
+    modules/math/include/MathUtils.h \
+    modules/graphics/include/Camera.h \
+    modules/graphics/include/TransformStack.h \
+    modules/graphics/include/Colour.h \
+    modules/graphics/include/Material.h \
+    modules/graphics/include/Light.h \
+    modules/graphics/include/ShaderLib.h \
+    modules/graphics/include/Graphics3D.h \
+    modules/utils/include/PerformanceMonitor.h \
+    modules/utils/include/FlockUtils.h \
+    modules/utils/include/Random.h
 
 FORMS += \
     ui/mainwindow.ui

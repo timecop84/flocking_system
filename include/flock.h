@@ -7,7 +7,6 @@
 #include "BBox.h"
 #include "TransformStack.h"
 #include "Camera.h"
-#include "avoidance.h"
 #include "obstacle.h"
 #include "Behaviours.h"
 

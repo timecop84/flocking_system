@@ -30,7 +30,7 @@
 - **Matrix.h**: GLM mat4/mat3 wrapper with interface compatibility
 - **NGLInit.h/cpp**: Initialization system stub
 - **VAOPrimitives.h/cpp**: Modern primitive rendering
-- **LegacyRandom.h/cpp**: Compatibility wrapper for legacy Random usage
+- **Random.h/cpp**: Modern C++11+ random number generator with thread-safe singleton (moved to utils module)
 
 ### 3. **Build System Modernized** ✅
 - Updated `flock.pro` to exclude all ngl_compat dependencies

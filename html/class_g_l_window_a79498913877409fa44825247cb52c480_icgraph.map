@@ -1,5 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_main_window.html#a6b51f8893d3494b5d9e88b760a329562" title="MainWindow::on_m_obstaclePosX_valueChanged" alt="" coords="271,5,596,35"/>
-<area shape="rect" id="node5" href="$class_main_window.html#ad9550b7e1f00401238cc10e0a9d83047" title="MainWindow::on_m_obstaclePosY_valueChanged" alt="" coords="271,58,596,89"/>
-<area shape="rect" id="node7" href="$class_main_window.html#ae431eefaba038dfebba00d27e79ea4fd" title="MainWindow::on_m_obstaclePosZ_valueChanged" alt="" coords="271,111,596,142"/>
-</map>

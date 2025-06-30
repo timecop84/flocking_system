@@ -8,12 +8,15 @@
 #include <QTimerEvent>
 #include <QKeyEvent>
 #include <glm/glm.hpp>
+
+// Forward declaration for modular include
+class ShaderLib;
+
 #include "Camera.h"
 #include "Light.h"
 #include "Vector.h"
 #include "Colour.h"
 #include "TransformStack.h"
-#include "ShaderLib.h"
 #include "BBox.h"
 #include "BehaviorValidator.h"
 

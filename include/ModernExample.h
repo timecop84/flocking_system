@@ -6,7 +6,7 @@
  */
 
 #include "FlockTypes.h"
-#include "ModernRandom.h"
+#include "Random.h"
 #include <iostream>
 
 namespace flock::examples {

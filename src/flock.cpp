@@ -1,7 +1,7 @@
 #include "flock.h"
 #include "Matrix.h"
 #include "ShaderLib.h"
-#include "LegacyRandom.h"
+#include "FlockUtils.h"
 #include "QDebug"
 #include <iostream>
 
@@ -67,14 +67,14 @@ void Flock::addBoids()
 {
     if (m_numberOfBoids <= 1990)
     {
-        Random *rng=Random::instance();
+        auto& rng = utils::Random::instance();
         Vector dir;
-        dir=rng->getRandomVector();
+        dir = rng.randomVec3();
         // add the spheres to the end of the particle list
         for(int i=0; i<10; i++)
         {
             //std::cout<<"adding boid"<<endl;
-            m_boidList.push_back(new Boid(rng->getRandomPoint(s_extents,s_extents,s_extents),dir));
+            m_boidList.push_back(new Boid(rng.randomPoint(s_extents,s_extents,s_extents),dir));
 
             ++m_numberOfBoids;
         }
@@ -98,11 +98,11 @@ void Flock::resetBoids()
 {
     m_boidList.clear();
     Vector dir;
-    Random *rng=Random::instance();
+    auto& rng = utils::Random::instance();
     for(int i=0; i<m_numberOfBoids; ++i)
     {
-        dir=rng->getRandomVector();
-        m_boidList.push_back(new Boid(rng->getRandomPoint(s_extents,s_extents,s_extents),dir));
+        dir = rng.randomVec3();
+        m_boidList.push_back(new Boid(rng.randomPoint(s_extents,s_extents,s_extents),dir));
     }
 }
 //----------------------------------------------------------------------------------------------------------------------

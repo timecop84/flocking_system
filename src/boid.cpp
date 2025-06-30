@@ -1,5 +1,4 @@
 #include "boid.h"
-#include "VAOPrimitives.h"
 #include "Material.h"
 #include "ShaderLib.h"
 #include "Matrix.h"
