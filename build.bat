@@ -134,11 +134,18 @@ if exist Makefile.Release (
 )
 
 REM Remove generated files and directories
-for %%d in (debug release %BIN_DIR% obj moc ui build) do (
+for %%d in (debug release %BIN_DIR% obj moc build) do (
     if exist "%%d" (
         echo %BLUE%    * Removing %%d directory...%NC%
         rmdir /s /q "%%d" >nul 2>&1
     )
+)
+
+REM Remove generated files in ui directory, but keep the directory and .ui files
+if exist "ui" (
+    echo %BLUE%    * Cleaning generated files in ui directory...%NC%
+    del /q "ui\ui_*.h" >nul 2>&1
+    del /q "ui\mainwindow_ui.py" >nul 2>&1
 )
 
 REM Remove generated files
