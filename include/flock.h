@@ -4,7 +4,7 @@
 #include "boid.h"
 #include "Vector.h"
 #include "Colour.h"
-#include "BBox.h"
+#include "modules/graphics/include/BBox.h"
 #include "TransformStack.h"
 #include "Camera.h"
 #include "obstacle.h"

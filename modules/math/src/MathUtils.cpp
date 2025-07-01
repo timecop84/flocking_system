@@ -2,7 +2,10 @@
 #include <random>
 #include <algorithm>
 #include <numeric>
+#include <cmath>
+#include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/geometric.hpp>
 
 namespace math {
     namespace utils {
@@ -101,6 +104,19 @@ namespace math {
             return normalize(randomVector(0.1f, 1.0f));
         }
         
+        // Additional random utilities used by flocking system
+        glm::vec3 randomVec3() {
+            return glm::vec3(randomFloat(), randomFloat(), randomFloat());
+        }
+        
+        glm::vec3 randomPoint(float x, float y, float z) {
+            return glm::vec3(
+                randomFloat(-x, x),
+                randomFloat(-y, y), 
+                randomFloat(-z, z)
+            );
+        }
+        
         // Easing functions
         float easeInQuad(float t) {
             return t * t;
@@ -180,4 +196,56 @@ namespace math {
             return std::sqrt(variance(values));
         }
     }
+}
+
+// ============================================================================
+// Vector Class Implementation
+// ============================================================================
+
+#include <cmath>
+
+float Vector::length() const {
+    return std::sqrt(m_x * m_x + m_y * m_y + m_z * m_z);
+}
+
+float Vector::lengthSquared() const {
+    return m_x * m_x + m_y * m_y + m_z * m_z;
+}
+
+Vector Vector::normalize() const {
+    float len = length();
+    if (len > 0.0f) {
+        return Vector(m_x / len, m_y / len, m_z / len);
+    }
+    return Vector(0, 0, 0);
+}
+
+void Vector::normalizeIP() {
+    float len = length();
+    if (len > 0.0f) {
+        m_x /= len;
+        m_y /= len;
+        m_z /= len;
+    }
+}
+
+float Vector::dot(const Vector& v) const {
+    return m_x * v.m_x + m_y * v.m_y + m_z * v.m_z;
+}
+
+Vector Vector::cross(const Vector& v) const {
+    return Vector(
+        m_y * v.m_z - m_z * v.m_y,
+        m_z * v.m_x - m_x * v.m_z,
+        m_x * v.m_y - m_y * v.m_x
+    );
+}
+
+std::ostream& operator<<(std::ostream& os, const Vector& v) {
+    os << "(" << v.m_x << ", " << v.m_y << ", " << v.m_z << ")";
+    return os;
+}
+
+Vector operator*(float scalar, const Vector& v) {
+    return v * scalar;
 }

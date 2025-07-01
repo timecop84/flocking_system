@@ -17,7 +17,7 @@ class ShaderLib;
 #include "Vector.h"
 #include "Colour.h"
 #include "TransformStack.h"
-#include "BBox.h"
+#include "modules/graphics/include/BBox.h"
 #include "BehaviorValidator.h"
 
 // must be included after our stuff because GLEW needs to be first

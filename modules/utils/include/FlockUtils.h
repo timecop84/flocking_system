@@ -13,7 +13,7 @@
 
 // Utility classes
 #include "PerformanceMonitor.h"
-#include "Random.h"
+#include "../../../modules/math/include/MathUtils.h"  // Random utilities now in math module
 
 namespace flock {
 namespace utils {

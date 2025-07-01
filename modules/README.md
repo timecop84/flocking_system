@@ -22,10 +22,11 @@ The library now uses a **direct inclusion model** with no wrapper layers:
 modules/
 ├── math/
 │   ├── include/
-│   │   ├── Vector.h         # 3D vector operations
-│   │   ├── Matrix.h         # 4x4 matrix transformations  
+│   │   ├── Vector.h         # 3D vector operations (header only)
+│   │   ├── Matrix.h         # 4x4 matrix transformations (header only)
 │   │   └── MathUtils.h      # ALL math utilities + constants + type aliases
 │   └── src/
+│       └── MathUtils.cpp    # Complete math implementation (Vector + utilities)
 ├── graphics/
 │   ├── include/
 │   │   ├── Camera.h         # 3D camera with projection/view matrices
@@ -34,33 +35,40 @@ modules/
 │   │   ├── TransformStack.h # Hierarchical transform management
 │   │   ├── Light.h          # Lighting system
 │   │   ├── ShaderLib.h      # Shader program management
-│   │   └── Graphics3D.h     # Graphics module interface
+│   │   └── BBox.h           # Axis-aligned bounding box with OpenGL drawing
 │   └── src/
+│       ├── Camera.cpp
+│       ├── Colour.cpp
+│       ├── Material.cpp
+│       ├── TransformStack.cpp
+│       ├── Light.cpp
+│       ├── ShaderLib.cpp
+│       └── BBox.cpp
 └── utils/
     ├── include/
-    │   ├── Random.h         # Modern thread-safe random generation
-    │   ├── PerformanceMonitor.h # Performance monitoring utilities
-    │   └── FlockUtils.h     # Utils module interface
+    │   └── PerformanceMonitor.h # Performance monitoring utilities
     └── src/
+        └── PerformanceMonitor.cpp
 ```
 
-```
-modules/
-├── math/          # Mathematical utilities
-├── graphics/      # Graphics and rendering utilities  
-├── utils/         # General utility classes
-└── FlockLib.h     # Main library header
-```
+
 
 ## 📦 Modules
 
 ### Math Module (`modules/math/`)
-**Unified in `MathUtils.h`**:
-- **Vector & Matrix**: 3D vector and 4x4 matrix classes  
+**Unified and Consolidated**:
+- **Vector & Matrix**: 3D vector and 4x4 matrix classes (interface in headers)
+- **Single Implementation**: All math code consolidated in `MathUtils.cpp`
 - **Type Aliases**: `math::Vec3`, `math::Mat4` for convenience
 - **Constants**: `math::PI`, `math::TWO_PI`, etc.
-- **Utilities**: `math::utils::clamp()`, `lerp()`, `distance()`, etc.
-- **All in one include**: `#include "modules/math/include/MathUtils.h"`
+- **Utilities**: `math::utils::clamp()`, `lerp()`, `distance()`, `randomVector()`, etc.
+- **All in one include**: `#include "MathUtils.h"` (via include path)
+
+**Benefits of Consolidation**:
+- Single compilation unit for all math operations
+- Reduced build complexity and faster compilation
+- Logical grouping of related functionality
+- Easier maintenance and debugging
 
 ### Graphics Module (`modules/graphics/`)
 - **Camera**: 3D camera class with perspective/orthographic projection
@@ -69,27 +77,31 @@ modules/
 - **TransformStack**: Hierarchical transformation matrix stack
 - **Light**: Lighting system with position, color, and attenuation
 - **ShaderLib**: GLSL shader program management and uniform handling
-- **Interface**: `Graphics3D.h` with `graphics3d::` namespace
+- **BBox**: Axis-aligned bounding box with OpenGL drawing and collision detection
+- **Core functionality**: Camera, color management, materials, transforms, lighting, shaders, bounding boxes
+- **Direct includes**: Individual header files for specific functionality
 
 ### Utils Module (`modules/utils/`)
 - **PerformanceMonitor**: Performance timing and profiling utilities
 - **Random**: Thread-safe modern random number generation
-- **Interface**: `FlockUtils.h` for convenient access
+- **Core functionality**: Performance monitoring utilities
+- **Direct includes**: `PerformanceMonitor.h` for performance tracking
 
 ## 🚀 Usage (Simplified)
 
 ### Recommended: Direct module includes
 ```cpp
 // Include only what you need
-#include "modules/math/include/MathUtils.h"        // All math functionality
-#include "modules/graphics/include/Graphics3D.h"   // All graphics functionality  
-#include "modules/utils/include/FlockUtils.h"      // All utility functionality
+#include "modules/math/include/MathUtils.h"        // Math utilities and random functions
+#include "modules/graphics/include/Camera.h"       // Camera functionality
+#include "modules/graphics/include/Colour.h"       // Color management
+#include "modules/utils/include/PerformanceMonitor.h" // Performance monitoring
 
 // Use simplified namespaces
 math::Vec3 position(0, 0, 0);
 math::utils::clamp(value, 0.0f, 1.0f);
-graphics3d::Camera camera;
-utils::Random::getInstance().getFloat();
+Camera camera;
+math::utils::getRandomFloat();
 ```
 
 ### Alternative: Individual includes
@@ -97,18 +109,8 @@ utils::Random::getInstance().getFloat();
 // Include specific components
 #include "modules/math/include/Vector.h"
 #include "modules/graphics/include/Camera.h"
-flock::math::Vec3 position(1.0f, 2.0f, 3.0f);
-flock::graphics::Color red(1.0f, 0.0f, 0.0f);
-```
-
-### Option 2: Include individual modules
-```cpp
-#include "modules/math/include/FlockMath.h"
-#include "modules/graphics/include/Graphics3D.h"
-
-// Use the classes directly
-Vector pos(1.0f, 2.0f, 3.0f);
-Camera cam(pos, Vector(0,0,0), Vector(0,1,0), PERSPECTIVE);
+math::Vec3 position(1.0f, 2.0f, 3.0f);
+Color red(1.0f, 0.0f, 0.0f);
 ```
 
 ### Option 3: Include specific headers
@@ -133,11 +135,15 @@ target_include_directories(your_target PRIVATE
 
 # Add source files
 target_sources(your_target PRIVATE
-    path/to/flocking_system/modules/math/src/Vector.cpp
+    path/to/flocking_system/modules/math/src/MathUtils.cpp
     path/to/flocking_system/modules/graphics/src/Camera.cpp
     path/to/flocking_system/modules/graphics/src/Colour.cpp
     path/to/flocking_system/modules/graphics/src/Material.cpp
     path/to/flocking_system/modules/graphics/src/TransformStack.cpp
+    path/to/flocking_system/modules/graphics/src/Light.cpp
+    path/to/flocking_system/modules/graphics/src/ShaderLib.cpp
+    path/to/flocking_system/modules/graphics/src/BBox.cpp
+    path/to/flocking_system/modules/utils/src/PerformanceMonitor.cpp
     # Add other .cpp files as needed
 )
 ```
@@ -149,8 +155,15 @@ INCLUDEPATH += path/to/flocking_system/modules/graphics/include
 INCLUDEPATH += path/to/flocking_system/modules/utils/include
 
 SOURCES += \
-    path/to/flocking_system/modules/math/src/Vector.cpp \
+    path/to/flocking_system/modules/math/src/MathUtils.cpp \
     path/to/flocking_system/modules/graphics/src/Camera.cpp \
+    path/to/flocking_system/modules/graphics/src/Colour.cpp \
+    path/to/flocking_system/modules/graphics/src/Material.cpp \
+    path/to/flocking_system/modules/graphics/src/TransformStack.cpp \
+    path/to/flocking_system/modules/graphics/src/Light.cpp \
+    path/to/flocking_system/modules/graphics/src/ShaderLib.cpp \
+    path/to/flocking_system/modules/graphics/src/BBox.cpp \
+    path/to/flocking_system/modules/utils/src/PerformanceMonitor.cpp \
     # ... other source files
 ```
 

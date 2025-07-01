@@ -1,7 +1,7 @@
 #include "flock.h"
 #include "Matrix.h"
 #include "ShaderLib.h"
-#include "FlockUtils.h"
+#include "MathUtils.h"
 #include "QDebug"
 #include <iostream>
 
@@ -67,14 +67,16 @@ void Flock::addBoids()
 {
     if (m_numberOfBoids <= 1990)
     {
-        auto& rng = utils::Random::instance();
         Vector dir;
-        dir = rng.randomVec3();
+        dir.m_x = math::utils::randomFloat();
+        dir.m_y = math::utils::randomFloat();
+        dir.m_z = math::utils::randomFloat();
         // add the spheres to the end of the particle list
         for(int i=0; i<10; i++)
         {
             //std::cout<<"adding boid"<<endl;
-            m_boidList.push_back(new Boid(rng.randomPoint(s_extents,s_extents,s_extents),dir));
+            glm::vec3 pos = math::utils::randomPoint(s_extents, s_extents, s_extents);
+            m_boidList.push_back(new Boid(Vector(pos.x, pos.y, pos.z), dir));
 
             ++m_numberOfBoids;
         }
@@ -98,11 +100,15 @@ void Flock::resetBoids()
 {
     m_boidList.clear();
     Vector dir;
-    auto& rng = utils::Random::instance();
     for(int i=0; i<m_numberOfBoids; ++i)
     {
-        dir = rng.randomVec3();
-        m_boidList.push_back(new Boid(rng.randomPoint(s_extents,s_extents,s_extents),dir));
+        glm::vec3 dirVec = math::utils::randomVec3();
+        dir.m_x = dirVec.x;
+        dir.m_y = dirVec.y;
+        dir.m_z = dirVec.z;
+        
+        glm::vec3 pos = math::utils::randomPoint(s_extents, s_extents, s_extents);
+        m_boidList.push_back(new Boid(Vector(pos.x, pos.y, pos.z), dir));
     }
 }
 //----------------------------------------------------------------------------------------------------------------------

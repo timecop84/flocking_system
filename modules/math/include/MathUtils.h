@@ -43,6 +43,10 @@ namespace math {
         glm::vec3 randomVector(float minLength = 0.0f, float maxLength = 1.0f);
         glm::vec3 randomUnitVector();
         
+        // Additional random utilities used by flocking system
+        glm::vec3 randomVec3();  // Random vector with components in [-1, 1]
+        glm::vec3 randomPoint(float x, float y, float z);  // Random point within bounds
+        
         // Easing functions
         float easeInQuad(float t);
         float easeOutQuad(float t);

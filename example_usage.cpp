@@ -7,8 +7,14 @@
 
 // Include individual modules directly (recommended approach)
 #include "modules/math/include/MathUtils.h"
-#include "modules/graphics/include/Graphics3D.h"
-#include "modules/utils/include/FlockUtils.h"
+#include "modules/graphics/include/Camera.h"
+#include "modules/graphics/include/Colour.h"
+#include "modules/graphics/include/Material.h"
+#include "modules/graphics/include/TransformStack.h"
+#include "modules/graphics/include/Light.h"
+#include "modules/graphics/include/ShaderLib.h"
+#include "modules/graphics/include/BBox.h"
+#include "modules/utils/include/PerformanceMonitor.h"
 
 #include <iostream>
 #include <vector>
@@ -44,8 +50,8 @@ int main() {
     std::cout << "\n=== Graphics Module Demo ===" << std::endl;
     
     // Using the Color class
-    graphics3d::Color red(1.0f, 0.0f, 0.0f, 1.0f);
-    graphics3d::Color blue(0.0f, 0.0f, 1.0f, 1.0f);
+    Color red(1.0f, 0.0f, 0.0f, 1.0f);
+    Color blue(0.0f, 0.0f, 1.0f, 1.0f);
     
     std::cout << "Red color: R=" << red.m_r << " G=" << red.m_g << " B=" << red.m_b << std::endl;
     std::cout << "Blue color: R=" << blue.m_r << " G=" << blue.m_g << " B=" << blue.m_b << std::endl;

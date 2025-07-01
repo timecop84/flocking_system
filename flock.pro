@@ -23,9 +23,7 @@ SOURCES += \
     src/flock.cpp \
     src/obstacle.cpp \
     src/Behaviours.cpp \
-    src/BBox.cpp \
     src/BehaviorValidator.cpp \
-    modules/math/src/Vector.cpp \
     modules/math/src/MathUtils.cpp \
     modules/graphics/src/Camera.cpp \
     modules/graphics/src/TransformStack.cpp \
@@ -33,7 +31,7 @@ SOURCES += \
     modules/graphics/src/Material.cpp \
     modules/graphics/src/Light.cpp \
     modules/graphics/src/ShaderLib.cpp \
-    modules/utils/src/Random.cpp
+    modules/graphics/src/BBox.cpp
 
 HEADERS += \
     include/mainwindow.h \
@@ -42,7 +40,6 @@ HEADERS += \
     include/flock.h \
     include/obstacle.h \
     include/Behaviours.h \
-    include/BBox.h \
     include/FlockTypes.h \
     include/ModernExample.h \
     include/BehaviorValidator.h \
@@ -55,10 +52,9 @@ HEADERS += \
     modules/graphics/include/Material.h \
     modules/graphics/include/Light.h \
     modules/graphics/include/ShaderLib.h \
-    modules/graphics/include/Graphics3D.h \
-    modules/utils/include/PerformanceMonitor.h \
-    modules/utils/include/FlockUtils.h \
-    modules/utils/include/Random.h
+    modules/graphics/include/BBox.h \
+
+    modules/utils/include/PerformanceMonitor.h
 
 FORMS += \
     ui/mainwindow.ui

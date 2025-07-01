@@ -1,84 +1,59 @@
-#version 150
+#version 330 core
 
-/// @brief[in] the vertex normal
 in vec3 fragmentNormal;
-/// @brief our output fragment colour
-out vec4 fragColour;
-
-/// @brief material structure
-struct Materials
-{
-  vec4 ambient;
-  vec4 diffuse;
-  vec4 specular;
-  float shininess;
-};
-
-// @brief light structure
-struct Lights
-{
-  vec4 position;
-  vec4 ambient;
-  vec4 diffuse;
-  vec4 specular;
-  float constantAttenuation;
-  float linearAttenuation;
-  float quadraticAttenuation;
-  float spotCosCutoff;
-
-};
-// @param material passed from our program
-uniform Materials material;
-
-uniform Lights light;
 in vec3 lightDir;
-// out the blinn half vector
 in vec3 halfVector;
 in vec3 eyeDirection;
 in vec3 vPosition;
 
+out vec4 fragColour;
 
-/// @brief a function to compute point light values
-/// @param[in] _light the number of the current light
+struct Materials {
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+    float shininess;
+};
 
-vec4 pointLight()
-{
-  vec3 N = normalize(fragmentNormal);
-  vec3 halfV;
-  float ndothv;
-  float attenuation;
-  vec3 E = normalize(eyeDirection);
-  vec3 L = normalize(lightDir);
-  float lambertTerm = dot(N,L);
-  vec4 diffuse=vec4(0);
-  vec4 ambient=vec4(0);
-  vec4 specular=vec4(0);
-  if (lambertTerm > 0.0)
-  {
-  float d;            // distance from surface to light position
-  vec3 VP;            // direction from surface to light position
+struct Lights {
+    vec4 position;
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+    float constantAttenuation;
+    float linearAttenuation;
+    float quadraticAttenuation;
+    float spotCosCutoff;
+};
 
-  // Compute vector from surface to light position
-  VP = vec3 (light.position) - vPosition;
+uniform Materials material;
+uniform Lights light;
 
-  // Compute distance between surface and light position
-    d = length (VP);
-
-
-    diffuse+=material.diffuse*light.diffuse*lambertTerm;
-    ambient+=material.ambient*light.ambient;
-    halfV = normalize(halfVector);
-    ndothv = max(dot(N, halfV), 0.0);
-    specular+=material.specular*light.specular*pow(ndothv, material.shininess);
-  }
-return ambient + diffuse + specular;
+vec4 pointLight() {
+    vec3 N = normalize(fragmentNormal);
+    vec3 L = normalize(lightDir);
+    vec3 E = normalize(eyeDirection);
+    vec3 H = normalize(halfVector);
+    
+    float distance = length(light.position.xyz - vPosition);
+    float attenuation = 1.0 / (light.constantAttenuation + 
+                              light.linearAttenuation * distance + 
+                              light.quadraticAttenuation * distance * distance);
+    
+    vec4 ambient = light.ambient * material.ambient;
+    
+    float NdotL = max(dot(N, L), 0.0);
+    vec4 diffuse = light.diffuse * material.diffuse * NdotL;
+    
+    vec4 specular = vec4(0.0);
+    if (NdotL > 0.0) {
+        float NdotH = max(dot(N, H), 0.0);
+        specular = light.specular * material.specular * pow(NdotH, material.shininess);
+    }
+    
+    return ambient + attenuation * (diffuse + specular);
 }
 
-
-
-void main ()
-{
-
-fragColour=pointLight();
+void main() {
+    fragColour = pointLight();
 }
-

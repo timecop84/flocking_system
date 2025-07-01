@@ -1,6 +1,7 @@
-#include "BBox.h"
+#include "../include/BBox.h"
 #include <iostream>
 #include <GL/gl.h>
+#include <vector>
 
 BBox::BBox() 
     : m_center(0, 0, 0), m_width(1), m_height(1), m_depth(1) {
