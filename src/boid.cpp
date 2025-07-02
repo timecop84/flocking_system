@@ -38,7 +38,7 @@ void Boid::loadMatricesToShader(
     Mat3x3 normalMatrix;
     Matrix M;
     M=_tx.getCurrentTransform();
-    MV=_tx.getCurrAndGlobal().getMatrix()*_cam->getViewMatrix() ;
+    MV=_tx.getCurrAndGlobal().getGLMMat4()*_cam->getViewMatrix() ;
     MVP=MV*_cam->getProjectionMatrix();
     normalMatrix=MV;
     normalMatrix.inverse();

@@ -17,14 +17,23 @@ layout(std140, binding = 0) uniform MatrixBlock {
     float shouldNormalize;
 };
 
-// Uniform Buffer for lighting (binding point 3)
+// Material properties UBO (binding point 1)
+layout(std140, binding = 1) uniform MaterialBlock {
+    vec4 ambient;    // Ambient material color
+    vec4 diffuse;    // Diffuse material color
+    vec4 specular;   // Specular material color
+    float shininess; // Material shininess
+    float padding[3]; // Padding for alignment
+};
+
+// Lighting properties UBO (binding point 3)
 layout(std140, binding = 3) uniform LightingBlock {
     vec3 lightPos;   // Light position in world space
     float pad1;      // Padding
     vec3 viewPos;    // Camera position (redundant with viewerPos above)
     float pad2;      // Padding
     vec3 lightColor; // Light color
-    float shininess; // Material shininess
+    float lightShininess; // Light-specific shininess (unused, use material.shininess)
 };
 
 void main()
@@ -32,22 +41,28 @@ void main()
     // Use viewerPos from the MatrixBlock (more reliable)
     vec3 viewerPosition = viewerPos;
     
-    // Ambient component
-    vec3 ambient = 0.2 * lightColor;  // Increased ambient for better visibility
-
-    // Diffuse component
-    vec3 norm = normalize(Normal);     // Normalize again to be safe
-    vec3 lightDir = normalize(lightPos - FragPos);  // Direction to light
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor;
-
-    // Specular component (Blinn-Phong for better highlights)
+    // Make sure we have a normalized normal vector
+    vec3 norm = normalize(Normal);
+    
+    // Calculate view and light directions
     vec3 viewDir = normalize(viewerPosition - FragPos);
+    vec3 lightDir = normalize(lightPos - FragPos);
+    
+    // Ambient component - use material ambient color
+    vec3 ambientColor = ambient.rgb * lightColor * 0.2;
+    
+    // Diffuse component - use material diffuse color
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuseColor = diffuse.rgb * lightColor * diff;
+    
+    // Specular component (Blinn-Phong for smoother highlights)
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfwayDir), 0.0), shininess);
-    vec3 specular = spec * lightColor;
-
-    // Final combined color
-    vec3 result = ambient + diffuse + specular;
-    FragColor = vec4(result, 1.0);
+    vec3 specularColor = specular.rgb * lightColor * spec;
+    
+    // Final combined color with proper material properties
+    vec3 result = ambientColor + diffuseColor + specularColor;
+    
+    // Output with material alpha
+    FragColor = vec4(result, diffuse.a);
 }

@@ -10,8 +10,6 @@
 //----------------------------------------------------------------------------------------------------------------------
 class Matrix {
 public:
-    glm::mat4 m_matrix;
-    
     Matrix() : m_matrix(1.0f) {}
     Matrix(const glm::mat4& mat) : m_matrix(mat) {}
     
@@ -32,7 +30,12 @@ public:
     glm::vec4 operator*(const glm::vec4& vec) const { return m_matrix * vec; }
     
     // Access to underlying matrix
-    glm::mat4 getMatrix() const { return m_matrix; }
+    glm::mat4 getGLMMat4() const { return m_matrix; }
+    glm::mat4& getMatrix() { return m_matrix; }
+    // Expose matrix for direct access by Mat3x3 and other friends
+    friend class Mat3x3;
+protected:
+    glm::mat4 m_matrix;
 };
 
 // Keep Mat3x3 as typedef for now
