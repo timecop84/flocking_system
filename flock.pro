@@ -22,6 +22,7 @@ SOURCES += \
     src/boid.cpp \
     src/flock.cpp \
     src/obstacle.cpp \
+    src/SphereGeometry.cpp \
     src/Behaviours.cpp \
     src/BehaviorValidator.cpp \
     modules/math/src/MathUtils.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     include/boid.h \
     include/flock.h \
     include/obstacle.h \
+    include/SphereGeometry.h \
     include/Behaviours.h \
     include/FlockTypes.h \
     include/ModernExample.h \

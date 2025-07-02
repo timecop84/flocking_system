@@ -197,7 +197,7 @@ echo %BLUE%  - Locating executable...%NC%
 
 REM Try multiple possible locations for the executable
 set "FOUND_EXE="
-for %%d in ("%BIN_DIR%" "%RELEASE_DIR%" "debug" ".") do (
+for %%d in ("%BIN_DIR%" "%RELEASE_DIR%" "release\\bin" "debug" ".") do (
     if exist "%%~d\%EXECUTABLE_NAME%" (
         set "FOUND_EXE=%%~d\%EXECUTABLE_NAME%"
         goto :found_exe
@@ -205,7 +205,7 @@ for %%d in ("%BIN_DIR%" "%RELEASE_DIR%" "debug" ".") do (
 )
 
 echo %RED%  ✗ Executable not found%NC%
-echo %YELLOW%    Tried locations: %BIN_DIR%\, %RELEASE_DIR%\, debug\, .\%NC%
+echo %YELLOW%    Tried locations: %BIN_DIR%\, %RELEASE_DIR%\, release\build\, release\bin\, debug\, .\%NC%
 echo %YELLOW%    Please build the project first using 'build.bat build'%NC%
 exit /b 1
 

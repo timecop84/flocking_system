@@ -7,7 +7,9 @@
 #include "TransformStack.h"
 // Modern includes for gradual migration
 #include "FlockTypes.h"
+#include "SphereGeometry.h"
 #include <string>
+#include <memory>
 #include <GL/gl.h>
 
 /*! \brief The obstacle class */
@@ -30,8 +32,11 @@ public:
     Obstacle(Vector spherePosition,
              float sphereRadius
              );
+    
+    /// @ destructor
+    ~Obstacle();
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief drawing the VBO obstacle
+    /// @brief drawing the modern VBO-based obstacle using UBO shaders
     /// @param [in] _shaderName value
     /// @param [in] _transformStack  values
     /// @param [in] _cam camera values
@@ -39,6 +44,16 @@ public:
                  TransformStack &_transformStack,
                  Camera *_cam
                  )const ;
+    
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief drawing the obstacle using immediate mode (legacy)
+    /// @param [in] _shaderName value
+    /// @param [in] _transformStack  values
+    /// @param [in] _cam camera values
+    void ObsDrawImmediate(const std::string &_shaderName,
+                          TransformStack &_transformStack,
+                          Camera *_cam
+                          )const ;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief load our matrices to shader
     /// @param [in] transformationStack valus
@@ -121,6 +136,9 @@ private:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the color value
     Colour m_colour;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Sphere geometry for modern VBO/VAO rendering
+    mutable std::unique_ptr<FlockingGeometry::SphereGeometry> m_sphereGeometry;
     //----------------------------------------------------------------------------------------------------------------------
 
 };

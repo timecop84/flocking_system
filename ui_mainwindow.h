@@ -245,20 +245,21 @@ public:
         m_obstaclePosX = new QDoubleSpinBox(groupBox_3);
         m_obstaclePosX->setObjectName("m_obstaclePosX");
         m_obstaclePosX->setMinimum(-99.000000000000000);
-        m_obstaclePosX->setValue(12.000000000000000);
+        m_obstaclePosX->setValue(0.000000000000000);
 
         gridLayout_3->addWidget(m_obstaclePosX, 1, 1, 1, 1);
 
         m_obstaclePosY = new QDoubleSpinBox(groupBox_3);
         m_obstaclePosY->setObjectName("m_obstaclePosY");
         m_obstaclePosY->setMinimum(-99.000000000000000);
-        m_obstaclePosY->setValue(30.000000000000000);
+        m_obstaclePosY->setValue(0.000000000000000);
 
         gridLayout_3->addWidget(m_obstaclePosY, 1, 2, 1, 1);
 
         m_obstaclePosZ = new QDoubleSpinBox(groupBox_3);
         m_obstaclePosZ->setObjectName("m_obstaclePosZ");
         m_obstaclePosZ->setMinimum(-99.000000000000000);
+        m_obstaclePosZ->setValue(0.000000000000000);
 
         gridLayout_3->addWidget(m_obstaclePosZ, 1, 3, 1, 1);
 

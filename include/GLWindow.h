@@ -14,11 +14,14 @@ class ShaderLib;
 
 #include "Camera.h"
 #include "Light.h"
+#include "Material.h"
 #include "Vector.h"
 #include "Colour.h"
 #include "TransformStack.h"
 #include "modules/graphics/include/BBox.h"
 #include "BehaviorValidator.h"
+// UBO support
+#include "../modules/graphics/include/UBOStructures.h"
 
 // must be included after our stuff because GLEW needs to be first
 #include <QTime>
@@ -179,6 +182,19 @@ private :
     /// @brief performance monitor for comparing legacy vs modern algorithms
     //----------------------------------------------------------------------------------------------------------------------
     flock::PerformanceMonitor m_performanceMonitor;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief UBO data structures for modern shader pipeline
+    //----------------------------------------------------------------------------------------------------------------------
+    FlockingShaders::MatrixBlock m_matrixData;
+    FlockingShaders::MaterialBlock m_materialData;
+    FlockingShaders::LightBlock m_lightData;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief UBO update helper methods
+    //----------------------------------------------------------------------------------------------------------------------
+    void initializeUBOs();
+    void updateMatrixUBO(const TransformStack& transformStack);
+    void updateMaterialUBO(const Material& material);
+    void updateLightUBO();
 
 protected:
 

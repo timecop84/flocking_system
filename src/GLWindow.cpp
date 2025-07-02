@@ -11,8 +11,8 @@
 #include "../modules/graphics/include/TransformStack.h"
 #include "../modules/graphics/include/Light.h"
 #include "../modules/graphics/include/ShaderLib.h"
+#include "../modules/graphics/include/UBOStructures.h"
 #include "PerformanceMonitor.h"
-#include "../modules/graphics/include/BBox.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -48,7 +48,7 @@ GLWindow::GLWindow(
     format.setSamples(4); // 4x MSAA
     setFormat(format);
     
-    obstacle = new Obstacle(Vector(12,30,0), 4.0);
+    obstacle = new Obstacle(Vector(50,0,0), 15.0);  // Move the obstacle far to the right for clear testing
 
     // set this widget to have the initial keyboard focus
     setFocus();
@@ -247,11 +247,15 @@ void GLWindow::initializeGL()
     m_shader->linkProgramObject("Phong");
     // and make it active ready to load values
     (*m_shader)["Phong"]->use();
-
+    
+    // Bind uniform blocks to binding points for UBO compatibility
+    m_shader->bindUniformBlockToBindingPoint("Phong", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("Phong", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("Phong", "LightBlock", FlockingShaders::LIGHT_BINDING_POINT);
+    
     // the shader will use the currently active material and light0 so set them
     Material m(GOLD);
-    // load our material values to the shader into the structure material (see Vertex shader)
-    m.loadToShader("material");
+    
     // Now we will create a basic Camera from the graphics library
     // Create camera using orbital controls
     Vector From(200,120,120);  // Initial position (will be updated by orbital controls)
@@ -266,7 +270,6 @@ void GLWindow::initializeGL()
     // Initialize camera position using orbital controls
     updateCameraPosition();
     
-    m_shader->setShaderParam3f("viewerPos",m_cam->getEye().x,m_cam->getEye().y,m_cam->getEye().z);
     // now create our light this is done after the camera so we can pass the
     // transpose of the projection matrix to the light to do correct eye space
     // transformations
@@ -274,8 +277,13 @@ void GLWindow::initializeGL()
     iv.transpose();
     m_light = new Light(Vector(120,120,120,1),Colour(1,1,1,1),Colour(1,1,1,1),POINTLIGHT);
     m_light->setTransform(iv);
-    // load these values to the shader as well
-    m_light->loadToShader("light");
+    
+    // Initialize UBOs for modern shader pipeline
+    initializeUBOs();
+    
+    // Load initial material and light data to UBOs
+    updateMaterialUBO(m);
+    updateLightUBO();
     m_shader->createShaderProgram("Colour");
 
     m_shader->attachShader("ColourVertex",VERTEX);
@@ -291,9 +299,14 @@ void GLWindow::initializeGL()
     m_shader->bindAttribute("Colour",0,"inVert");
 
     m_shader->linkProgramObject("Colour");
+    
+    // Bind UBO blocks to the Colour shader (same as Phong shader)
+    m_shader->bindUniformBlockToBindingPoint("Colour", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    
     (*m_shader)["Colour"]->use();
     m_shader->setShaderParam4f("Colour",1,1,1,1);
     glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
+    
     // Initialize sphere primitive for boid rendering
     std::cout << "Initializing sphere primitive for boid rendering" << std::endl;
     bbox = new BBox(Vector(0,0,0),120,120,120);
@@ -341,42 +354,19 @@ void GLWindow::loadMatricesToShader(
         TransformStack &_tx
         )
 {
-    ShaderLib *shader=ShaderLib::instance();
-
-    Matrix MV;
-    Matrix MVP;
-    Mat3x3 normalMatrix;
-    Matrix M;
-    M=_tx.getCurrAndGlobal().getMatrix();
-    MV=  _tx.getCurrAndGlobal().getMatrix()*m_cam->getViewMatrix();
-    MVP= M*m_cam->getVPMatrix(); //MV*m_cam->getProjectionMatrix();
-    normalMatrix=MV;
-    normalMatrix.inverse();
-    //  shader->setShaderParamFromMatrix("MV",MV);
-    shader->setShaderParamFromMatrix("MVP",MVP);
-    //  shader->setShaderParamFromMat3x3("normalMatrix",normalMatrix);
-    //  shader->setShaderParamFromMatrix("M",M);
+    // Use UBO-based approach for modern shader pipeline
+    updateMatrixUBO(_tx);
 }
 void GLWindow::loadMatricesToColourShader(
         TransformStack &_tx
         )
 
 {
+    // Use UBO-based approach for modern shader pipeline
+    updateMatrixUBO(_tx);
+    
     ShaderLib *shader=ShaderLib::instance();
     (*shader)["Colour"]->use();
-    Matrix MV;
-    Matrix MVP;
-    Matrix M;
-    Mat3x3 normalMatrix;
-    normalMatrix=MV;
-    normalMatrix.inverse();
-
-    MV= _tx.getCurrAndGlobal().getMatrix()*m_cam->getViewMatrix() ;
-    MVP=MV*m_cam->getProjectionMatrix();
-    shader->setShaderParamFromMatrix("MVP",MVP);
-    shader->setShaderParamFromMatrix("M",M);
-
-
 }
 //----------------------------------------------------------------------------------------------------------------------
 //This virtual function is called whenever the widget needs to be painted.
@@ -399,8 +389,11 @@ void GLWindow::paintGL()
     // clear the screen and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    // Enable depth testing
+    // Enable depth testing and face culling for proper 3D rendering
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
 
     // Use the NGL-style camera and transform stack for consistent rendering
     // Set up the view matrix for the camera
@@ -482,15 +475,85 @@ void GLWindow::paintGL()
         std::cout << "Drawing flock" << std::endl;
     }
     if (flock) {
+        // Update UBO matrices before drawing flock
+        updateMatrixUBO(m_transformStack);
         flock->draw("Phong", m_transformStack, m_cam);
     }
 
-    // Draw the obstacle with Phong shader
+    // Draw the obstacle with modern UBO-based Phong shader
     if (obstacle && frame_count % 60 == 1) {
-        std::cout << "Drawing obstacle" << std::endl;
+        std::cout << "Drawing obstacle using modern UBO pipeline" << std::endl;
+        flock::Vec3 obstaclePos = obstacle->getPositionModern();
+        std::cout << "Obstacle position: (" << obstaclePos.x << ", " << obstaclePos.y << ", " << obstaclePos.z << ")" << std::endl;
+        std::cout << "Obstacle radius: " << obstacle->getRadiusModern() << std::endl;
     }
     if (obstacle) {
-        obstacle->ObsDraw("Phong", m_transformStack, m_cam);
+        // Push a new transform level for the obstacle
+        m_transformStack.pushTransform();
+        {
+            // Set up the obstacle's transform (translate to obstacle position)
+            flock::Vec3 obstaclePos = obstacle->getPositionModern();
+            Matrix obstacleTransform;
+            obstacleTransform.identity();
+            
+            // Debug: Check the matrix after identity (GLM uses column-major storage)
+            std::cout << "After identity [3,0]: " << obstacleTransform.m_matrix[3][0] 
+                      << ", [3,1]: " << obstacleTransform.m_matrix[3][1] 
+                      << ", [3,2]: " << obstacleTransform.m_matrix[3][2] << std::endl;
+            
+            // Add debugging for translate operation
+            std::cout << "About to translate by (" << obstaclePos.x << ", " << obstaclePos.y << ", " << obstaclePos.z << ")" << std::endl;
+            obstacleTransform.translate(obstaclePos.x, obstaclePos.y, obstaclePos.z);
+            
+            // Debug: Check the matrix we're creating (GLM uses column-major storage)
+            std::cout << "Created obstacleTransform [3,0]: " << obstacleTransform.m_matrix[3][0] 
+                      << ", [3,1]: " << obstacleTransform.m_matrix[3][1] 
+                      << ", [3,2]: " << obstacleTransform.m_matrix[3][2] << std::endl;
+            
+            // Debug: Check the transform stack before setting model (GLM uses column-major storage)
+            glm::mat4 beforeSet = m_transformStack.getCurrentTransform();
+            std::cout << "Transform stack before setModel [3,0]: " << beforeSet[3][0] 
+                      << ", [3,1]: " << beforeSet[3][1] 
+                      << ", [3,2]: " << beforeSet[3][2] << std::endl;
+            
+            m_transformStack.setModel(obstacleTransform.m_matrix);
+            
+            // Debug: Check the transform stack after setting model (GLM uses column-major storage)
+            glm::mat4 afterSet = m_transformStack.getCurrentTransform();
+            std::cout << "Transform stack after setModel [3,0]: " << afterSet[3][0] 
+                      << ", [3,1]: " << afterSet[3][1] 
+                      << ", [3,2]: " << afterSet[3][2] << std::endl;
+            
+            // Update UBO matrices with obstacle transform
+            updateMatrixUBO(m_transformStack);
+            
+            // Set up obstacle material with balanced properties for smooth standard Phong lighting
+            Material obstacleMaterial;
+            flock::Color obstacleColor = obstacle->getColorModern();
+            
+            // Enhanced material properties for better specular visibility
+            obstacleMaterial.setAmbient(Colour(0.3f, 0.25f, 0.2f, 1.0f));  // Moderate ambient
+            obstacleMaterial.setDiffuse(Colour(0.6f, 0.4f, 0.2f, 1.0f));   // Warm diffuse color
+            obstacleMaterial.setSpecular(Colour(1.0f, 0.9f, 0.8f, 1.0f));  // Bright specular for visibility
+            obstacleMaterial.setShininess(8.0f);  // Low shininess for broad, visible highlights
+            
+            // Debug output for material values
+            static int materialDebugCounter = 0;
+            if (materialDebugCounter++ % 120 == 0) {
+                std::cout << "Obstacle material - Ambient: (0.2, 0.2, 0.2), Diffuse: (0.8, 0.6, 0.4), Specular: (0.5, 0.5, 0.5), Shininess: 32.0" << std::endl;
+            }
+            
+            updateMaterialUBO(obstacleMaterial);
+            
+            // Use the Phong shader for obstacle rendering
+            m_shader->use("Phong");
+            
+            // Render the obstacle using modern VBO/VAO approach
+            obstacle->ObsDraw("Phong", m_transformStack, m_cam);
+            
+            // Note: No explicit shader unuse needed as next render call will use a different shader or disable shaders
+        }
+        m_transformStack.popTransform();
     }
 }
 
@@ -749,5 +812,123 @@ void GLWindow::validateBehaviorDifferences()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+/// @brief Initialize UBOs for modern shader pipeline
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::initializeUBOs()
+{
+    std::cout << "Initializing UBOs for modern shader pipeline..." << std::endl;
+    
+    // Create UBOs for matrix, material, and light data
+    m_shader->createUBO("MatrixUBO", sizeof(FlockingShaders::MatrixBlock));
+    m_shader->createUBO("MaterialUBO", sizeof(FlockingShaders::MaterialBlock));
+    m_shader->createUBO("LightUBO", sizeof(FlockingShaders::LightBlock));
+    
+    // Bind UBOs to their respective binding points
+    m_shader->bindUBOToBindingPoint("MatrixUBO", FlockingShaders::MATRIX_BINDING_POINT);
+    m_shader->bindUBOToBindingPoint("MaterialUBO", FlockingShaders::MATERIAL_BINDING_POINT);
+    m_shader->bindUBOToBindingPoint("LightUBO", FlockingShaders::LIGHT_BINDING_POINT);
+    
+    std::cout << "UBOs initialized successfully" << std::endl;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// @brief Update matrix UBO with current transform data
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateMatrixUBO(const TransformStack& transformStack)
+{
+    // Get matrices from transform stack
+    Matrix M = transformStack.getCurrAndGlobal();
+    
+    // Debug: check what we're getting from the transform stack (only occasionally to avoid spam)
+    static int transformDebugCounter = 0;
+    if (transformDebugCounter++ % 120 == 0) {
+        glm::mat4 current = transformStack.getCurrentTransform();
+        std::cout << "Current transform [3,0]: " << current[3][0] << ", [3,1]: " << current[3][1] << ", [3,2]: " << current[3][2] << std::endl;
+        std::cout << "Final M matrix [3,0]: " << M.m_matrix[3][0] << ", [3,1]: " << M.m_matrix[3][1] << ", [3,2]: " << M.m_matrix[3][2] << std::endl;
+    }
+    
+    Matrix MV = M * m_cam->getViewMatrix();
+    Matrix MVP = M * m_cam->getVPMatrix();
+    
+    // Convert to GLM matrices
+    m_matrixData.M = M.m_matrix;
+    m_matrixData.MV = MV.m_matrix;
+    m_matrixData.MVP = MVP.m_matrix;
+    
+    // Calculate normal matrix (transpose of inverse of M, not MV)
+    // This keeps normals in world space for consistent lighting
+    glm::mat3 normalMat = glm::transpose(glm::inverse(glm::mat3(M.m_matrix)));
+    m_matrixData.normalMatrix = normalMat;
+    
+    // Set viewer position and normalize flag
+    Vector eyePos = m_cam->getEye();
+    m_matrixData.viewerPos = glm::vec3(eyePos.m_x, eyePos.m_y, eyePos.m_z);
+    m_matrixData.shouldNormalize = 1.0f; // Enable normal normalization
+    
+    // Debug output for matrices (only occasionally to avoid spam)
+    static int debugCounter = 0;
+    if (debugCounter++ % 120 == 0) {
+        std::cout << "=== Matrix Debug ===" << std::endl;
+        std::cout << "Camera position: (" << eyePos.m_x << ", " << eyePos.m_y << ", " << eyePos.m_z << ")" << std::endl;
+        std::cout << "Model matrix [3,0]: " << M.m_matrix[3][0] << ", [3,1]: " << M.m_matrix[3][1] << ", [3,2]: " << M.m_matrix[3][2] << std::endl;
+        std::cout << "===================" << std::endl;
+    }
+    
+    // Update the UBO
+    m_shader->updateUBO("MatrixUBO", &m_matrixData, sizeof(FlockingShaders::MatrixBlock));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// @brief Update material UBO with material properties
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateMaterialUBO(const Material& material)
+{
+    // Convert NGL Material to UBO format
+    Colour ambient = material.getAmbient();
+    Colour diffuse = material.getDiffuse();
+    Colour specular = material.getSpecular();
+    
+    m_materialData.ambient = glm::vec4(ambient.m_r, ambient.m_g, ambient.m_b, ambient.m_a);
+    m_materialData.diffuse = glm::vec4(diffuse.m_r, diffuse.m_g, diffuse.m_b, diffuse.m_a);
+    m_materialData.specular = glm::vec4(specular.m_r, specular.m_g, specular.m_b, specular.m_a);
+    m_materialData.shininess = material.getShininess();
+    
+    // Update the UBO
+    m_shader->updateUBO("MaterialUBO", &m_materialData, sizeof(FlockingShaders::MaterialBlock));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// @brief Update light UBO with light properties
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateLightUBO()
+{
+    if (m_light) {
+        // Convert NGL Light to UBO format
+        glm::vec3 lightPos = m_light->getPosition();
+        glm::vec3 lightColor = m_light->getColor();
+        
+        // Debug output for light position
+        static int lightDebugCounter = 0;
+        if (lightDebugCounter++ % 120 == 0) { // Print every 2 seconds at 60fps
+            std::cout << "Light position (world): (" << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << ")" << std::endl;
+            std::cout << "Light color: (" << lightColor.x << ", " << lightColor.y << ", " << lightColor.z << ")" << std::endl;
+        }
+        
+        m_lightData.position = glm::vec4(lightPos, 1.0f); // Keep light in world space
+        // Enhanced lighting components for smoother appearance
+        m_lightData.ambient = glm::vec4(lightColor * 0.5f, 1.0f);  // Moderate ambient for smooth gradient support
+        m_lightData.diffuse = glm::vec4(lightColor, 1.0f);         // Full diffuse
+        m_lightData.specular = glm::vec4(lightColor * 2.0f, 1.0f); // High specular light for visible highlights
+        
+        // Set attenuation values
+        m_lightData.constantAttenuation = m_light->getConstantAttenuation();
+        m_lightData.linearAttenuation = m_light->getLinearAttenuation();
+        m_lightData.quadraticAttenuation = m_light->getQuadraticAttenuation();
+        m_lightData.spotCosCutoff = -1.0f; // No spotlight (directional/point light)
+        
+        // Update the UBO
+        m_shader->updateUBO("LightUBO", &m_lightData, sizeof(FlockingShaders::LightBlock));
+    }
+}
 
 

@@ -1,24 +1,31 @@
 #version 330 core
 
+// Input attributes
 layout(location = 0) in vec3 inVert;
 layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec3 inNormal;
 
-uniform mat4 MVP;
-uniform mat4 MV;
-uniform mat4 M;
-uniform mat3 normalMatrix;
-uniform vec3 viewerPos;
-uniform bool Normalize;
+// UBO for transformation matrices
+layout(std140) uniform MatrixBlock {
+    mat4 MVP;
+    mat4 MV;
+    mat4 M;
+    mat3 normalMatrix;
+    vec3 viewerPos;
+    float shouldNormalize;
+};
 
-struct Materials {
+// UBO for material properties
+layout(std140) uniform MaterialBlock {
     vec4 ambient;
     vec4 diffuse;
     vec4 specular;
     float shininess;
-};
+    float padding[3];   // Padding for alignment
+} material;
 
-struct Lights {
+// UBO for lighting properties
+layout(std140) uniform LightBlock {
     vec4 position;
     vec4 ambient;
     vec4 diffuse;
@@ -27,31 +34,20 @@ struct Lights {
     float linearAttenuation;
     float quadraticAttenuation;
     float spotCosCutoff;
-};
+} light;
 
-uniform Materials material;
-uniform Lights light;
-
-out vec3 fragmentNormal;
-out vec3 lightDir;
-out vec3 halfVector;
-out vec3 eyeDirection;
-out vec3 vPosition;
+// Output to fragment shader
+out vec3 FragPos;
+out vec3 Normal;
 
 void main() {
+    // Calculate world position
+    FragPos = vec3(M * vec4(inVert, 1.0));
+    
+    // Transform normal to world space using the normal matrix
+    // This is the correct way to handle normals for transformed geometry
+    Normal = normalMatrix * inNormal;
+    
+    // Calculate final position
     gl_Position = MVP * vec4(inVert, 1.0);
-    
-    fragmentNormal = normalMatrix * inNormal;
-    if (Normalize) {
-        fragmentNormal = normalize(fragmentNormal);
-    }
-    
-    vec4 worldPosition = M * vec4(inVert, 1.0);
-    eyeDirection = normalize(viewerPos - worldPosition.xyz);
-    
-    vec4 eyePosition = MV * vec4(inVert, 1.0);
-    vPosition = eyePosition.xyz / eyePosition.w;
-    
-    lightDir = normalize(light.position.xyz - eyePosition.xyz);
-    halfVector = normalize(eyeDirection + lightDir);
 }

@@ -56,6 +56,7 @@ void Boid::draw(
         )const
 {
     // Use immediate mode OpenGL with lighting for better visual appearance
+    // Note: Shader programs should be disabled before calling this function
     
     glPushMatrix();
     {

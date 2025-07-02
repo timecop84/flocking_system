@@ -8,6 +8,27 @@
 #include <QFile>
 #include <QTextStream>
 #include <glm/gtc/type_ptr.hpp>
+#include "../../../include/glew_compat.h" // For OpenGL 3.0+ functions
+
+// Define global function pointers for UBO functions
+PFNGLBINDBUFFERBASEPROC glBindBufferBase = nullptr;
+PFNGLGETUNIFORMBLOCKINDEXPROC glGetUniformBlockIndex = nullptr;
+PFNGLUNIFORMBLOCKBINDINGPROC glUniformBlockBinding = nullptr;
+
+// Define global function pointers for VAO functions
+PFNGLGENVERTEXARRAYSPROC glGenVertexArrays = nullptr;
+PFNGLBINDVERTEXARRAYPROC glBindVertexArray = nullptr;
+PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays = nullptr;
+
+// Define global function pointers for VBO functions
+PFNGLGENBUFFERSPROC glGenBuffers = nullptr;
+PFNGLBINDBUFFERPROC glBindBuffer = nullptr;
+PFNGLBUFFERDATAPROC glBufferData = nullptr;
+PFNGLDELETEBUFFERSPROC glDeleteBuffers = nullptr;
+
+// Define global function pointers for vertex attribute functions
+PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer = nullptr;
+PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray = nullptr;
 
 ShaderLib* ShaderLib::s_instance = nullptr;
 
@@ -20,6 +41,17 @@ ShaderLib* ShaderLib::instance() {
             s_instance->m_gl = context->functions();
             if (!s_instance->m_gl) {
                 std::cerr << "Failed to get OpenGL functions from Qt context" << std::endl;
+            } else {
+                // Initialize UBO function pointers
+                glBindBufferBase = (PFNGLBINDBUFFERBASEPROC)context->getProcAddress("glBindBufferBase");
+                glGetUniformBlockIndex = (PFNGLGETUNIFORMBLOCKINDEXPROC)context->getProcAddress("glGetUniformBlockIndex");
+                glUniformBlockBinding = (PFNGLUNIFORMBLOCKBINDINGPROC)context->getProcAddress("glUniformBlockBinding");
+                
+                if (!glBindBufferBase || !glGetUniformBlockIndex || !glUniformBlockBinding) {
+                    std::cerr << "Failed to initialize UBO function pointers" << std::endl;
+                } else {
+                    std::cout << "OpenGL functions initialized" << std::endl;
+                }
             }
         } else {
             std::cerr << "No current OpenGL context available" << std::endl;
@@ -137,6 +169,11 @@ void ShaderLib::attachShaderToProgram(const std::string& program, const std::str
         unsigned int programId = programIt->second;
         unsigned int shaderId = shaderIt->second;
         
+        // Debug: Check what shaders are already attached to this program
+        int attachedCount = 0;
+        m_gl->glGetProgramiv(programId, 0x8B85, &attachedCount); // GL_ATTACHED_SHADERS
+        std::cout << "Program '" << program << "' currently has " << attachedCount << " shaders attached" << std::endl;
+        
         // Attach shader to program
         if (m_gl) {
             m_gl->glAttachShader(programId, shaderId);
@@ -178,6 +215,22 @@ void ShaderLib::linkProgramObject(const std::string& name) {
         
         // Link the program
         if (m_gl) {
+            // Debug: Show attached shaders before linking
+            int attachedCount = 0;
+            m_gl->glGetProgramiv(programId, 0x8B85, &attachedCount); // GL_ATTACHED_SHADERS
+            std::cout << "About to link program '" << name << "' with " << attachedCount << " attached shaders" << std::endl;
+            
+            if (attachedCount > 0) {
+                std::vector<unsigned int> attachedShaders(attachedCount);
+                m_gl->glGetAttachedShaders(programId, attachedCount, nullptr, attachedShaders.data());
+                
+                for (int i = 0; i < attachedCount; ++i) {
+                    int shaderType = 0;
+                    m_gl->glGetShaderiv(attachedShaders[i], 0x8B4F, &shaderType); // GL_SHADER_TYPE
+                    std::cout << "  Attached shader " << i << ": ID=" << attachedShaders[i] << ", Type=" << shaderType << std::endl;
+                }
+            }
+            
             m_gl->glLinkProgram(programId);
             
             // Check linking status
@@ -339,10 +392,16 @@ ShaderLib::ProgramWrapper* ShaderLib::operator[](const std::string& name) {
 // Helper methods
 unsigned int ShaderLib::glShaderType(int type) {
     switch(type) {
-        case VERTEX: return 0x8B31;   // GL_VERTEX_SHADER
-        case FRAGMENT: return 0x8B30; // GL_FRAGMENT_SHADER
-        case GEOMETRY: return 0x8DD9; // GL_GEOMETRY_SHADER
-        case COMPUTE: return 0x91B9;  // GL_COMPUTE_SHADER
+        case 0x8B31: return 0x8B31;   // GL_VERTEX_SHADER (ShaderLib enum)
+        case 0x8B30: return 0x8B30;   // GL_FRAGMENT_SHADER (ShaderLib enum)
+        case 0x8DD9: return 0x8DD9;   // GL_GEOMETRY_SHADER (ShaderLib enum)
+        case 0x91B9: return 0x91B9;   // GL_COMPUTE_SHADER (ShaderLib enum)
+        
+        // Legacy shader_constants.h values
+        case 0: return 0x8B31;        // VERTEX = 0 -> GL_VERTEX_SHADER
+        case 1: return 0x8B30;        // FRAGMENT = 1 -> GL_FRAGMENT_SHADER
+        case 2: return 0x8DD9;        // GEOMETRY = 2 -> GL_GEOMETRY_SHADER
+        
         default: return 0x8B31;       // Default to vertex shader
     }
 }
@@ -375,9 +434,16 @@ bool ShaderLib::checkProgramLinking(unsigned int programId, const std::string& n
     m_gl->glGetProgramiv(programId, 0x8B82, &success); // GL_LINK_STATUS
     
     if (!success) {
-        char infoLog[512];
-        m_gl->glGetProgramInfoLog(programId, 512, nullptr, infoLog);
-        std::cerr << "Failed to link program '" << name << "': " << infoLog << std::endl;
+        int logLength = 0;
+        m_gl->glGetProgramiv(programId, 0x8B84, &logLength); // GL_INFO_LOG_LENGTH
+        
+        if (logLength > 0) {
+            std::vector<char> infoLog(logLength);
+            m_gl->glGetProgramInfoLog(programId, logLength, nullptr, infoLog.data());
+            std::cerr << "Failed to link program '" << name << "': " << std::string(infoLog.data()) << std::endl;
+        } else {
+            std::cerr << "Failed to link program '" << name << "': Unknown error (no log available)" << std::endl;
+        }
         return false;
     }
     return true;
@@ -408,4 +474,95 @@ bool ShaderLib::loadShaderFromFile(const std::string& filename, std::string& sou
     
     std::cerr << "Cannot open shader file: " << filename << " (tried multiple paths)" << std::endl;
     return false;
+}
+
+// UBO (Uniform Buffer Object) implementation
+unsigned int ShaderLib::createUBO(const std::string& name, size_t size) {
+    if (!m_gl) {
+        std::cerr << "OpenGL functions not available for UBO creation" << std::endl;
+        return 0;
+    }
+    
+    unsigned int uboId;
+    m_gl->glGenBuffers(1, &uboId);
+    m_gl->glBindBuffer(GL_UNIFORM_BUFFER, uboId);
+    m_gl->glBufferData(GL_UNIFORM_BUFFER, size, nullptr, GL_DYNAMIC_DRAW);
+    m_gl->glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    
+    m_ubos[name] = uboId;
+    std::cout << "ShaderLib: Created UBO '" << name << "' with ID " << uboId << " and size " << size << std::endl;
+    
+    return uboId;
+}
+
+void ShaderLib::bindUBOToBindingPoint(const std::string& uboName, unsigned int bindingPoint) {
+    if (!m_gl) {
+        std::cerr << "OpenGL functions not available for UBO binding" << std::endl;
+        return;
+    }
+    
+    auto it = m_ubos.find(uboName);
+    if (it == m_ubos.end()) {
+        std::cerr << "UBO '" << uboName << "' not found" << std::endl;
+        return;
+    }
+    
+    glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, it->second);
+    std::cout << "ShaderLib: Bound UBO '" << uboName << "' to binding point " << bindingPoint << std::endl;
+}
+
+void ShaderLib::bindUniformBlockToBindingPoint(const std::string& programName, const std::string& blockName, unsigned int bindingPoint) {
+    if (!m_gl) {
+        std::cerr << "OpenGL functions not available for uniform block binding" << std::endl;
+        return;
+    }
+    
+    auto it = m_programs.find(programName);
+    if (it == m_programs.end()) {
+        std::cerr << "Program '" << programName << "' not found" << std::endl;
+        return;
+    }
+    
+    unsigned int blockIndex = glGetUniformBlockIndex(it->second, blockName.c_str());
+    if (blockIndex == GL_INVALID_INDEX) {
+        std::cerr << "Uniform block '" << blockName << "' not found in program '" << programName << "'" << std::endl;
+        return;
+    }
+    
+    glUniformBlockBinding(it->second, blockIndex, bindingPoint);
+    std::cout << "ShaderLib: Bound uniform block '" << blockName << "' in program '" << programName << "' to binding point " << bindingPoint << std::endl;
+}
+
+void ShaderLib::updateUBO(const std::string& uboName, const void* data, size_t size, size_t offset) {
+    if (!m_gl) {
+        std::cerr << "OpenGL functions not available for UBO update" << std::endl;
+        return;
+    }
+    
+    auto it = m_ubos.find(uboName);
+    if (it == m_ubos.end()) {
+        std::cerr << "UBO '" << uboName << "' not found" << std::endl;
+        return;
+    }
+    
+    m_gl->glBindBuffer(GL_UNIFORM_BUFFER, it->second);
+    m_gl->glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
+    m_gl->glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void ShaderLib::deleteUBO(const std::string& uboName) {
+    if (!m_gl) {
+        std::cerr << "OpenGL functions not available for UBO deletion" << std::endl;
+        return;
+    }
+    
+    auto it = m_ubos.find(uboName);
+    if (it == m_ubos.end()) {
+        std::cerr << "UBO '" << uboName << "' not found" << std::endl;
+        return;
+    }
+    
+    m_gl->glDeleteBuffers(1, &it->second);
+    m_ubos.erase(it);
+    std::cout << "ShaderLib: Deleted UBO '" << uboName << "'" << std::endl;
 }

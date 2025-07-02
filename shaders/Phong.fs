@@ -1,21 +1,23 @@
 #version 330 core
 
-in vec3 fragmentNormal;
-in vec3 lightDir;
-in vec3 halfVector;
-in vec3 eyeDirection;
-in vec3 vPosition;
+// Inputs from vertex shader
+in vec3 FragPos;
+in vec3 Normal;
 
+// Output color
 out vec4 fragColour;
 
-struct Materials {
+// UBO for material properties (must match vertex shader)
+layout(std140) uniform MaterialBlock {
     vec4 ambient;
     vec4 diffuse;
     vec4 specular;
     float shininess;
-};
+    float padding[3];   // Padding for alignment
+} material;
 
-struct Lights {
+// UBO for lighting properties (must match vertex shader)
+layout(std140) uniform LightBlock {
     vec4 position;
     vec4 ambient;
     vec4 diffuse;
@@ -24,36 +26,42 @@ struct Lights {
     float linearAttenuation;
     float quadraticAttenuation;
     float spotCosCutoff;
+} light;
+
+// Additional uniform for camera position
+layout(std140) uniform MatrixBlock {
+    mat4 MVP;
+    mat4 MV;
+    mat4 M;
+    mat3 normalMatrix;
+    vec3 viewerPos;
+    float shouldNormalize;
 };
 
-uniform Materials material;
-uniform Lights light;
-
-vec4 pointLight() {
-    vec3 N = normalize(fragmentNormal);
-    vec3 L = normalize(lightDir);
-    vec3 E = normalize(eyeDirection);
-    vec3 H = normalize(halfVector);
+void main() {
+    // Normalize the interpolated normal from vertex shader
+    vec3 norm = normalize(Normal);
     
-    float distance = length(light.position.xyz - vPosition);
-    float attenuation = 1.0 / (light.constantAttenuation + 
-                              light.linearAttenuation * distance + 
-                              light.quadraticAttenuation * distance * distance);
+    // Calculate lighting vectors
+    vec3 lightDir = normalize(light.position.xyz - FragPos);
+    vec3 viewDir = normalize(viewerPos - FragPos);
     
-    vec4 ambient = light.ambient * material.ambient;
+    // Ambient component
+    vec3 ambient = light.ambient.rgb * material.ambient.rgb;
     
-    float NdotL = max(dot(N, L), 0.0);
-    vec4 diffuse = light.diffuse * material.diffuse * NdotL;
+    // Diffuse component (Lambertian)
+    float NdotL = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = light.diffuse.rgb * material.diffuse.rgb * NdotL;
     
-    vec4 specular = vec4(0.0);
+    // Specular component (Blinn-Phong)
+    vec3 specular = vec3(0.0);
     if (NdotL > 0.0) {
-        float NdotH = max(dot(N, H), 0.0);
-        specular = light.specular * material.specular * pow(NdotH, material.shininess);
+        vec3 halfwayDir = normalize(lightDir + viewDir);
+        float NdotH = max(dot(norm, halfwayDir), 0.0);
+        specular = light.specular.rgb * material.specular.rgb * pow(NdotH, material.shininess);
     }
     
-    return ambient + attenuation * (diffuse + specular);
-}
-
-void main() {
-    fragColour = pointLight();
+    // Final color
+    vec3 finalColor = ambient + diffuse + specular;
+    fragColour = vec4(finalColor, 1.0);
 }

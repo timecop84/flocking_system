@@ -2,8 +2,10 @@
 #include "Material.h"
 #include "ShaderLib.h"
 #include "Matrix.h"
+#include "SphereGeometry.h"
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <iostream>
 
 Obstacle::Obstacle(Vector spherePosition, GLfloat sphereRadius)
 {
@@ -13,31 +15,54 @@ Obstacle::Obstacle(Vector spherePosition, GLfloat sphereRadius)
     m_wireframe = false;
 
     _hit = false;
+    
+    // Initialize the sphere geometry (lazy initialization will happen in first draw)
+    m_sphereGeometry = nullptr;
+}
+
+Obstacle::~Obstacle()
+{
+    // Cleanup will be handled automatically by the unique_ptr
 }
 
 void Obstacle::loadMatricesToShader(TransformStack &_tx, Camera *_cam) const
 {
-    ShaderLib *shader=ShaderLib::instance();
-
-    Matrix MV;
-    Matrix MVP;
-    Mat3x3 normalMatrix;
-    Matrix M;
-    M=_tx.getCurrentTransform();
-    MV=  _tx.getCurrAndGlobal().getMatrix()*_cam->getViewMatrix();
-    MVP=  MV*_cam->getProjectionMatrix();
-    normalMatrix=MV;
-    normalMatrix.inverse();
-    shader->setShaderParamFromMatrix("MV",MV);
-    shader->setShaderParamFromMatrix("MVP",MVP);
-    shader->setShaderParamFromMat3x3("normalMatrix",normalMatrix);
-    shader->setShaderParamFromMatrix("M",M);
-
+    // Modern UBO-based approach: No need to set individual uniforms
+    // The UBO data should be updated by the main rendering loop
+    // This function is kept for compatibility but doesn't need to do anything
+    // as the UBO system handles matrix updates automatically
+    
+    // TODO: Remove this function entirely once all rendering is verified to work with UBOs
 }
 
 void Obstacle::ObsDraw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const
 {
-    // Use immediate mode OpenGL with lighting for better appearance
+    // Modern VBO/VAO-based rendering using UBO shaders
+    std::cout << "Drawing obstacle using modern VBO/VAO and UBO pipeline with shader: " << _shaderName << std::endl;
+    
+    // Lazy initialization of sphere geometry
+    if (!m_sphereGeometry) {
+        std::cout << "Initializing sphere geometry for obstacle..." << std::endl;
+        m_sphereGeometry = std::make_unique<FlockingGeometry::SphereGeometry>(_sphereRadius, 64, 64);
+        m_sphereGeometry->initializeBuffers();
+    }
+    
+    // The transform matrix and material should already be updated in the UBOs
+    // by the calling code (GLWindow) before this function is called.
+    // We just need to ensure the correct shader is active and render the geometry.
+    
+    // The sphere geometry will be rendered using the currently active shader program
+    // and the data from the UBOs (transforms, materials, lighting)
+    m_sphereGeometry->render();
+    
+    std::cout << "Obstacle rendered using modern pipeline" << std::endl;
+}
+
+void Obstacle::ObsDrawImmediate(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const
+{
+    // Legacy immediate mode OpenGL rendering (kept for reference/fallback)
+    std::cout << "Drawing obstacle using legacy immediate mode" << std::endl;
+    
     glPushMatrix();
     {
         // Translate to obstacle position

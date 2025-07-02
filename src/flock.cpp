@@ -25,12 +25,14 @@ Flock::Flock(BBox *bbox, Obstacle *obstacle)
 
 void Flock::draw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam)const
 {
-    ShaderLib *shader=ShaderLib::instance();
-    shader->use(_shaderName);
+    // For immediate mode rendering, don't use shaders
+    // ShaderLib *shader=ShaderLib::instance();
+    // shader->use(_shaderName);
+    
     _transformStack.pushTransform();
 
-    loadMatricesToShader(_transformStack, _cam);
-
+    // For immediate mode rendering with fixed-function pipeline, 
+    // matrix loading should be handled by the main rendering loop
 
     for(Boid *b : m_boidList)
     {
@@ -45,22 +47,12 @@ void Flock::draw(const std::string &_shaderName, TransformStack &_transformStack
 void Flock::loadMatricesToShader(TransformStack &_tx, Camera *_cam) const
 
 {
-    ShaderLib *shader = ShaderLib::instance();
-    Matrix MV;
-    Matrix MVP;
-    Mat3x3 normalMatrix;
-    Matrix M;
-
-    M = _tx.getCurrentTransform();
-    MV = _tx.getCurrAndGlobal().getMatrix() *_cam->getViewMatrix();
-    MVP = MV * _cam->getProjectionMatrix();
-    normalMatrix = MV;
-    normalMatrix.inverse();
-    shader->setShaderParamFromMatrix("MV", MV);
-    shader->setShaderParamFromMatrix("MVP", MVP);
-    shader->setShaderParamFromMat3x3("normalMatrix", normalMatrix);
-    shader->setShaderParamFromMatrix("M", M);
-
+    // Modern UBO-based approach: No need to set individual uniforms
+    // The UBO data should be updated by the main rendering loop
+    // This function is kept for compatibility but doesn't need to do anything
+    // as the UBO system handles matrix updates automatically
+    
+    // TODO: Remove this function entirely once all rendering is verified to work with UBOs
 }
 //-----------------------------------------------------------------------------------------------------------------------
 void Flock::addBoids()

@@ -85,6 +85,13 @@ public:
     void setShaderParamFromMatrix(const std::string& paramName, const glm::mat4& matrix);
     void setShaderParamFromMat3x3(const std::string& paramName, const glm::mat3& matrix);
     
+    // UBO (Uniform Buffer Object) support
+    unsigned int createUBO(const std::string& name, size_t size);
+    void bindUBOToBindingPoint(const std::string& uboName, unsigned int bindingPoint);
+    void bindUniformBlockToBindingPoint(const std::string& programName, const std::string& blockName, unsigned int bindingPoint);
+    void updateUBO(const std::string& uboName, const void* data, size_t size, size_t offset = 0);
+    void deleteUBO(const std::string& uboName);
+    
     /**
      * @brief Get the currently active shader program name
      * @return Name of the current shader program
@@ -107,6 +114,9 @@ private:
     std::unordered_map<std::string, int> m_shaderTypes;             // Shader types
     std::unordered_map<std::string, std::unique_ptr<ProgramWrapper>> m_wrappers;
     std::unordered_map<std::string, std::string> m_shaderSources;
+    
+    // UBO storage
+    std::unordered_map<std::string, unsigned int> m_ubos;           // UBO object IDs
     
     // Track which shaders are attached to which programs to prevent duplicates
     std::unordered_map<std::string, std::set<std::string>> m_programShaderAttachments;
