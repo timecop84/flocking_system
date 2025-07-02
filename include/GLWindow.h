@@ -195,6 +195,12 @@ private :
     void updateMatrixUBO(const TransformStack& transformStack);
     void updateMaterialUBO(const Material& material);
     void updateLightUBO();
+    void updateLightingUBO();
+    void setupLightingUBO();
+
+    // UBO handles
+    GLuint m_matrixUBO;
+    GLuint m_lightingUBO;
 
 protected:
 

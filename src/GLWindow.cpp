@@ -400,6 +400,9 @@ void GLWindow::paintGL()
     glm::mat4 view = m_cam->getViewMatrix();
     glm::mat4 project = m_cam->getProjectionMatrix();
     
+    // Update lighting UBO with current camera position
+    updateLightingUBO();
+    
     // Load the matrices into the transform stack (for NGL compatibility)
     Matrix nglProject(project);
     Matrix nglView(view);
@@ -418,7 +421,7 @@ void GLWindow::paintGL()
     
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf(glm::value_ptr(view));
-    glMultMatrixf(glm::value_ptr(model.m_matrix));
+    glMultMatrixf(glm::value_ptr(model.getGLMMat4()));
 
     // Set up lighting for immediate mode rendering
     // Position the light in world space
@@ -491,38 +494,32 @@ void GLWindow::paintGL()
         // Push a new transform level for the obstacle
         m_transformStack.pushTransform();
         {
-            // Set up the obstacle's transform (translate to obstacle position)
+            // Get the obstacle's absolute world position
             flock::Vec3 obstaclePos = obstacle->getPositionModern();
-            Matrix obstacleTransform;
-            obstacleTransform.identity();
             
-            // Debug: Check the matrix after identity (GLM uses column-major storage)
-            std::cout << "After identity [3,0]: " << obstacleTransform.m_matrix[3][0] 
-                      << ", [3,1]: " << obstacleTransform.m_matrix[3][1] 
-                      << ", [3,2]: " << obstacleTransform.m_matrix[3][2] << std::endl;
+            // Create a fresh identity matrix for the model transform
             
-            // Add debugging for translate operation
-            std::cout << "About to translate by (" << obstaclePos.x << ", " << obstaclePos.y << ", " << obstaclePos.z << ")" << std::endl;
-            obstacleTransform.translate(obstaclePos.x, obstaclePos.y, obstaclePos.z);
+            // Create a fresh world-space model matrix
+            glm::mat4 modelMatrix = glm::mat4(1.0f); // Identity matrix
             
-            // Debug: Check the matrix we're creating (GLM uses column-major storage)
-            std::cout << "Created obstacleTransform [3,0]: " << obstacleTransform.m_matrix[3][0] 
-                      << ", [3,1]: " << obstacleTransform.m_matrix[3][1] 
-                      << ", [3,2]: " << obstacleTransform.m_matrix[3][2] << std::endl;
+            // Apply translation to position the obstacle in world space
+            // This positions the obstacle at its absolute world coordinates
+            modelMatrix = glm::translate(
+                modelMatrix,
+                glm::vec3(obstaclePos.x, obstaclePos.y, obstaclePos.z)
+            );
             
-            // Debug: Check the transform stack before setting model (GLM uses column-major storage)
-            glm::mat4 beforeSet = m_transformStack.getCurrentTransform();
-            std::cout << "Transform stack before setModel [3,0]: " << beforeSet[3][0] 
-                      << ", [3,1]: " << beforeSet[3][1] 
-                      << ", [3,2]: " << beforeSet[3][2] << std::endl;
+            // Debug output to verify the transformation
+            std::cout << "Obstacle absolute world position: (" 
+                     << obstaclePos.x << ", " << obstaclePos.y << ", " << obstaclePos.z << ")" << std::endl;
+                     
+            // Show the translation component of the matrix
+            std::cout << "Model matrix translation components: [" 
+                     << modelMatrix[3][0] << ", " << modelMatrix[3][1] << ", " << modelMatrix[3][2] << "]" << std::endl;
             
-            m_transformStack.setModel(obstacleTransform.m_matrix);
-            
-            // Debug: Check the transform stack after setting model (GLM uses column-major storage)
-            glm::mat4 afterSet = m_transformStack.getCurrentTransform();
-            std::cout << "Transform stack after setModel [3,0]: " << afterSet[3][0] 
-                      << ", [3,1]: " << afterSet[3][1] 
-                      << ", [3,2]: " << afterSet[3][2] << std::endl;
+            // Apply the model matrix directly to the transform stack
+            // This ensures object-to-world transformation is correct
+            m_transformStack.setModel(modelMatrix);
             
             // Update UBO matrices with obstacle transform
             updateMatrixUBO(m_transformStack);
@@ -728,16 +725,32 @@ void GLWindow::updateCameraPosition()
     float radAzimuth = glm::radians(m_cameraAzimuth);
     float radElevation = glm::radians(m_cameraElevation);
     
-    // Calculate camera position relative to target
+    // Calculate camera position in spherical coordinates
+    // This ensures proper orbit around the target
     float x = m_cameraDistance * cos(radElevation) * cos(radAzimuth);
     float y = m_cameraDistance * sin(radElevation);
     float z = m_cameraDistance * cos(radElevation) * sin(radAzimuth);
     
-    Vector cameraPos(m_cameraTarget.m_x + x, m_cameraTarget.m_y + y, m_cameraTarget.m_z + z);
-    Vector up(0, 1, 0);
+    // Calculate the camera position in world space
+    glm::vec3 cameraPos(
+        m_cameraTarget.m_x + x, 
+        m_cameraTarget.m_y + y, 
+        m_cameraTarget.m_z + z
+    );
     
-    // Update camera
-    m_cam->lookAt(cameraPos, m_cameraTarget, up);
+    // Set up view vector (from camera to target)
+    glm::vec3 target(m_cameraTarget.m_x, m_cameraTarget.m_y, m_cameraTarget.m_z);
+    glm::vec3 up(0.0f, 1.0f, 0.0f); // World up vector
+    
+    // Update the camera with explicit lookAt
+    m_cam->lookAt(cameraPos, target, up);
+    
+    // Debug output (every 60 frames)
+    static int frameCount = 0;
+    if (frameCount++ % 60 == 0) {
+        std::cout << "Camera position: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
+        std::cout << "Camera target: (" << target.x << ", " << target.y << ", " << target.z << ")" << std::endl;
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -828,54 +841,105 @@ void GLWindow::initializeUBOs()
     m_shader->bindUBOToBindingPoint("MaterialUBO", FlockingShaders::MATERIAL_BINDING_POINT);
     m_shader->bindUBOToBindingPoint("LightUBO", FlockingShaders::LIGHT_BINDING_POINT);
     
+    // Setup lighting UBO
+    setupLightingUBO();
+    
     std::cout << "UBOs initialized successfully" << std::endl;
+}
+
+void GLWindow::setupLightingUBO() {
+    FlockingShaders::LightingBlock lighting;
+    
+    // Set default light position and color
+    lighting.lightPos = glm::vec3(50.0f, 50.0f, 50.0f);
+    lighting.viewPos = glm::vec3(0.0f, 0.0f, 0.0f);  // Will be updated in updateLightUBO
+    lighting.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    lighting.shininess = 32.0f;
+    lighting.pad1 = lighting.pad2 = 0.0f;  // Required padding for std140 layout
+    
+    // Create and initialize the UBO
+    m_shader->createUBO("LightingUBO", sizeof(FlockingShaders::LightingBlock));
+    m_shader->updateUBO("LightingUBO", &lighting, sizeof(FlockingShaders::LightingBlock));
+    m_shader->bindUBOToBindingPoint("LightingUBO", FlockingShaders::LIGHTING_BINDING_POINT);
+}
+
+void GLWindow::updateLightingUBO() {
+    if (m_cam && m_light) {
+        FlockingShaders::LightingBlock lighting;
+        
+        // Get camera position for view direction calculations
+        glm::vec3 cameraPos = m_cam->getEye();
+        glm::vec3 lightPos = m_light->getPosition();
+        glm::vec3 lightColor = m_light->getColor();
+        
+        // Set lighting data
+        lighting.lightPos = lightPos;
+        lighting.viewPos = cameraPos;
+        lighting.lightColor = lightColor;
+        lighting.shininess = 32.0f;
+        lighting.pad1 = lighting.pad2 = 0.0f;
+        
+        // Update the UBO with current lighting data
+        m_shader->updateUBO("LightingUBO", &lighting, sizeof(FlockingShaders::LightingBlock));
+        
+        // Print debug info occasionally
+        static int debugCounter = 0;
+        if (debugCounter++ % 180 == 0) { // Print every 3 seconds at 60fps
+            std::cout << "Updated lighting UBO - Camera position: (" 
+                      << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
+        }
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 /// @brief Update matrix UBO with current transform data
 //----------------------------------------------------------------------------------------------------------------------
-void GLWindow::updateMatrixUBO(const TransformStack& transformStack)
-{
-    // Get matrices from transform stack
-    Matrix M = transformStack.getCurrAndGlobal();
+void GLWindow::updateMatrixUBO(const TransformStack& transformStack) {
+    FlockingShaders::MatrixBlock matrices;
     
-    // Debug: check what we're getting from the transform stack (only occasionally to avoid spam)
-    static int transformDebugCounter = 0;
-    if (transformDebugCounter++ % 120 == 0) {
-        glm::mat4 current = transformStack.getCurrentTransform();
-        std::cout << "Current transform [3,0]: " << current[3][0] << ", [3,1]: " << current[3][1] << ", [3,2]: " << current[3][2] << std::endl;
-        std::cout << "Final M matrix [3,0]: " << M.m_matrix[3][0] << ", [3,1]: " << M.m_matrix[3][1] << ", [3,2]: " << M.m_matrix[3][2] << std::endl;
-    }
+    // Get matrices from transform stack and camera
+    glm::mat4 modelMatrix = transformStack.getCurrentTransform();
+    glm::mat4 viewMatrix = m_cam->getViewMatrix();
+    glm::mat4 projMatrix = m_cam->getProjectionMatrix();
     
-    Matrix MV = M * m_cam->getViewMatrix();
-    Matrix MVP = M * m_cam->getVPMatrix();
-    
-    // Convert to GLM matrices
-    m_matrixData.M = M.m_matrix;
-    m_matrixData.MV = MV.m_matrix;
-    m_matrixData.MVP = MVP.m_matrix;
-    
-    // Calculate normal matrix (transpose of inverse of M, not MV)
-    // This keeps normals in world space for consistent lighting
-    glm::mat3 normalMat = glm::transpose(glm::inverse(glm::mat3(M.m_matrix)));
-    m_matrixData.normalMatrix = normalMat;
-    
-    // Set viewer position and normalize flag
-    Vector eyePos = m_cam->getEye();
-    m_matrixData.viewerPos = glm::vec3(eyePos.m_x, eyePos.m_y, eyePos.m_z);
-    m_matrixData.shouldNormalize = 1.0f; // Enable normal normalization
-    
-    // Debug output for matrices (only occasionally to avoid spam)
+    // Debug matrices occasionally (every 60 frames)
     static int debugCounter = 0;
-    if (debugCounter++ % 120 == 0) {
-        std::cout << "=== Matrix Debug ===" << std::endl;
-        std::cout << "Camera position: (" << eyePos.m_x << ", " << eyePos.m_y << ", " << eyePos.m_z << ")" << std::endl;
-        std::cout << "Model matrix [3,0]: " << M.m_matrix[3][0] << ", [3,1]: " << M.m_matrix[3][1] << ", [3,2]: " << M.m_matrix[3][2] << std::endl;
-        std::cout << "===================" << std::endl;
+    if (debugCounter++ % 60 == 0) {
+        // Print model matrix translation (world-space position)
+        std::cout << "Model matrix translation (world): [" 
+                  << modelMatrix[3][0] << ", " 
+                  << modelMatrix[3][1] << ", " 
+                  << modelMatrix[3][2] << "]" << std::endl;
+        
+        // Print camera position (world space)
+        glm::vec3 eye = m_cam->getEye();
+        std::cout << "Camera position (world): [" 
+                  << eye.x << ", " << eye.y << ", " << eye.z << "]" << std::endl;
+                  
+        // Print view matrix
+        std::cout << "View matrix first column: [" 
+                  << viewMatrix[0][0] << ", " 
+                  << viewMatrix[0][1] << ", " 
+                  << viewMatrix[0][2] << "]" << std::endl;
     }
     
-    // Update the UBO
-    m_shader->updateUBO("MatrixUBO", &m_matrixData, sizeof(FlockingShaders::MatrixBlock));
+    // Set up matrices for UBO
+    matrices.M = modelMatrix;                              // Model matrix (object → world)
+    matrices.MV = viewMatrix * modelMatrix;                // Model-View matrix (object → camera)
+    matrices.MVP = projMatrix * viewMatrix * modelMatrix;  // Model-View-Projection (object → clip space)
+    
+    // Calculate normal matrix (inverse transpose of model-view's 3x3 upper-left)
+    // This corrects normals when there's non-uniform scaling
+    glm::mat3 normalMat = glm::mat3(matrices.MV);
+    normalMat = glm::transpose(glm::inverse(normalMat));
+    matrices.normalMatrix = normalMat;
+    
+    // Set viewer position in world space for lighting calculations
+    matrices.viewerPos = m_cam->getEye();
+    matrices.shouldNormalize = 1.0f;
+
+    // Update the UBO with new matrices
+    m_shader->updateUBO("MatrixUBO", &matrices, sizeof(FlockingShaders::MatrixBlock));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

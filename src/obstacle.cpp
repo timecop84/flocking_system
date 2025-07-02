@@ -37,25 +37,31 @@ void Obstacle::loadMatricesToShader(TransformStack &_tx, Camera *_cam) const
 
 void Obstacle::ObsDraw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const
 {
-    // Modern VBO/VAO-based rendering using UBO shaders
-    std::cout << "Drawing obstacle using modern VBO/VAO and UBO pipeline with shader: " << _shaderName << std::endl;
+    // For debugging only - can be removed in production
+    if (_shaderName != "Phong") {
+        std::cerr << "Warning: Obstacle only supports Phong shader, got: " << _shaderName << std::endl;
+    }
     
     // Lazy initialization of sphere geometry
     if (!m_sphereGeometry) {
         std::cout << "Initializing sphere geometry for obstacle..." << std::endl;
-        m_sphereGeometry = std::make_unique<FlockingGeometry::SphereGeometry>(_sphereRadius, 64, 64);
+        // Create sphere at origin - position will be applied via model matrix
+        m_sphereGeometry = std::make_unique<FlockingGeometry::SphereGeometry>(_sphereRadius, 32, 32);
         m_sphereGeometry->initializeBuffers();
     }
     
-    // The transform matrix and material should already be updated in the UBOs
-    // by the calling code (GLWindow) before this function is called.
-    // We just need to ensure the correct shader is active and render the geometry.
+    // The sphere geometry will be rendered at the current model transform position
+    // All transformations should be handled by the transform stack
+    // We just ensure the correct shader is bound and render using VAO
     
-    // The sphere geometry will be rendered using the currently active shader program
-    // and the data from the UBOs (transforms, materials, lighting)
+    ShaderLib *shader = ShaderLib::instance();
+    shader->use(_shaderName);
+    
+    // Apply current transform from transform stack (already includes our position)
+    // The transform matrix and material should already be in the UBOs
+    
+    // Simply render the geometry with the current transform state
     m_sphereGeometry->render();
-    
-    std::cout << "Obstacle rendered using modern pipeline" << std::endl;
 }
 
 void Obstacle::ObsDrawImmediate(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const

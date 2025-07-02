@@ -163,27 +163,20 @@ void SphereGeometry::render() const
         return;
     }
     
-    std::cout << "Rendering sphere with " << m_indices.size() << " indices using VAO " << m_VAO << std::endl;
+    // For efficiency, don't log every frame in production
+    static int renderCount = 0;
+    if (renderCount++ % 60 == 0) {
+        std::cout << "Rendering sphere using VAO " << m_VAO << std::endl;
+    }
     
+    // Bind our VAO which contains the sphere geometry
     glBindVertexArray(m_VAO);
     
-    // Check for OpenGL errors before drawing
-    GLenum error = glGetError();
-    if (error != GL_NO_ERROR) {
-        std::cerr << "OpenGL error before drawing: " << error << std::endl;
-    }
-    
+    // Draw the sphere using indices
     glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, 0);
     
-    // Check for OpenGL errors after drawing
-    error = glGetError();
-    if (error != GL_NO_ERROR) {
-        std::cerr << "OpenGL error after drawing: " << error << std::endl;
-    }
-    
+    // Unbind VAO when done
     glBindVertexArray(0);
-    
-    std::cout << "Sphere rendered successfully" << std::endl;
 }
 
 void SphereGeometry::cleanup()

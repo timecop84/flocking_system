@@ -41,9 +41,21 @@ struct LightBlock {
     // Total: 80 bytes (aligned to 16-byte boundary)
 };
 
+// Lighting block for fragment shader (Binding point 3)
+struct LightingBlock {
+    glm::vec3 lightPos;    // 12 bytes
+    float pad1;            // 4 bytes padding
+    glm::vec3 viewPos;     // 12 bytes
+    float pad2;            // 4 bytes padding
+    glm::vec3 lightColor;  // 12 bytes
+    float shininess;       // 4 bytes
+    // Total: 48 bytes (aligned to 16-byte boundary)
+};
+
 // Binding points for UBOs
 const unsigned int MATRIX_BINDING_POINT = 0;
 const unsigned int MATERIAL_BINDING_POINT = 1;
 const unsigned int LIGHT_BINDING_POINT = 2;
+const unsigned int LIGHTING_BINDING_POINT = 3;
 
 } // namespace FlockingShaders
