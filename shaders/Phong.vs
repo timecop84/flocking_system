@@ -1,8 +1,9 @@
 #version 450 core
 
 // Input attributes
-layout(location = 0) in vec3 aPosition;
-layout(location = 1) in vec3 aNormal;
+layout(location = 0) in vec3 inVert;    // Position
+layout(location = 1) in vec2 inUV;     // Texture coordinates (unused)
+layout(location = 2) in vec3 inNormal;  // Normal
 
 // Output to fragment shader
 out vec3 FragPos;    // Position in world space
@@ -20,13 +21,13 @@ layout(std140, binding = 0) uniform MatrixBlock {
 
 void main()
 {
-    // Transform position to world space using model matrix
-    FragPos = vec3(M * vec4(aPosition, 1.0));
+    // Transform vertex to view space (like fixed function pipeline)
+    vec4 viewPos = MV * vec4(inVert, 1.0);
+    FragPos = viewPos.xyz;
     
-    // Transform normal to world space using the normal matrix
-    // The normal matrix correctly handles non-uniform scaling
-    Normal = normalize(normalMatrix * aNormal);
+    // Transform normal to view space (like fixed function)
+    Normal = normalize(mat3(MV) * inNormal);
     
-    // Final position in clip space using the combined MVP matrix
-    gl_Position = MVP * vec4(aPosition, 1.0);
+    // Output position in clip space
+    gl_Position = MVP * vec4(inVert, 1.0);
 }

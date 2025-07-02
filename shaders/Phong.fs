@@ -1,8 +1,8 @@
 #version 450 core
 
-// Inputs from vertex shader (in world space)
-in vec3 FragPos;     // Fragment position in world space
-in vec3 Normal;      // Surface normal in world space
+// Inputs from vertex shader (in view space, like fixed function)
+in vec3 FragPos;     // Fragment position in view space
+in vec3 Normal;      // Surface normal in view space
 
 // Output color
 out vec4 FragColor;
@@ -33,36 +33,41 @@ layout(std140, binding = 3) uniform LightingBlock {
     vec3 viewPos;    // Camera position (redundant with viewerPos above)
     float pad2;      // Padding
     vec3 lightColor; // Light color
-    float lightShininess; // Light-specific shininess (unused, use material.shininess)
+    float lightShininess; // Light-specific shininess (unused)
 };
 
 void main()
 {
-    // Use viewerPos from the MatrixBlock (more reliable)
-    vec3 viewerPosition = viewerPos;
+    // Since we're in view space, the view direction is simply (0,0,1)
+    vec3 viewDir = vec3(0.0, 0.0, 1.0);
     
-    // Make sure we have a normalized normal vector
-    vec3 norm = normalize(Normal);
+    // Transform light position to view space (like fixed function)
+    vec3 lightPosView = (MV * vec4(lightPos, 1.0)).xyz;
+    vec3 lightDirView = normalize(lightPosView - FragPos);
     
-    // Calculate view and light directions
-    vec3 viewDir = normalize(viewerPosition - FragPos);
-    vec3 lightDir = normalize(lightPos - FragPos);
+    // Ambient - increased for better base illumination
+    vec3 ambientColor = ambient.rgb * lightColor * 0.4;  // Increased ambient
     
-    // Ambient component - use material ambient color
-    vec3 ambientColor = ambient.rgb * lightColor * 0.2;
+    // Diffuse - much brighter with gentler falloff
+    float diff = max(dot(Normal, lightDirView), 0.0);
+    diff = diff * 0.8 + 0.2;  // Prevent complete darkness
+    vec3 diffuseColor = diffuse.rgb * lightColor * diff * 1.5;  // Increased diffuse multiplier
     
-    // Diffuse component - use material diffuse color
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuseColor = diffuse.rgb * lightColor * diff;
+    // Specular - keep the sharp highlights
+    vec3 reflectDir = reflect(-lightDirView, Normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess * 1.5);  // Reduced shininess multiplier
+    vec3 specularColor = specular.rgb * lightColor * spec * 3.0;
     
-    // Specular component (Blinn-Phong for smoother highlights)
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, halfwayDir), 0.0), shininess);
-    vec3 specularColor = specular.rgb * lightColor * spec;
+    // Much lighter attenuation
+    float distanceToLight = length(lightPosView - FragPos);
+    float attenuation = 1.0 / (1.0 + 0.005 * distanceToLight + 0.0001 * distanceToLight * distanceToLight);
     
-    // Final combined color with proper material properties
-    vec3 result = ambientColor + diffuseColor + specularColor;
+    // Final color with increased brightness
+    vec3 result = ambientColor + (diffuseColor + specularColor) * attenuation;
     
-    // Output with material alpha
+    // Optional slight boost to overall brightness
+    result *= 1.2;
+    
+    // Output without gamma correction (fixed function doesn't use it)
     FragColor = vec4(result, diffuse.a);
 }

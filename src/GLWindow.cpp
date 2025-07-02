@@ -526,19 +526,12 @@ void GLWindow::paintGL()
             
             // Set up obstacle material with balanced properties for smooth standard Phong lighting
             Material obstacleMaterial;
-            flock::Color obstacleColor = obstacle->getColorModern();
             
-            // Enhanced material properties for better specular visibility
-            obstacleMaterial.setAmbient(Colour(0.3f, 0.25f, 0.2f, 1.0f));  // Moderate ambient
-            obstacleMaterial.setDiffuse(Colour(0.6f, 0.4f, 0.2f, 1.0f));   // Warm diffuse color
-            obstacleMaterial.setSpecular(Colour(1.0f, 0.9f, 0.8f, 1.0f));  // Bright specular for visibility
-            obstacleMaterial.setShininess(8.0f);  // Low shininess for broad, visible highlights
-            
-            // Debug output for material values
-            static int materialDebugCounter = 0;
-            if (materialDebugCounter++ % 120 == 0) {
-                std::cout << "Obstacle material - Ambient: (0.2, 0.2, 0.2), Diffuse: (0.8, 0.6, 0.4), Specular: (0.5, 0.5, 0.5), Shininess: 32.0" << std::endl;
-            }
+            // Match the boids' material properties exactly
+            obstacleMaterial.setAmbient(glm::vec3(m_colour.m_r * 0.3f, m_colour.m_g * 0.3f, m_colour.m_b * 0.3f));  // 0.3 ambient factor
+            obstacleMaterial.setDiffuse(glm::vec3(m_colour.m_r, m_colour.m_g, m_colour.m_b));     // Full color for diffuse
+            obstacleMaterial.setSpecular(glm::vec3(0.8f, 0.8f, 0.8f));  // Match boids' specular
+            obstacleMaterial.setShininess(64.0f);  // Match boids' shininess
             
             updateMaterialUBO(obstacleMaterial);
             
