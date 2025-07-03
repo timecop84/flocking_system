@@ -68,16 +68,8 @@ void Flock::draw(const std::string &_shaderName, TransformStack &_transformStack
 
 }
 //----------------------------------------------------------------------------------------------------------------------
-void Flock::loadMatricesToShader(TransformStack &_tx, Camera *_cam) const
-
-{
-    // Modern UBO-based approach: No need to set individual uniforms
-    // The UBO data should be updated by the main rendering loop
-    // This function is kept for compatibility but doesn't need to do anything
-    // as the UBO system handles matrix updates automatically
-    
-    // TODO: Remove this function entirely once all rendering is verified to work with UBOs
-}
+// Legacy function removed - UBO-based rendering handles matrix updates automatically
+//----------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------
 void Flock::addBoids()
 {

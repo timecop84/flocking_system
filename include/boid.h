@@ -99,12 +99,6 @@ public:
     /// @param [in] _cam camera values
     void drawModern(const std::string &_shaderName,TransformStack &_transformStack,Camera *_cam)const;
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief drawing the boid using legacy immediate mode (for fallback)
-    /// @param [in] _shaderName value
-    /// @param [in] _transformStack  values
-    /// @param [in] _cam camera values
-    void drawImmediate(const std::string &_shaderName,TransformStack &_transformStack,Camera *_cam)const;
-    //----------------------------------------------------------------------------------------------------------------------
     /// @brief reverse function
     /// @param [in] m_velocity sets the velocity to have a new direction plus the next position. Called during boid to obstacle collision.
     inline void reverse(){m_velocity= (m_newDirection + getNextPosition()) * - 20.0;}
@@ -225,12 +219,7 @@ private:
     //----------------------------------------------------------------------------------------------------------------------
 
 protected:
-    void loadMatricesToShader(
-            TransformStack &_tx,
-            Camera *_cam
-            )const;
-
-
+    // Legacy matrix loading function removed - UBO-based rendering handles matrix updates automatically
 
 };
 

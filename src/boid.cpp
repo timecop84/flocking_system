@@ -26,27 +26,8 @@ Boid::Boid(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void Boid::loadMatricesToShader(
-        TransformStack &_tx,
-        Camera *_cam
-        )const
-{
-    ShaderLib *shader=ShaderLib::instance();
-
-    Matrix MV;
-    Matrix MVP;
-    Mat3x3 normalMatrix;
-    Matrix M;
-    M=_tx.getCurrentTransform();
-    MV=_tx.getCurrAndGlobal().getGLMMat4()*_cam->getViewMatrix() ;
-    MVP=MV*_cam->getProjectionMatrix();
-    normalMatrix=MV;
-    normalMatrix.inverse();
-    shader->setShaderParamFromMatrix("MV",MV);
-    shader->setShaderParamFromMatrix("MVP",MVP);
-    shader->setShaderParamFromMat3x3("normalMatrix",normalMatrix);
-    shader->setShaderParamFromMatrix("M",M);
-}
+// Legacy function removed - UBO-based rendering handles matrix updates automatically
+//----------------------------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------------------------
 void Boid::draw(
@@ -102,51 +83,6 @@ void Boid::drawModern(
     glPolygonMode(GL_FRONT_AND_BACK, prevPolygonMode[0]);
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-void Boid::drawImmediate(
-        const std::string &_shaderName,
-        TransformStack &_transformStack,
-        Camera *_cam
-        )const
-{
-    // Legacy immediate mode OpenGL rendering (kept for reference/fallback)
-    std::cout << "Drawing boid using legacy immediate mode" << std::endl;
-    
-    glPushMatrix();
-    {
-        // Translate to boid position
-        glTranslatef(m_position.m_x, m_position.m_y, m_position.m_z);
-        
-        // Scale the boid 
-        float boidSize = 2.0f;
-        glScalef(boidSize, boidSize, boidSize);
-        
-        // Enable lighting for this object
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-        
-        // Set material properties for the boid
-        GLfloat ambient[] = {m_colour.m_r * 0.3f, m_colour.m_g * 0.3f, m_colour.m_b * 0.3f, 1.0f};
-        GLfloat diffuse[] = {m_colour.m_r, m_colour.m_g, m_colour.m_b, 1.0f};
-        GLfloat specular[] = {0.8f, 0.8f, 0.8f, 1.0f};
-        GLfloat shininess[] = {64.0f};
-        
-        glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-        glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
-        
-        // Draw a sphere using GLU quadrics for smooth appearance
-        GLUquadric* quad = gluNewQuadric();
-        gluQuadricNormals(quad, GLU_SMOOTH);
-        gluQuadricDrawStyle(quad, GLU_FILL);
-        gluSphere(quad, 0.5, 16, 16);  // radius, slices, stacks
-        gluDeleteQuadric(quad);
-        
-        glDisable(GL_LIGHTING);
-    }
-    glPopMatrix();
-}
 //----------------------------------------------------------------------------------------------------------------------
 void Boid::updateVelocity(Vector direction)
 {

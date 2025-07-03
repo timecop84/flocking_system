@@ -46,21 +46,7 @@ public:
                  )const ;
     
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief drawing the obstacle using immediate mode (legacy)
-    /// @param [in] _shaderName value
-    /// @param [in] _transformStack  values
-    /// @param [in] _cam camera values
-    void ObsDrawImmediate(const std::string &_shaderName,
-                          TransformStack &_transformStack,
-                          Camera *_cam
-                          )const ;
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief load our matrices to shader
-    /// @param [in] transformationStack valus
-    /// @param [in] camera value
-    void loadMatricesToShader(TransformStack &_tx,
-                              Camera *_cam
-                              )const;
+    /// @brief Legacy matrix loading function removed - UBO-based rendering handles matrix updates automatically
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the obstacle position
     /// @param [in] _spherePosition the obstacle Position within the space.

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <GL/gl.h>
 #include <vector>
+#include "../../../include/glew_compat.h"
 
 BBox::BBox() 
     : m_center(0, 0, 0), m_width(1), m_height(1), m_depth(1) {
@@ -70,57 +71,58 @@ bool BBox::intersects(const BBox& other) const {
 }
 
 void BBox::draw() const {
-    // Draw bounding box as wireframe using immediate mode OpenGL
+    // Modern wireframe box rendering using VAO/VBO
     Vector min = getMin();
     Vector max = getMax();
     
-    glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_LINE_BIT);
-    glDisable(GL_LIGHTING);
-    glLineWidth(2.0f);
-    
-    // Draw wireframe box
-    glBegin(GL_LINES);
+    // Define vertices for a wireframe box (24 vertices, 12 lines)
+    std::vector<glm::vec3> vertices = {
         // Bottom face
-        glVertex3f(min.m_x, min.m_y, min.m_z);
-        glVertex3f(max.m_x, min.m_y, min.m_z);
-        
-        glVertex3f(max.m_x, min.m_y, min.m_z);
-        glVertex3f(max.m_x, min.m_y, max.m_z);
-        
-        glVertex3f(max.m_x, min.m_y, max.m_z);
-        glVertex3f(min.m_x, min.m_y, max.m_z);
-        
-        glVertex3f(min.m_x, min.m_y, max.m_z);
-        glVertex3f(min.m_x, min.m_y, min.m_z);
+        glm::vec3(min.m_x, min.m_y, min.m_z), glm::vec3(max.m_x, min.m_y, min.m_z),
+        glm::vec3(max.m_x, min.m_y, min.m_z), glm::vec3(max.m_x, min.m_y, max.m_z),
+        glm::vec3(max.m_x, min.m_y, max.m_z), glm::vec3(min.m_x, min.m_y, max.m_z),
+        glm::vec3(min.m_x, min.m_y, max.m_z), glm::vec3(min.m_x, min.m_y, min.m_z),
         
         // Top face
-        glVertex3f(min.m_x, max.m_y, min.m_z);
-        glVertex3f(max.m_x, max.m_y, min.m_z);
-        
-        glVertex3f(max.m_x, max.m_y, min.m_z);
-        glVertex3f(max.m_x, max.m_y, max.m_z);
-        
-        glVertex3f(max.m_x, max.m_y, max.m_z);
-        glVertex3f(min.m_x, max.m_y, max.m_z);
-        
-        glVertex3f(min.m_x, max.m_y, max.m_z);
-        glVertex3f(min.m_x, max.m_y, min.m_z);
+        glm::vec3(min.m_x, max.m_y, min.m_z), glm::vec3(max.m_x, max.m_y, min.m_z),
+        glm::vec3(max.m_x, max.m_y, min.m_z), glm::vec3(max.m_x, max.m_y, max.m_z),
+        glm::vec3(max.m_x, max.m_y, max.m_z), glm::vec3(min.m_x, max.m_y, max.m_z),
+        glm::vec3(min.m_x, max.m_y, max.m_z), glm::vec3(min.m_x, max.m_y, min.m_z),
         
         // Vertical edges
-        glVertex3f(min.m_x, min.m_y, min.m_z);
-        glVertex3f(min.m_x, max.m_y, min.m_z);
-        
-        glVertex3f(max.m_x, min.m_y, min.m_z);
-        glVertex3f(max.m_x, max.m_y, min.m_z);
-        
-        glVertex3f(max.m_x, min.m_y, max.m_z);
-        glVertex3f(max.m_x, max.m_y, max.m_z);
-        
-        glVertex3f(min.m_x, min.m_y, max.m_z);
-        glVertex3f(min.m_x, max.m_y, max.m_z);
-    glEnd();
+        glm::vec3(min.m_x, min.m_y, min.m_z), glm::vec3(min.m_x, max.m_y, min.m_z),
+        glm::vec3(max.m_x, min.m_y, min.m_z), glm::vec3(max.m_x, max.m_y, min.m_z),
+        glm::vec3(max.m_x, min.m_y, max.m_z), glm::vec3(max.m_x, max.m_y, max.m_z),
+        glm::vec3(min.m_x, min.m_y, max.m_z), glm::vec3(min.m_x, max.m_y, max.m_z)
+    };
     
-    glPopAttrib();
+    // Create temporary VAO/VBO for wireframe rendering
+    static unsigned int VAO = 0, VBO = 0;
+    static bool initialized = false;
+    
+    if (!initialized) {
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        initialized = true;
+    }
+    
+    // Bind and upload vertex data
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_DYNAMIC_DRAW);
+    
+    // Set up vertex attributes for position only
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+    glEnableVertexAttribArray(0);
+    
+    // Set line width for wireframe
+    glLineWidth(2.0f);
+    
+    // Draw the wireframe box
+    glDrawArrays(GL_LINES, 0, vertices.size());
+    
+    // Unbind VAO
+    glBindVertexArray(0);
 }
 
 void BBox::setDrawMode(int mode) {

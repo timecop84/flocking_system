@@ -329,22 +329,7 @@ void GLWindow::resizeGL(
     // set the viewport for openGL
     glViewport(0,0,_w,_h);
     
-    // Set up projection matrix using legacy OpenGL calls
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    
-    // Simple perspective projection
-    float aspect = (float)_w / (float)_h;
-    float fovy = 45.0f;
-    float near_plane = 0.1f;
-    float far_plane = 1000.0f;
-    
-    // Use gluPerspective equivalent
-    float fH = tan(fovy * 3.14159f / 360.0f) * near_plane;
-    float fW = fH * aspect;
-    glFrustum(-fW, fW, -fH, fH, near_plane, far_plane);
-    
-    // now set the camera size values as the screen size has changed
+    // Update camera with new aspect ratio (modern approach)
     if (m_cam) {
         m_cam->setShape(45,(float)_w/_h,0.05,350,PERSPECTIVE);
     }
@@ -413,62 +398,29 @@ void GLWindow::paintGL()
     model.translate(m_modelPos.m_x, m_modelPos.m_y, m_modelPos.m_z);
     m_transformStack.setModel(model);
 
-    // Debug: Add immediate mode test AFTER setting up matrices
-    glMatrixMode(GL_PROJECTION);
-    glLoadMatrixf(glm::value_ptr(project));
-    
-    glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf(glm::value_ptr(view));
-    glMultMatrixf(glm::value_ptr(model.getGLMMat4()));
-
-    // Set up lighting for immediate mode rendering
-    // Position the light in world space
-    GLfloat lightPos[] = {120.0f, 120.0f, 120.0f, 1.0f}; // Positional light
-    GLfloat lightAmbient[] = {0.3f, 0.3f, 0.3f, 1.0f};   // Ambient light
-    GLfloat lightDiffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};   // Diffuse light
-    GLfloat lightSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};  // Specular light
-    
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
-    glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular);
-    
-    // Enable lighting (will be disabled/enabled per object as needed)
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-    glEnable(GL_NORMALIZE); // Normalize normals automatically
-    glShadeModel(GL_SMOOTH); // Smooth shading
-    
-    // Temporarily disable lighting for axes
-    glDisable(GL_LIGHTING);
-
-    // Test: Draw coordinate axes for reference (smaller now that we know rendering works)
-    glLineWidth(2.0f);
-    glBegin(GL_LINES);
-        // X axis - Red
-        glColor3f(1.0f, 0.0f, 0.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(30.0f, 0.0f, 0.0f);
-        
-        // Y axis - Green
-        glColor3f(0.0f, 1.0f, 0.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(0.0f, 30.0f, 0.0f);
-        
-        // Z axis - Blue
-        glColor3f(0.0f, 0.0f, 1.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(0.0f, 0.0f, 30.0f);
-    glEnd();
-    glLineWidth(1.0f);
-
     // Draw the bounding box (wireframe) with white color
     if (bbox && frame_count % 60 == 1) {
         std::cout << "Drawing bbox" << std::endl;
     }
     if (bbox) {
-        glColor3f(1.0f, 1.0f, 1.0f); // White color
-        bbox->draw();
+        // Push a clean transform for the bounding box to ensure it's drawn at origin
+        m_transformStack.pushTransform();
+        {
+            // Reset to identity transform for bounding box (no translation)
+            Matrix bboxTransform;
+            bboxTransform.identity();
+            m_transformStack.setModel(bboxTransform.getGLMMat4());
+            
+            // Update UBO with clean transform
+            updateMatrixUBO(m_transformStack);
+            
+            // Use modern color shader for wireframe rendering
+            ShaderLib *shader = ShaderLib::instance();
+            shader->use("Colour");
+            shader->setShaderParam4f("Colour", 1.0f, 1.0f, 1.0f, 1.0f); // White color
+            bbox->draw();
+        }
+        m_transformStack.popTransform();
     }
 
     // Draw the flock with Phong shader using modern UBO pipeline

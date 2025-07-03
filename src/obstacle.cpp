@@ -25,15 +25,9 @@ Obstacle::~Obstacle()
     // Cleanup will be handled automatically by the unique_ptr
 }
 
-void Obstacle::loadMatricesToShader(TransformStack &_tx, Camera *_cam) const
-{
-    // Modern UBO-based approach: No need to set individual uniforms
-    // The UBO data should be updated by the main rendering loop
-    // This function is kept for compatibility but doesn't need to do anything
-    // as the UBO system handles matrix updates automatically
-    
-    // TODO: Remove this function entirely once all rendering is verified to work with UBOs
-}
+//----------------------------------------------------------------------------------------------------------------------
+// Legacy function removed - UBO-based rendering handles matrix updates automatically
+//----------------------------------------------------------------------------------------------------------------------
 
 void Obstacle::ObsDraw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const
 {
@@ -72,48 +66,6 @@ void Obstacle::ObsDraw(const std::string &_shaderName, TransformStack &_transfor
     glPolygonMode(GL_FRONT_AND_BACK, prevPolygonMode[0]);
 }
 
-void Obstacle::ObsDrawImmediate(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const
-{
-    // Legacy immediate mode OpenGL rendering (kept for reference/fallback)
-    std::cout << "Drawing obstacle using legacy immediate mode" << std::endl;
-    
-    glPushMatrix();
-    {
-        // Translate to obstacle position
-        glTranslatef(_spherePosition.m_x, _spherePosition.m_y, _spherePosition.m_z);
-        
-        // Enable lighting for this object
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-        
-        // Set material properties for the obstacle (different from boids)
-        GLfloat ambient[] = {m_colour.m_r * 0.4f, m_colour.m_g * 0.4f, m_colour.m_b * 0.4f, 1.0f};
-        GLfloat diffuse[] = {m_colour.m_r, m_colour.m_g, m_colour.m_b, 1.0f};
-        GLfloat specular[] = {0.9f, 0.9f, 0.9f, 1.0f};
-        GLfloat shininess[] = {128.0f};
-        
-        glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-        glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
-        
-        // Draw sphere using GLU quadrics for smooth appearance
-        GLUquadric* quad = gluNewQuadric();
-        if (m_wireframe) {
-            gluQuadricDrawStyle(quad, GLU_LINE);
-        } else {
-            gluQuadricDrawStyle(quad, GLU_FILL);
-        }
-        gluQuadricNormals(quad, GLU_SMOOTH);
-        gluSphere(quad, _sphereRadius, 32, 32);  // Use actual radius, more detail
-        gluDeleteQuadric(quad);
-        
-        glDisable(GL_LIGHTING);
-    }
-    glPopMatrix();
-}
-
-
-
-
-
+//----------------------------------------------------------------------------------------------------------------------
+// Legacy function removed - UBO-based rendering handles matrix updates automatically
+//----------------------------------------------------------------------------------------------------------------------

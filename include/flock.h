@@ -103,8 +103,7 @@ private:
     /// @brief a pointer to the bbox.
     BBox *m_bbox;
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief shader method
-    void loadMatricesToShader(TransformStack &_tx, Camera *_cam) const;
+    /// @brief Legacy matrix loading function removed - UBO-based rendering handles matrix updates automatically
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our sphere collision method.
     void  checkSphereCollisions();
