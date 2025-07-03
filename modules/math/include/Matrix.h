@@ -16,6 +16,7 @@ public:
     // Interface compatibility methods
     void identity() { m_matrix = glm::mat4(1.0f); }
     void translate(float x, float y, float z) { m_matrix = glm::translate(m_matrix, glm::vec3(x, y, z)); }
+    void scale(float x, float y, float z) { m_matrix = glm::scale(m_matrix, glm::vec3(x, y, z)); }
     void transpose() { m_matrix = glm::transpose(m_matrix); }
     
     // GLM access
@@ -31,10 +32,7 @@ public:
     
     // Access to underlying matrix
     glm::mat4 getGLMMat4() const { return m_matrix; }
-    glm::mat4& getMatrix() { return m_matrix; }
-    // Expose matrix for direct access by Mat3x3 and other friends
-    friend class Mat3x3;
-protected:
+private:
     glm::mat4 m_matrix;
 };
 
@@ -42,20 +40,20 @@ protected:
 class Mat3x3 {
 public:
     glm::mat3 m_matrix;
-    
+
     Mat3x3() : m_matrix(1.0f) {}
     Mat3x3(const glm::mat3& mat) : m_matrix(mat) {}
-    Mat3x3(const Matrix& mat) : m_matrix(glm::mat3(mat.m_matrix)) {} // Conversion from Matrix
-    
+    Mat3x3(const Matrix& mat) : m_matrix(glm::mat3(mat.getGLMMat4())) {} // Use public accessor
+
     void inverse() { m_matrix = glm::inverse(m_matrix); }
-    
+
     operator glm::mat3() const { return m_matrix; }
     operator glm::mat3&() { return m_matrix; }
-    
+
     // Assignment operators
-    Mat3x3& operator=(const Matrix& mat) { 
-        m_matrix = glm::mat3(mat.m_matrix); 
-        return *this; 
+    Mat3x3& operator=(const Matrix& mat) {
+        m_matrix = glm::mat3(mat.getGLMMat4()); // Use public accessor
+        return *this;
     }
 };
 

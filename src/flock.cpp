@@ -25,18 +25,42 @@ Flock::Flock(BBox *bbox, Obstacle *obstacle)
 
 void Flock::draw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam)const
 {
-    // For immediate mode rendering, don't use shaders
-    // ShaderLib *shader=ShaderLib::instance();
-    // shader->use(_shaderName);
+    // For debugging only - can be removed in production
+    if (_shaderName != "Phong") {
+        std::cerr << "Warning: Flock only supports Phong shader in modern mode, got: " << _shaderName << std::endl;
+    }
+    
+    // Use modern UBO-based rendering pipeline
+    ShaderLib *shader = ShaderLib::instance();
+    shader->use(_shaderName);
     
     _transformStack.pushTransform();
 
-    // For immediate mode rendering with fixed-function pipeline, 
-    // matrix loading should be handled by the main rendering loop
-
+    // Render each boid with individual transforms and materials
     for(Boid *b : m_boidList)
     {
-        b->draw(_shaderName,_transformStack,_cam);
+        // Push a new transform level for each boid
+        _transformStack.pushTransform();
+        {
+            // Set up the boid's transform (translate to boid position and scale)
+            flock::Vec3 boidPos = b->getPositionModern();
+            Matrix boidTransform;
+            boidTransform.identity();
+            boidTransform.translate(boidPos.x, boidPos.y, boidPos.z);
+            
+            // Scale the boid (same size as in immediate mode)
+            float boidSize = 2.0f;
+            boidTransform.scale(boidSize, boidSize, boidSize);
+            
+            _transformStack.setModel(boidTransform.getGLMMat4());
+            
+            // Note: Matrix UBO update should be handled by the main rendering loop
+            // Material UBO should also be updated by the main rendering loop
+            
+            // Render the boid using the modern pipeline
+            b->draw(_shaderName, _transformStack, _cam);
+        }
+        _transformStack.popTransform();
     }
 
     _transformStack.popTransform();

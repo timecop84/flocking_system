@@ -1,6 +1,7 @@
 #include "obstacle.h"
 #include "GLWindow.h"
 #include "flock.h"
+#include "boid.h"
 #include <iostream>
 #include <cmath>
 #include <QSurfaceFormat>
@@ -470,14 +471,49 @@ void GLWindow::paintGL()
         bbox->draw();
     }
 
-    // Draw the flock with Phong shader
+    // Draw the flock with Phong shader using modern UBO pipeline
     if (flock && frame_count % 60 == 1) {
-        std::cout << "Drawing flock" << std::endl;
+        std::cout << "Drawing flock using modern UBO pipeline" << std::endl;
     }
     if (flock) {
-        // Update UBO matrices before drawing flock
-        updateMatrixUBO(m_transformStack);
-        flock->draw("Phong", m_transformStack, m_cam);
+        // Use modern UBO-based rendering pipeline for boids
+        ShaderLib *shader = ShaderLib::instance();
+        shader->use("Phong");
+        
+        m_transformStack.pushTransform();
+        
+        // Render each boid with individual transforms and materials
+        const std::vector<Boid*>& boidList = flock->getBoidList();
+        for(Boid* boid : boidList)
+        {
+            // Push a new transform level for each boid
+            m_transformStack.pushTransform();
+            {
+                // Set up the boid's transform (translate to boid position and scale)
+                flock::Vec3 boidPos = boid->getPositionModern();
+                Matrix boidTransform;
+                boidTransform.identity();
+                boidTransform.translate(boidPos.x, boidPos.y, boidPos.z);
+                
+                // Scale the boid (same size as in immediate mode)
+                float boidSize = 2.0f;
+                boidTransform.scale(boidSize, boidSize, boidSize);
+                
+                m_transformStack.setModel(boidTransform.getGLMMat4());
+                
+                // Update UBO matrices for this boid
+                updateMatrixUBO(m_transformStack);
+                
+                // Update material UBO for this boid
+                updateBoidMaterialUBO(*boid);
+                
+                // Render the boid using the modern pipeline
+                boid->drawModern("Phong", m_transformStack, m_cam);
+            }
+            m_transformStack.popTransform();
+        }
+        
+        m_transformStack.popTransform();
     }
 
     // Draw the obstacle with modern UBO-based Phong shader
@@ -496,33 +532,33 @@ void GLWindow::paintGL()
             Matrix obstacleTransform;
             obstacleTransform.identity();
             
-            // Debug: Check the matrix after identity (GLM uses column-major storage)
-            std::cout << "After identity [3,0]: " << obstacleTransform.getGLMMat4()[3][0] 
-                      << ", [3,1]: " << obstacleTransform.getGLMMat4()[3][1] 
-                      << ", [3,2]: " << obstacleTransform.getGLMMat4()[3][2] << std::endl;
+            // Debug output disabled for performance
+            // Debug: Check the matrix after identity and translate operations
+            // std::cout << "After identity [3,0]: " << obstacleTransform.getGLMMat4()[3][0] 
+            //           << ", [3,1]: " << obstacleTransform.getGLMMat4()[3][1] 
+            //           << ", [3,2]: " << obstacleTransform.getGLMMat4()[3][2] << std::endl;
             
-            // Add debugging for translate operation
-            std::cout << "About to translate by (" << obstaclePos.x << ", " << obstaclePos.y << ", " << obstaclePos.z << ")" << std::endl;
+            // std::cout << "About to translate by (" << obstaclePos.x << ", " << obstaclePos.y << ", " << obstaclePos.z << ")" << std::endl;
             obstacleTransform.translate(obstaclePos.x, obstaclePos.y, obstaclePos.z);
             
-            // Debug: Check the matrix we're creating (GLM uses column-major storage)
-            std::cout << "Created obstacleTransform [3,0]: " << obstacleTransform.getGLMMat4()[3][0] 
-                      << ", [3,1]: " << obstacleTransform.getGLMMat4()[3][1] 
-                      << ", [3,2]: " << obstacleTransform.getGLMMat4()[3][2] << std::endl;
+            // Debug output disabled for performance
+            // std::cout << "Created obstacleTransform [3,0]: " << obstacleTransform.getGLMMat4()[3][0] 
+            //           << ", [3,1]: " << obstacleTransform.getGLMMat4()[3][1] 
+            //           << ", [3,2]: " << obstacleTransform.getGLMMat4()[3][2] << std::endl;
             
-            // Debug: Check the transform stack before setting model (GLM uses column-major storage)
-            glm::mat4 beforeSet = m_transformStack.getCurrentTransform();
-            std::cout << "Transform stack before setModel [3,0]: " << beforeSet[3][0] 
-                      << ", [3,1]: " << beforeSet[3][1] 
-                      << ", [3,2]: " << beforeSet[3][2] << std::endl;
+            // Debug output disabled for performance
+            // glm::mat4 beforeSet = m_transformStack.getCurrentTransform();
+            // std::cout << "Transform stack before setModel [3,0]: " << beforeSet[3][0] 
+            //           << ", [3,1]: " << beforeSet[3][1] 
+            //           << ", [3,2]: " << beforeSet[3][2] << std::endl;
             
             m_transformStack.setModel(obstacleTransform.getGLMMat4());
             
-            // Debug: Check the transform stack after setting model (GLM uses column-major storage)
-            glm::mat4 afterSet = m_transformStack.getCurrentTransform();
-            std::cout << "Transform stack after setModel [3,0]: " << afterSet[3][0] 
-                      << ", [3,1]: " << afterSet[3][1] 
-                      << ", [3,2]: " << afterSet[3][2] << std::endl;
+            // Debug output disabled for performance
+            // glm::mat4 afterSet = m_transformStack.getCurrentTransform();
+            // std::cout << "Transform stack after setModel [3,0]: " << afterSet[3][0] 
+            //           << ", [3,1]: " << afterSet[3][1] 
+            //           << ", [3,2]: " << afterSet[3][2] << std::endl;
             
             // Update UBO matrices with obstacle transform
             updateMatrixUBO(m_transformStack);
@@ -533,15 +569,15 @@ void GLWindow::paintGL()
             
             // Enhanced material properties for better specular visibility
             obstacleMaterial.setAmbient(Colour(0.3f, 0.25f, 0.2f, 1.0f));  // Moderate ambient
-            obstacleMaterial.setDiffuse(Colour(0.6f, 0.4f, 0.2f, 1.0f));   // Warm diffuse color
-            obstacleMaterial.setSpecular(Colour(1.0f, 0.9f, 0.8f, 1.0f));  // Bright specular for visibility
+            obstacleMaterial.setDiffuse(Colour(m_obstacleDiffuseR, m_obstacleDiffuseG, m_obstacleDiffuseB, 1.0f));   // Warm diffuse color
+            obstacleMaterial.setSpecular(Colour(m_obstacleSpecularR, m_obstacleSpecularG, m_obstacleSpecularB, 1.0f));  // Bright specular for visibility
             obstacleMaterial.setShininess(8.0f);  // Low shininess for broad, visible highlights
             
-            // Debug output for material values
-            static int materialDebugCounter = 0;
-            if (materialDebugCounter++ % 120 == 0) {
-                std::cout << "Obstacle material - Ambient: (0.2, 0.2, 0.2), Diffuse: (0.8, 0.6, 0.4), Specular: (0.5, 0.5, 0.5), Shininess: 32.0" << std::endl;
-            }
+            // Debug output disabled for performance
+            // static int materialDebugCounter = 0;
+            // if (materialDebugCounter++ % 120 == 0) {
+            //     std::cout << "Obstacle material - Ambient: (0.2, 0.2, 0.2), Diffuse: (0.8, 0.6, 0.4), Specular: (0.5, 0.5, 0.5), Shininess: 32.0" << std::endl;
+            // }
             
             updateMaterialUBO(obstacleMaterial);
             
@@ -912,12 +948,12 @@ void GLWindow::updateLightUBO()
         glm::vec3 lightPos = m_light->getPosition();
         glm::vec3 lightColor = m_light->getColor();
         
-        // Debug output for light position
-        static int lightDebugCounter = 0;
-        if (lightDebugCounter++ % 120 == 0) { // Print every 2 seconds at 60fps
-            std::cout << "Light position (world): (" << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << ")" << std::endl;
-            std::cout << "Light color: (" << lightColor.x << ", " << lightColor.y << ", " << lightColor.z << ")" << std::endl;
-        }
+        // Debug output disabled for performance
+        // static int lightDebugCounter = 0;
+        // if (lightDebugCounter++ % 120 == 0) { // Print every 2 seconds at 60fps
+        //     std::cout << "Light position (world): (" << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << ")" << std::endl;
+        //     std::cout << "Light color: (" << lightColor.x << ", " << lightColor.y << ", " << lightColor.z << ")" << std::endl;
+        // }
         
         m_lightData.position = glm::vec4(lightPos, 1.0f); // Keep light in world space
         // Enhanced lighting components for smoother appearance
@@ -934,6 +970,44 @@ void GLWindow::updateLightUBO()
         // Update the UBO
         m_shader->updateUBO("LightUBO", &m_lightData, sizeof(FlockingShaders::LightBlock));
     }
+}
+
+// Store obstacle material properties
+double m_obstacleSpecularR = 1.0, m_obstacleSpecularG = 1.0, m_obstacleSpecularB = 1.0;
+double m_obstacleDiffuseR = 0.6, m_obstacleDiffuseG = 0.4, m_obstacleDiffuseB = 0.2;
+
+void GLWindow::setObstacleSpecular(double r, double g, double b)
+{
+    m_obstacleSpecularR = r;
+    m_obstacleSpecularG = g;
+    m_obstacleSpecularB = b;
+    update(); // Trigger a redraw
+}
+
+void GLWindow::setObstacleDiffuse(double r, double g, double b)
+{
+    m_obstacleDiffuseR = r;
+    m_obstacleDiffuseG = g;
+    m_obstacleDiffuseB = b;
+    update(); // Trigger a redraw
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// @brief Update material UBO with boid-specific material properties
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateBoidMaterialUBO(const Boid& boid)
+{
+    // Get boid color
+    flock::Color boidColor = boid.getColorModern();
+    
+    // Set up boid material properties similar to immediate mode
+    m_materialData.ambient = glm::vec4(boidColor.r * 0.3f, boidColor.g * 0.3f, boidColor.b * 0.3f, 1.0f);
+    m_materialData.diffuse = glm::vec4(boidColor.r, boidColor.g, boidColor.b, 1.0f);
+    m_materialData.specular = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
+    m_materialData.shininess = 64.0f;
+    
+    // Update the UBO
+    m_shader->updateUBO("MaterialUBO", &m_materialData, sizeof(FlockingShaders::MaterialBlock));
 }
 
 

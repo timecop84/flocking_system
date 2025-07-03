@@ -209,6 +209,70 @@ class Ui_MainWindow(object):
 
         self.gridLayout_41.addWidget(self.m_obstacleColour, 0, 0, 1, 1)
 
+        self.label_specular = QLabel(self.groupBox_5)
+        self.label_specular.setObjectName(u"label_specular")
+
+        self.gridLayout_41.addWidget(self.label_specular, 2, 0, 1, 3)
+
+        self.m_obstacleSpecularR = QDoubleSpinBox(self.groupBox_5)
+        self.m_obstacleSpecularR.setObjectName(u"m_obstacleSpecularR")
+        self.m_obstacleSpecularR.setMinimum(0.000000000000000)
+        self.m_obstacleSpecularR.setMaximum(1.000000000000000)
+        self.m_obstacleSpecularR.setSingleStep(0.010000000000000)
+        self.m_obstacleSpecularR.setValue(1.000000000000000)
+
+        self.gridLayout_41.addWidget(self.m_obstacleSpecularR, 3, 0, 1, 1)
+
+        self.m_obstacleSpecularG = QDoubleSpinBox(self.groupBox_5)
+        self.m_obstacleSpecularG.setObjectName(u"m_obstacleSpecularG")
+        self.m_obstacleSpecularG.setMinimum(0.000000000000000)
+        self.m_obstacleSpecularG.setMaximum(1.000000000000000)
+        self.m_obstacleSpecularG.setSingleStep(0.010000000000000)
+        self.m_obstacleSpecularG.setValue(1.000000000000000)
+
+        self.gridLayout_41.addWidget(self.m_obstacleSpecularG, 3, 1, 1, 1)
+
+        self.m_obstacleSpecularB = QDoubleSpinBox(self.groupBox_5)
+        self.m_obstacleSpecularB.setObjectName(u"m_obstacleSpecularB")
+        self.m_obstacleSpecularB.setMinimum(0.000000000000000)
+        self.m_obstacleSpecularB.setMaximum(1.000000000000000)
+        self.m_obstacleSpecularB.setSingleStep(0.010000000000000)
+        self.m_obstacleSpecularB.setValue(1.000000000000000)
+
+        self.gridLayout_41.addWidget(self.m_obstacleSpecularB, 3, 2, 1, 1)
+
+        self.label_diffuse = QLabel(self.groupBox_5)
+        self.label_diffuse.setObjectName(u"label_diffuse")
+
+        self.gridLayout_41.addWidget(self.label_diffuse, 4, 0, 1, 3)
+
+        self.m_obstacleDiffuseR = QDoubleSpinBox(self.groupBox_5)
+        self.m_obstacleDiffuseR.setObjectName(u"m_obstacleDiffuseR")
+        self.m_obstacleDiffuseR.setMinimum(0.000000000000000)
+        self.m_obstacleDiffuseR.setMaximum(1.000000000000000)
+        self.m_obstacleDiffuseR.setSingleStep(0.010000000000000)
+        self.m_obstacleDiffuseR.setValue(0.600000000000000)
+
+        self.gridLayout_41.addWidget(self.m_obstacleDiffuseR, 5, 0, 1, 1)
+
+        self.m_obstacleDiffuseG = QDoubleSpinBox(self.groupBox_5)
+        self.m_obstacleDiffuseG.setObjectName(u"m_obstacleDiffuseG")
+        self.m_obstacleDiffuseG.setMinimum(0.000000000000000)
+        self.m_obstacleDiffuseG.setMaximum(1.000000000000000)
+        self.m_obstacleDiffuseG.setSingleStep(0.010000000000000)
+        self.m_obstacleDiffuseG.setValue(0.400000000000000)
+
+        self.gridLayout_41.addWidget(self.m_obstacleDiffuseG, 5, 1, 1, 1)
+
+        self.m_obstacleDiffuseB = QDoubleSpinBox(self.groupBox_5)
+        self.m_obstacleDiffuseB.setObjectName(u"m_obstacleDiffuseB")
+        self.m_obstacleDiffuseB.setMinimum(0.000000000000000)
+        self.m_obstacleDiffuseB.setMaximum(1.000000000000000)
+        self.m_obstacleDiffuseB.setSingleStep(0.010000000000000)
+        self.m_obstacleDiffuseB.setValue(0.200000000000000)
+
+        self.gridLayout_41.addWidget(self.m_obstacleDiffuseB, 5, 2, 1, 1)
+
         self.m_obstacleWireframe = QCheckBox(self.groupBox_5)
         self.m_obstacleWireframe.setObjectName(u"m_obstacleWireframe")
 
@@ -447,6 +511,8 @@ class Ui_MainWindow(object):
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"Size:", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Appearence", None))
         self.m_obstacleColour.setText(QCoreApplication.translate("MainWindow", u"Change Colour", None))
+        self.label_specular.setText(QCoreApplication.translate("MainWindow", u"Specular (RGB):", None))
+        self.label_diffuse.setText(QCoreApplication.translate("MainWindow", u"Diffuse (RGB):", None))
         self.m_obstacleWireframe.setText(QCoreApplication.translate("MainWindow", u"Render Wireframe", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.m_page2_obstacle), QCoreApplication.translate("MainWindow", u"Obstacle", None))
         self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"General", None))

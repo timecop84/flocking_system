@@ -379,6 +379,118 @@
              </property>
             </widget>
            </item>
+           <!-- Specular RGB Controls -->
+           <item row="2" column="0" colspan="3">
+            <widget class="QLabel" name="label_specular">
+             <property name="text">
+              <string>Specular (RGB):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QDoubleSpinBox" name="m_obstacleSpecularR">
+             <property name="minimum">
+              <double>0.000000</double>
+             </property>
+             <property name="maximum">
+              <double>1.000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.01</double>
+             </property>
+             <property name="value">
+              <double>1.000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QDoubleSpinBox" name="m_obstacleSpecularG">
+             <property name="minimum">
+              <double>0.000000</double>
+             </property>
+             <property name="maximum">
+              <double>1.000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.01</double>
+             </property>
+             <property name="value">
+              <double>1.000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QDoubleSpinBox" name="m_obstacleSpecularB">
+             <property name="minimum">
+              <double>0.000000</double>
+             </property>
+             <property name="maximum">
+              <double>1.000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.01</double>
+             </property>
+             <property name="value">
+              <double>1.000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0" colspan="3">
+            <widget class="QLabel" name="label_diffuse">
+             <property name="text">
+              <string>Diffuse (RGB):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QDoubleSpinBox" name="m_obstacleDiffuseR">
+             <property name="minimum">
+              <double>0.000000</double>
+             </property>
+             <property name="maximum">
+              <double>1.000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.01</double>
+             </property>
+             <property name="value">
+              <double>0.6</double>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QDoubleSpinBox" name="m_obstacleDiffuseG">
+             <property name="minimum">
+              <double>0.000000</double>
+             </property>
+             <property name="maximum">
+              <double>1.000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.01</double>
+             </property>
+             <property name="value">
+              <double>0.4</double>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="2">
+            <widget class="QDoubleSpinBox" name="m_obstacleDiffuseB">
+             <property name="minimum">
+              <double>0.000000</double>
+             </property>
+             <property name="maximum">
+              <double>1.000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.01</double>
+             </property>
+             <property name="value">
+              <double>0.2</double>
+             </property>
+            </widget>
+           </item>
+           <!-- End Specular/Diffuse RGB Controls -->
            <item row="1" column="0">
             <widget class="QCheckBox" name="m_obstacleWireframe">
              <property name="text">

@@ -71,6 +71,14 @@ public:
     QGroupBox *groupBox_5;
     QGridLayout *gridLayout_41;
     QPushButton *m_obstacleColour;
+    QLabel *label_specular;
+    QDoubleSpinBox *m_obstacleSpecularR;
+    QDoubleSpinBox *m_obstacleSpecularG;
+    QDoubleSpinBox *m_obstacleSpecularB;
+    QLabel *label_diffuse;
+    QDoubleSpinBox *m_obstacleDiffuseR;
+    QDoubleSpinBox *m_obstacleDiffuseG;
+    QDoubleSpinBox *m_obstacleDiffuseB;
     QCheckBox *m_obstacleWireframe;
     QSpacerItem *verticalSpacer_2;
     QWidget *m_page3_simulation;
@@ -287,6 +295,70 @@ public:
         m_obstacleColour->setObjectName("m_obstacleColour");
 
         gridLayout_41->addWidget(m_obstacleColour, 0, 0, 1, 1);
+
+        label_specular = new QLabel(groupBox_5);
+        label_specular->setObjectName("label_specular");
+
+        gridLayout_41->addWidget(label_specular, 2, 0, 1, 3);
+
+        m_obstacleSpecularR = new QDoubleSpinBox(groupBox_5);
+        m_obstacleSpecularR->setObjectName("m_obstacleSpecularR");
+        m_obstacleSpecularR->setMinimum(0.000000000000000);
+        m_obstacleSpecularR->setMaximum(1.000000000000000);
+        m_obstacleSpecularR->setSingleStep(0.010000000000000);
+        m_obstacleSpecularR->setValue(1.000000000000000);
+
+        gridLayout_41->addWidget(m_obstacleSpecularR, 3, 0, 1, 1);
+
+        m_obstacleSpecularG = new QDoubleSpinBox(groupBox_5);
+        m_obstacleSpecularG->setObjectName("m_obstacleSpecularG");
+        m_obstacleSpecularG->setMinimum(0.000000000000000);
+        m_obstacleSpecularG->setMaximum(1.000000000000000);
+        m_obstacleSpecularG->setSingleStep(0.010000000000000);
+        m_obstacleSpecularG->setValue(1.000000000000000);
+
+        gridLayout_41->addWidget(m_obstacleSpecularG, 3, 1, 1, 1);
+
+        m_obstacleSpecularB = new QDoubleSpinBox(groupBox_5);
+        m_obstacleSpecularB->setObjectName("m_obstacleSpecularB");
+        m_obstacleSpecularB->setMinimum(0.000000000000000);
+        m_obstacleSpecularB->setMaximum(1.000000000000000);
+        m_obstacleSpecularB->setSingleStep(0.010000000000000);
+        m_obstacleSpecularB->setValue(1.000000000000000);
+
+        gridLayout_41->addWidget(m_obstacleSpecularB, 3, 2, 1, 1);
+
+        label_diffuse = new QLabel(groupBox_5);
+        label_diffuse->setObjectName("label_diffuse");
+
+        gridLayout_41->addWidget(label_diffuse, 4, 0, 1, 3);
+
+        m_obstacleDiffuseR = new QDoubleSpinBox(groupBox_5);
+        m_obstacleDiffuseR->setObjectName("m_obstacleDiffuseR");
+        m_obstacleDiffuseR->setMinimum(0.000000000000000);
+        m_obstacleDiffuseR->setMaximum(1.000000000000000);
+        m_obstacleDiffuseR->setSingleStep(0.010000000000000);
+        m_obstacleDiffuseR->setValue(0.600000000000000);
+
+        gridLayout_41->addWidget(m_obstacleDiffuseR, 5, 0, 1, 1);
+
+        m_obstacleDiffuseG = new QDoubleSpinBox(groupBox_5);
+        m_obstacleDiffuseG->setObjectName("m_obstacleDiffuseG");
+        m_obstacleDiffuseG->setMinimum(0.000000000000000);
+        m_obstacleDiffuseG->setMaximum(1.000000000000000);
+        m_obstacleDiffuseG->setSingleStep(0.010000000000000);
+        m_obstacleDiffuseG->setValue(0.400000000000000);
+
+        gridLayout_41->addWidget(m_obstacleDiffuseG, 5, 1, 1, 1);
+
+        m_obstacleDiffuseB = new QDoubleSpinBox(groupBox_5);
+        m_obstacleDiffuseB->setObjectName("m_obstacleDiffuseB");
+        m_obstacleDiffuseB->setMinimum(0.000000000000000);
+        m_obstacleDiffuseB->setMaximum(1.000000000000000);
+        m_obstacleDiffuseB->setSingleStep(0.010000000000000);
+        m_obstacleDiffuseB->setValue(0.200000000000000);
+
+        gridLayout_41->addWidget(m_obstacleDiffuseB, 5, 2, 1, 1);
 
         m_obstacleWireframe = new QCheckBox(groupBox_5);
         m_obstacleWireframe->setObjectName("m_obstacleWireframe");
@@ -527,6 +599,8 @@ public:
         label_3->setText(QCoreApplication::translate("MainWindow", "Size:", nullptr));
         groupBox_5->setTitle(QCoreApplication::translate("MainWindow", "Appearence", nullptr));
         m_obstacleColour->setText(QCoreApplication::translate("MainWindow", "Change Colour", nullptr));
+        label_specular->setText(QCoreApplication::translate("MainWindow", "Specular (RGB):", nullptr));
+        label_diffuse->setText(QCoreApplication::translate("MainWindow", "Diffuse (RGB):", nullptr));
         m_obstacleWireframe->setText(QCoreApplication::translate("MainWindow", "Render Wireframe", nullptr));
         toolBox->setItemText(toolBox->indexOf(m_page2_obstacle), QCoreApplication::translate("MainWindow", "Obstacle", nullptr));
         groupBox_7->setTitle(QCoreApplication::translate("MainWindow", "General", nullptr));

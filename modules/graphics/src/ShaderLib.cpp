@@ -254,7 +254,8 @@ void ShaderLib::use(const std::string& name) {
             
             m_currentShader = name;
             m_currentWrapper = m_wrappers[name].get();
-            std::cout << "ShaderLib: Using program '" << name << "' (ID: " << programId << ")" << std::endl;
+            // Debug output disabled for performance - was causing significant slowdown
+            // std::cout << "ShaderLib: Using program '" << name << "' (ID: " << programId << ")" << std::endl;
         } else {
             std::cerr << "OpenGL functions not available for using program" << std::endl;
         }

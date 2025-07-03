@@ -9,6 +9,8 @@
 #include "TransformStack.h"
 // Modern includes for gradual migration
 #include "FlockTypes.h"
+#include "SphereGeometry.h"
+#include <memory>
 
 /*! \brief the boids class */
 /// @file boids.h
@@ -90,6 +92,18 @@ public:
     /// @param [in] _transformStack  values
     /// @param [in] _cam camera values
     void draw(const std::string &_shaderName,TransformStack &_transformStack,Camera *_cam)const;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief drawing the boid using modern VBO/VAO rendering with UBO shaders
+    /// @param [in] _shaderName value
+    /// @param [in] _transformStack  values
+    /// @param [in] _cam camera values
+    void drawModern(const std::string &_shaderName,TransformStack &_transformStack,Camera *_cam)const;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief drawing the boid using legacy immediate mode (for fallback)
+    /// @param [in] _shaderName value
+    /// @param [in] _transformStack  values
+    /// @param [in] _cam camera values
+    void drawImmediate(const std::string &_shaderName,TransformStack &_transformStack,Camera *_cam)const;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief reverse function
     /// @param [in] m_velocity sets the velocity to have a new direction plus the next position. Called during boid to obstacle collision.
@@ -205,6 +219,9 @@ private:
     GLfloat m_size;
     //----------------------------------------------------------------------------------------------------------------------
     bool m_wireframe;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Sphere geometry for modern VBO/VAO rendering
+    mutable std::unique_ptr<FlockingGeometry::SphereGeometry> m_sphereGeometry;
     //----------------------------------------------------------------------------------------------------------------------
 
 protected:

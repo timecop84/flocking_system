@@ -55,8 +55,62 @@ void Boid::draw(
         Camera *_cam
         )const
 {
-    // Use immediate mode OpenGL with lighting for better visual appearance
-    // Note: Shader programs should be disabled before calling this function
+    // Use modern UBO-based rendering by default
+    drawModern(_shaderName, _transformStack, _cam);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void Boid::drawModern(
+        const std::string &_shaderName,
+        TransformStack &_transformStack,
+        Camera *_cam
+        )const
+{
+    // For debugging only - can be removed in production
+    if (_shaderName != "Phong") {
+        std::cerr << "Warning: Boid only supports Phong shader in modern mode, got: " << _shaderName << std::endl;
+    }
+    
+    // Lazy initialization of sphere geometry
+    if (!m_sphereGeometry) {
+        std::cout << "Initializing sphere geometry for boid rendering..." << std::endl;
+        // Create sphere at origin - position will be applied via model matrix
+        float boidRadius = 0.5f; // Same as in immediate mode
+        m_sphereGeometry = std::make_unique<FlockingGeometry::SphereGeometry>(boidRadius, 16, 16);
+        m_sphereGeometry->initializeBuffers();
+    }
+    
+    // The sphere geometry will be rendered at the current model transform position
+    // All transformations should be handled by the transform stack
+    // We just ensure the correct shader is bound and render using VAO
+    
+    ShaderLib *shader = ShaderLib::instance();
+    shader->use(_shaderName);
+    
+    // Set polygon mode for wireframe if needed
+    GLint prevPolygonMode[2];
+    glGetIntegerv(GL_POLYGON_MODE, prevPolygonMode);
+    glPolygonMode(GL_FRONT_AND_BACK, m_wireframe ? GL_LINE : GL_FILL);
+
+    // Apply current transform from transform stack (already includes our position and scale)
+    // The transform matrix and material should already be in the UBOs
+    
+    // Simply render the geometry with the current transform state
+    m_sphereGeometry->render();
+
+    // Restore previous polygon mode
+    glPolygonMode(GL_FRONT_AND_BACK, prevPolygonMode[0]);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void Boid::drawImmediate(
+        const std::string &_shaderName,
+        TransformStack &_transformStack,
+        Camera *_cam
+        )const
+{
+    // Legacy immediate mode OpenGL rendering (kept for reference/fallback)
+    std::cout << "Drawing boid using legacy immediate mode" << std::endl;
     
     glPushMatrix();
     {

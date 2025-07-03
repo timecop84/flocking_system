@@ -70,6 +70,8 @@ public :
     void setObstaclePosition(glm::vec3 position);
     void setObstacleSize(double size);
     void setObstacleColour(QColor colour);
+    void setObstacleSpecular(double r, double g, double b);
+    void setObstacleDiffuse(double r, double g, double b);
     void setObstacleWireframe(bool value);
 
     void setSimDistance(double distance);
@@ -194,6 +196,7 @@ private :
     void initializeUBOs();
     void updateMatrixUBO(const TransformStack& transformStack);
     void updateMaterialUBO(const Material& material);
+    void updateBoidMaterialUBO(const Boid& boid);
     void updateLightUBO();
     void updateLightingUBO();
     void setupLightingUBO();
@@ -286,6 +289,12 @@ private :
     bool m_animate;
     //----------------------------------------------------------------------------------------------------------------------
 
+    double m_obstacleSpecularR = 1.0;
+    double m_obstacleSpecularG = 1.0;
+    double m_obstacleSpecularB = 1.0;
+    double m_obstacleDiffuseR = 0.6;
+    double m_obstacleDiffuseG = 0.4;
+    double m_obstacleDiffuseB = 0.2;
 
 public slots:
 

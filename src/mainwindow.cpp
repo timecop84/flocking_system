@@ -181,3 +181,45 @@ void MainWindow::on_m_bboxSize_valueChanged(double arg1)
     glm::vec3 size(arg1, arg1, arg1);
     m_gl->setBBoxSize(size);
 }
+
+void MainWindow::on_m_obstacleSpecularR_valueChanged(double arg1)
+{
+    double g = m_ui->m_obstacleSpecularG->value();
+    double b = m_ui->m_obstacleSpecularB->value();
+    m_gl->setObstacleSpecular(arg1, g, b);
+}
+
+void MainWindow::on_m_obstacleSpecularG_valueChanged(double arg1)
+{
+    double r = m_ui->m_obstacleSpecularR->value();
+    double b = m_ui->m_obstacleSpecularB->value();
+    m_gl->setObstacleSpecular(r, arg1, b);
+}
+
+void MainWindow::on_m_obstacleSpecularB_valueChanged(double arg1)
+{
+    double r = m_ui->m_obstacleSpecularR->value();
+    double g = m_ui->m_obstacleSpecularG->value();
+    m_gl->setObstacleSpecular(r, g, arg1);
+}
+
+void MainWindow::on_m_obstacleDiffuseR_valueChanged(double arg1)
+{
+    double g = m_ui->m_obstacleDiffuseG->value();
+    double b = m_ui->m_obstacleDiffuseB->value();
+    m_gl->setObstacleDiffuse(arg1, g, b);
+}
+
+void MainWindow::on_m_obstacleDiffuseG_valueChanged(double arg1)
+{
+    double r = m_ui->m_obstacleDiffuseR->value();
+    double b = m_ui->m_obstacleDiffuseB->value();
+    m_gl->setObstacleDiffuse(r, arg1, b);
+}
+
+void MainWindow::on_m_obstacleDiffuseB_valueChanged(double arg1)
+{
+    double r = m_ui->m_obstacleDiffuseR->value();
+    double g = m_ui->m_obstacleDiffuseG->value();
+    m_gl->setObstacleDiffuse(r, g, arg1);
+}

@@ -163,11 +163,11 @@ void SphereGeometry::render() const
         return;
     }
     
-    // For efficiency, don't log every frame in production
-    static int renderCount = 0;
-    if (renderCount++ % 60 == 0) {
-        std::cout << "Rendering sphere using VAO " << m_VAO << std::endl;
-    }
+    // Debug output disabled for performance
+    // static int renderCount = 0;
+    // if (renderCount++ % 60 == 0) {
+    //     std::cout << "Rendering sphere using VAO " << m_VAO << std::endl;
+    // }
     
     // Bind our VAO which contains the sphere geometry
     glBindVertexArray(m_VAO);

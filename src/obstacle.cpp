@@ -56,12 +56,20 @@ void Obstacle::ObsDraw(const std::string &_shaderName, TransformStack &_transfor
     
     ShaderLib *shader = ShaderLib::instance();
     shader->use(_shaderName);
-    
+
+    // Set polygon mode for wireframe if needed
+    GLint prevPolygonMode[2];
+    glGetIntegerv(GL_POLYGON_MODE, prevPolygonMode);
+    glPolygonMode(GL_FRONT_AND_BACK, m_wireframe ? GL_LINE : GL_FILL);
+
     // Apply current transform from transform stack (already includes our position)
     // The transform matrix and material should already be in the UBOs
     
     // Simply render the geometry with the current transform state
     m_sphereGeometry->render();
+
+    // Restore previous polygon mode
+    glPolygonMode(GL_FRONT_AND_BACK, prevPolygonMode[0]);
 }
 
 void Obstacle::ObsDrawImmediate(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const
