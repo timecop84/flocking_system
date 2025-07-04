@@ -2,7 +2,6 @@
 #include "Matrix.h"
 #include "ShaderLib.h"
 #include "MathUtils.h"
-#include "QDebug"
 #include <iostream>
 #include <cstdlib>  // For rand()
 #include <ctime>    // For time-based seeding
@@ -389,12 +388,14 @@ void Flock::validateBoundingBoxCollision()
     ext[0]=ext[1]=(m_bbox->height()/2.0f);
     ext[2]=ext[3]=(m_bbox->width()/2.0f);
     ext[4]=ext[5]=(m_bbox->depth()/2.0f);
+    
     // Dot product needs a Vector so we convert The Point Temp into a Vector so we can
     // do a dot product on it
     Vector point;
     // D is the distance of the Agent from the Plane. If it is less than ext[i] then there is
     // no collision
     GLfloat Distance;
+    
     // Loop for each sphere in the vector list
     for(Boid *s : m_boidList)
     {
@@ -408,17 +409,27 @@ void Flock::validateBoundingBoxCollision()
             Distance=m_bbox->getNormalArray()[i].dot(point);
             //Now Add the Radius of the sphere to the offsett
             Distance+=s->getSize();
+            
+            // Define avoidance zone near the boundary
+            GLfloat avoidanceZone = ext[i] * 0.9f;  // Start avoiding at 90% of the extent
+            
             // If this is greater or equal to the BBox extent /2 then there is a collision
-            //So we calculate the Spheres new direction
-            if(Distance >=ext[i])
+            if(Distance >= ext[i])
             {
-                //We use the same calculation as in raytracing to determine the
-                // the new direction
-                GLfloat x= 2*( s->getVelocity().dot((m_bbox->getNormalArray()[i])));
-                Vector d =m_bbox->getNormalArray()[i]*x;
-                s->setVelocity(s->getNextPosition()-d * 5.0);
+                // Hard collision - reflect the velocity
+                GLfloat x = 2 * (s->getVelocity().dot((m_bbox->getNormalArray()[i])));
+                Vector d = m_bbox->getNormalArray()[i] * x;
+                // Use a smaller multiplier for more reasonable reflection
+                s->setVelocity(s->getNextPosition() - d * 0.8);
                 s->isHit();
-            }//end of hit test
+            }
+            else if(Distance >= avoidanceZone)
+            {
+                // Soft avoidance - add a gentle force away from the boundary
+                GLfloat avoidanceStrength = (Distance - avoidanceZone) / (ext[i] - avoidanceZone);
+                Vector avoidanceForce = m_bbox->getNormalArray()[i] * (avoidanceStrength * 0.2f);
+                s->addVelocity(avoidanceForce);
+            }
         }//end of each face test
     }//end of for
 }

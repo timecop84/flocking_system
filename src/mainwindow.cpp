@@ -12,12 +12,21 @@ MainWindow::MainWindow(QWidget *parent) :
     m_ui->s_mainWindowGridLayout->addWidget(m_gl, 0, 0 ,2, 1);
     this->setWindowTitle(QString("Swarm Flock"));
 
-
+    // Note: UI initialization moved to after OpenGL initialization
+    // This will be done via timer or signal to ensure proper order
 }
 
 MainWindow::~MainWindow()
 {
     delete m_ui;
+}
+
+void MainWindow::initializeUIValues()
+{
+    // Initialize UI controls with their default values
+    // This ensures the objects match the UI control values at startup
+    m_gl->setBoidSize(m_ui->m_changeBoidSize->value());
+    m_gl->setObstacleSize(m_ui->m_obstacleSize->value());
 }
 
 void MainWindow::on_m_flockDensity_valueChanged(int arg1)

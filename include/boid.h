@@ -84,6 +84,10 @@ public:
     /// @param [in] m_scale sets the scale of the boid.
     void setScale(Vector scale) { m_scale = scale; }
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief get the scale of the boid
+    /// @return the scale vector of the boid
+    Vector getScale() const { return m_scale; }
+    //----------------------------------------------------------------------------------------------------------------------
     /// @brief updates the velocity constraints.
     void velocityConstraint();
     //----------------------------------------------------------------------------------------------------------------------
@@ -101,7 +105,7 @@ public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief reverse function
     /// @param [in] m_velocity sets the velocity to have a new direction plus the next position. Called during boid to obstacle collision.
-    inline void reverse(){m_velocity= (m_newDirection + getNextPosition()) * - 20.0;}
+    inline void reverse(){m_velocity= (m_newDirection + getNextPosition()) * -1.2;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the hit function of the boid
     /// @param [in] m_hit called from boids to check if there is collision.

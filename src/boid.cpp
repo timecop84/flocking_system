@@ -126,7 +126,17 @@ void Boid::velocityConstraint()
 {
     float velocityLength = m_velocity.length();
     
-    if (velocityLength > m_maxVelocity)
+    // Check for extreme values that might cause instability
+    if (velocityLength > m_maxVelocity * 10.0f)
+    {
+        // If velocity is extremely high, clamp it more aggressively
+        if(velocityLength > 0.0001f)  // Avoid division by zero
+        {
+            m_velocity.normalize();
+            m_velocity = m_velocity * m_maxVelocity;
+        }
+    }
+    else if (velocityLength > m_maxVelocity)
     {
         if(velocityLength > 0.0001f)  // Avoid division by zero
         {
@@ -134,7 +144,7 @@ void Boid::velocityConstraint()
             m_velocity = m_velocity * m_maxVelocity;
         }
     }
-    else if (velocityLength < m_minVelocity)  // Remove the extra condition
+    else if (velocityLength < m_minVelocity)
     {
         if(velocityLength > 0.0001f)  // Avoid division by zero
         {

@@ -10,8 +10,8 @@ layout(location = 3) in mat4 instanceMatrix; // Model matrix for this instance (
 layout(location = 7) in vec4 instanceColor;  // Color for this instance
 
 // Output to fragment shader
-out vec3 FragPos;      // Position in world space
-out vec3 Normal;       // Normal in world space
+out vec3 FragPos;      // Position in view space
+out vec3 Normal;       // Normal in view space
 out vec4 InstanceColor; // Color passed from instance data
 
 // Uniform Buffer Object for matrices

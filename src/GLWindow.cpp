@@ -1,11 +1,11 @@
 #include "obstacle.h"
 #include "GLWindow.h"
+#include "mainwindow.h"
 #include "flock.h"
 #include "boid.h"
 #include <iostream>
 #include <cmath>
 #include <QSurfaceFormat>
-#include <QDebug>
 #include "MathUtils.h"
 #include "../modules/graphics/include/Camera.h"
 #include "../modules/graphics/include/Colour.h"
@@ -86,6 +86,12 @@ GLWindow::GLWindow(
     m_currentFPS = 0.0f;
     m_showFPS = true; // Show FPS by default
     
+    // Initialize pending size values
+    m_pendingBoidSize = 1.0;
+    m_pendingObstacleSize = 4.0;
+    m_hasPendingBoidSize = false;
+    m_hasPendingObstacleSize = false;
+    
     // Print profiling instructions
     std::cout << "\n=== PERFORMANCE PROFILER CONTROLS ===" << std::endl;
     std::cout << "Press 'R' - Print detailed performance report" << std::endl;
@@ -139,7 +145,12 @@ void GLWindow::removeBoidsFromFlock()
 
 void GLWindow::setBoidSize(double size)
 {
-    flock->setBoidSize(size);
+    if (flock) {
+        flock->setBoidSize(size);
+    } else {
+        m_pendingBoidSize = size;
+        m_hasPendingBoidSize = true;
+    }
 }
 
 void GLWindow::setBoidColor(QColor colour)
@@ -168,7 +179,12 @@ void GLWindow::setObstaclePosition(glm::vec3 position)
 
 void GLWindow::setObstacleSize(double size)
 {
-    obstacle->setSphereRadius(size);
+    if (obstacle) {
+        obstacle->setSphereRadius(size);
+    } else {
+        m_pendingObstacleSize = size;
+        m_hasPendingObstacleSize = true;
+    }
 }
 
 void GLWindow::setObstacleColour(QColor colour)
@@ -344,8 +360,8 @@ void GLWindow::initializeGL()
     // now load to our new camera
     m_cam= new Camera(From,To,Up,PERSPECTIVE);
     // set the shape using FOV 45 Aspect Ratio based on Width and Height
-    // The final two are near and far clipping planes of 0.5 and 10
-    m_cam->setShape(45,(float)720.0/576.0,0.05,350,PERSPECTIVE);
+    // The final two are near and far clipping planes of 0.05 and 2000 (increased for large simulations)
+    m_cam->setShape(45,(float)720.0/576.0,0.05,2000,PERSPECTIVE);
     
     // Initialize camera position using orbital controls
     updateCameraPosition();
@@ -427,6 +443,22 @@ void GLWindow::initializeGL()
     // Initialize high-performance instanced boid renderer
     m_instancedBoidRenderer = std::make_unique<FlockingGraphics::InstancedBoidRenderer>();
     m_instancedBoidRenderer->initialize(0.5f, 16); // 0.5f radius, 16 segments
+    
+    // Apply any pending size values that were set before OpenGL initialization
+    if (m_hasPendingBoidSize) {
+        flock->setBoidSize(m_pendingBoidSize);
+        m_hasPendingBoidSize = false;
+    }
+    if (m_hasPendingObstacleSize) {
+        obstacle->setSphereRadius(m_pendingObstacleSize);
+        m_hasPendingObstacleSize = false;
+    }
+    
+    // Initialize UI values now that OpenGL is ready
+    // Get the parent MainWindow and initialize UI values
+    if (auto* mainWindow = qobject_cast<MainWindow*>(parent()->parent())) {
+        mainWindow->initializeUIValues();
+    }
 }
 //----------------------------------------------------------------------------------------------------------------------
 //This virtual function is called whenever the widget has been updateVelocityresized.
@@ -442,7 +474,7 @@ void GLWindow::resizeGL(
     
     // Update camera with new aspect ratio (modern approach)
     if (m_cam) {
-        m_cam->setShape(45,(float)_w/_h,0.05,350,PERSPECTIVE);
+        m_cam->setShape(45,(float)_w/_h,0.05,2000,PERSPECTIVE);
     }
 }
 
@@ -510,6 +542,9 @@ void GLWindow::paintGL()
     model.identity();
     model.translate(m_modelPos.m_x, m_modelPos.m_y, m_modelPos.m_z);
     m_transformStack.setModel(model);
+    
+    // Update lighting UBO every frame (light position needs to be in view space)
+    updateLightingUBO();
 
     // Draw the bounding box (wireframe) with white color
     if (bbox) {
@@ -552,28 +587,32 @@ void GLWindow::paintGL()
         m_transformStack.setModel(identityMatrix.getGLMMat4());
         updateMatrixUBO(m_transformStack);
         
-        // Update material UBO once for all boids
-        Material goldMaterial(GOLD);
-        updateMaterialUBO(goldMaterial);
+        // Update material UBO once for all boids with a brighter material
+        Material boidMaterial;
+        boidMaterial.setAmbient(Colour(0.3f, 0.3f, 0.3f, 1.0f));     // Brighter ambient
+        boidMaterial.setDiffuse(Colour(0.8f, 0.6f, 0.4f, 1.0f));     // Bright gold diffuse
+        boidMaterial.setSpecular(Colour(1.0f, 1.0f, 1.0f, 1.0f));    // Bright specular
+        boidMaterial.setShininess(32.0f);                              // Moderate shininess
+        updateMaterialUBO(boidMaterial);
         
         // Add each boid as an instance
         for(const Boid* boid : boidList)
         {
             // Calculate model matrix for this boid
             flock::Vec3 boidPos = boid->getPositionModern();
+            Vector boidScale = boid->getScale();
             Matrix boidTransform;
             boidTransform.identity();
             boidTransform.translate(boidPos.x, boidPos.y, boidPos.z);
             
-            // Scale the boid (same size as in immediate mode)
-            float boidSize = 2.0f;
-            boidTransform.scale(boidSize, boidSize, boidSize);
+            // Use the actual boid scale from the flock (controlled by UI)
+            boidTransform.scale(boidScale.m_x, boidScale.m_y, boidScale.m_z);
             
             // Convert to GLM matrix
             glm::mat4 modelMatrix = boidTransform.getGLMMat4();
             
-            // Use a nice color for boids (blue-ish)
-            glm::vec4 boidColor(0.3f, 0.6f, 1.0f, 1.0f);
+            // Use a brighter color for boids that won't darken the material too much
+            glm::vec4 boidColor(1.0f, 1.0f, 1.0f, 1.0f);  // White to preserve material color
             
             // Add this boid as an instance
             m_instancedBoidRenderer->addInstance(modelMatrix, boidColor);
@@ -591,12 +630,21 @@ void GLWindow::paintGL()
         // Push a new transform level for the obstacle
         m_transformStack.pushTransform();
         {
-            // Set up the obstacle's transform (translate to obstacle position)
+            // Set up the obstacle's transform (translate to obstacle position and scale by radius)
             flock::Vec3 obstaclePos = obstacle->getPositionModern();
+            float obstacleRadius = obstacle->getSphereRadius();
+            
+            // Debug output for obstacle size
+            static int obstacleDebugCount = 0;
+            if (obstacleDebugCount++ % 60 == 0) { // Every 60 frames (once per second at 60fps)
+                std::cout << "Obstacle radius: " << obstacleRadius << std::endl;
+            }
+            
             Matrix obstacleTransform;
             obstacleTransform.identity();
             
             obstacleTransform.translate(obstaclePos.x, obstaclePos.y, obstaclePos.z);
+            obstacleTransform.scale(obstacleRadius, obstacleRadius, obstacleRadius);
             
             m_transformStack.setModel(obstacleTransform.getGLMMat4());
             
@@ -759,7 +807,7 @@ void GLWindow::wheelEvent(QWheelEvent *_event)
     {
         // Zoom out - increase camera distance
         m_cameraDistance += zoomFactor;
-        if (m_cameraDistance > 1000.0f) m_cameraDistance = 1000.0f; // Maximum distance
+        if (m_cameraDistance > 1500.0f) m_cameraDistance = 1500.0f; // Maximum distance (increased for large simulations)
     }
     
     updateCameraPosition();
@@ -1028,11 +1076,16 @@ void GLWindow::setupLightingUBO() {
 
 void GLWindow::updateLightingUBO() {
     FlockingShaders::LightingBlock lighting;
-    // Update view position from camera
-    lighting.viewPos = m_cam->getEye(); // changed from getPosition()
+    // In view space, the camera is always at the origin
+    lighting.viewPos = glm::vec3(0.0f, 0.0f, 0.0f);
     
-    // Keep other values constant (or update as needed)
-    lighting.lightPos = glm::vec3(50.0f, 50.0f, 50.0f);
+    // Transform light position to view space
+    // Position light above and to the side of the flock for good visibility
+    glm::vec3 lightWorldPos = glm::vec3(80.0f, 80.0f, 80.0f);
+    glm::mat4 viewMatrix = m_cam->getViewMatrix();
+    glm::vec4 lightViewPos = viewMatrix * glm::vec4(lightWorldPos, 1.0f);
+    lighting.lightPos = glm::vec3(lightViewPos); // Light position in view space
+    
     lighting.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
     lighting.shininess = 32.0f;
     lighting.pad1 = lighting.pad2 = 0.0f;

@@ -76,6 +76,10 @@ private slots:
 
     void on_m_enableObstacle_toggled(bool checked);
 
+public:
+    /// @brief Initialize UI control values (called after OpenGL initialization)
+    void initializeUIValues();
+
 private:
     Ui::MainWindow *m_ui;
 

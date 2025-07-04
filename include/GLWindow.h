@@ -215,6 +215,13 @@ private :
     float m_currentFPS;
     bool m_showFPS;
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Pending size values for UI controls set before OpenGL initialization
+    //----------------------------------------------------------------------------------------------------------------------
+    double m_pendingBoidSize;
+    double m_pendingObstacleSize;
+    bool m_hasPendingBoidSize;
+    bool m_hasPendingObstacleSize;
+    //----------------------------------------------------------------------------------------------------------------------
     /// @brief UBO update helper methods
     //----------------------------------------------------------------------------------------------------------------------
     void initializeUBOs();
