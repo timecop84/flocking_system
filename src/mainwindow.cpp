@@ -223,3 +223,8 @@ void MainWindow::on_m_obstacleDiffuseB_valueChanged(double arg1)
     double g = m_ui->m_obstacleDiffuseG->value();
     m_gl->setObstacleDiffuse(r, g, arg1);
 }
+
+void MainWindow::on_m_enableObstacle_toggled(bool checked)
+{
+    m_gl->setObstacleEnabled(checked);
+}

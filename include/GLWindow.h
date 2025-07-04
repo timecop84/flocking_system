@@ -93,6 +93,10 @@ public :
     void setBBoxSize(glm::vec3 size);
     
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief set obstacle collision checking enabled/disabled
+    //----------------------------------------------------------------------------------------------------------------------
+    void setObstacleCollisionEnabled(bool enabled);
+    //----------------------------------------------------------------------------------------------------------------------
     /// @brief print performance comparison between legacy and modern modes
     //----------------------------------------------------------------------------------------------------------------------
     void printPerformanceComparison();
@@ -328,8 +332,15 @@ private :
     double m_obstacleDiffuseR = 0.6;
     double m_obstacleDiffuseG = 0.4;
     double m_obstacleDiffuseB = 0.2;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief flag to indicate if obstacle is enabled or not
+    //----------------------------------------------------------------------------------------------------------------------
+    bool m_obstacleEnabled = true;
 
 public slots:
+    /// @brief slot to set obstacle enabled/disabled
+    /// @param [in] _enabled the enabled state
+    void setObstacleEnabled(bool _enabled);
 
 };
 

@@ -27,6 +27,7 @@
 #include "BehaviorValidator.h"
 #include "glew_compat.h"
 #include "shader_constants.h"
+#include "PerformanceProfiler.h"
 
 
 
@@ -84,6 +85,18 @@ GLWindow::GLWindow(
     m_frameCount = 0;
     m_currentFPS = 0.0f;
     m_showFPS = true; // Show FPS by default
+    
+    // Print profiling instructions
+    std::cout << "\n=== PERFORMANCE PROFILER CONTROLS ===" << std::endl;
+    std::cout << "Press 'R' - Print detailed performance report" << std::endl;
+    std::cout << "Press 'T' - Reset profiler statistics" << std::endl;
+    std::cout << "Press 'Space' - Toggle animation" << std::endl;
+    std::cout << "Press '+' or '-' - Add/Remove 50 boids" << std::endl;
+    std::cout << "Press '0' - Reset to 200 boids (default)" << std::endl;
+    std::cout << "Press '1' - Set 500 boids" << std::endl;
+    std::cout << "Press '2' - Set 1000 boids" << std::endl;
+    std::cout << "Press '3' - Set 2000 boids (TARGET)" << std::endl;
+    std::cout << "====================================\n" << std::endl;
     
     m_sphereUpdateTimer = startTimer(1000 / 60); //run at 60FPS
     m_animate = true;
@@ -194,6 +207,11 @@ void GLWindow::setSimSeparation(double separation)
 void GLWindow::setSimAlignment(double alignment)
 {
     flock->setSimAlignment(alignment);
+}
+
+void GLWindow::setObstacleCollisionEnabled(bool enabled)
+{
+    flock->setObstacleCollisionEnabled(enabled);
 }
 
 void GLWindow::setBackgroundColour(Colour colour)
@@ -453,6 +471,8 @@ void GLWindow::loadMatricesToColourShader(
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::paintGL()
 {
+    PROFILE_SCOPE("Total Frame Render");
+    
     static int frame_count = 0;
     frame_count++;
     
@@ -463,7 +483,10 @@ void GLWindow::paintGL()
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
     
     // clear the screen and depth buffer
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    {
+        PROFILE_SCOPE("Clear Buffers");
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
     
     // Enable depth testing and face culling for proper 3D rendering
     glEnable(GL_DEPTH_TEST);
@@ -490,6 +513,7 @@ void GLWindow::paintGL()
 
     // Draw the bounding box (wireframe) with white color
     if (bbox) {
+        PROFILE_SCOPE("Draw Bounding Box");
         // Push a clean transform for the bounding box to ensure it's drawn at origin
         m_transformStack.pushTransform();
         {
@@ -512,6 +536,7 @@ void GLWindow::paintGL()
 
     // Draw the flock using high-performance instanced rendering
     if (flock && m_instancedBoidRenderer) {
+        PROFILE_SCOPE("Draw Instanced Boids");
         // Clear previous instances
         m_instancedBoidRenderer->clearInstances();
         
@@ -561,7 +586,8 @@ void GLWindow::paintGL()
     }
 
     // Draw the obstacle with modern UBO-based Phong shader
-    if (obstacle) {
+    if (obstacle && m_obstacleEnabled) {
+        PROFILE_SCOPE("Draw Obstacle");
         // Push a new transform level for the obstacle
         m_transformStack.pushTransform();
         {
@@ -758,8 +784,11 @@ void GLWindow::timerEvent(
 
         // Use modern GLM-based update with performance monitoring
         {
-            FLOCK_TIMER(m_performanceMonitor, "Modern GLM Update");
-            flock->update();
+            PROFILE_SCOPE("Total Frame Update");
+            {
+                PROFILE_SCOPE("Flock Update");
+                flock->update();
+            }
         }
         update();
     }
@@ -809,6 +838,15 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
             // Print performance comparison
             printPerformanceComparison();
             break;
+        case Qt::Key_R:
+            // Print performance profiler report
+            PerformanceProfiler::getInstance().printReport();
+            break;
+        case Qt::Key_T:
+            // Reset performance profiler statistics
+            PerformanceProfiler::getInstance().reset();
+            std::cout << "Performance profiler statistics reset." << std::endl;
+            break;
         case Qt::Key_M:
             // Toggle performance monitoring
             setPerformanceMonitoring(!m_performanceMonitor.isEnabled());
@@ -824,6 +862,109 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
         case Qt::Key_V:
             // Validate behavior differences
             validateBehaviorDifferences();
+            break;
+        case Qt::Key_Plus:
+        case Qt::Key_Equal:
+            // Add more boids for testing
+            if (flock) {
+                for (int i = 0; i < 5; i++) {  // Add 5 sets of 10 = 50 boids
+                    flock->addBoids();
+                }
+                std::cout << "Added boids. Total: " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_Minus:
+            // Remove boids for testing
+            if (flock) {
+                for (int i = 0; i < 5 && flock->getFlockSize() > 10; i++) {  // Remove 5 sets of 10 = 50 boids
+                    flock->removeBoids();
+                }
+                std::cout << "Removed boids. Total: " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_1:
+            // Set to 500 boids
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 500;
+                std::cout << "Setting flock size from " << currentSize << " to " << target << std::endl;
+                
+                if (currentSize < target) {
+                    // Add boids
+                    while (flock->getFlockSize() < target) {
+                        flock->addBoids();
+                    }
+                } else if (currentSize > target) {
+                    // Remove boids
+                    while (flock->getFlockSize() > target) {
+                        flock->removeBoids();
+                    }
+                }
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_2:
+            // Set to 1000 boids
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 1000;
+                std::cout << "Setting flock size from " << currentSize << " to " << target << std::endl;
+                
+                if (currentSize < target) {
+                    // Add boids
+                    while (flock->getFlockSize() < target) {
+                        flock->addBoids();
+                    }
+                } else if (currentSize > target) {
+                    // Remove boids
+                    while (flock->getFlockSize() > target) {
+                        flock->removeBoids();
+                    }
+                }
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_3:
+            // Set to 2000 boids
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 2000;
+                std::cout << "Setting flock size from " << currentSize << " to " << target << " - TARGET!" << std::endl;
+                
+                if (currentSize < target) {
+                    // Add boids
+                    while (flock->getFlockSize() < target) {
+                        flock->addBoids();
+                    }
+                } else if (currentSize > target) {
+                    // Remove boids
+                    while (flock->getFlockSize() > target) {
+                        flock->removeBoids();
+                    }
+                }
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_0:
+            // Reset to default 200 boids
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 200;
+                std::cout << "Resetting flock size from " << currentSize << " to " << target << " (default)" << std::endl;
+                
+                if (currentSize < target) {
+                    // Add boids
+                    while (flock->getFlockSize() < target) {
+                        flock->addBoids();
+                    }
+                } else if (currentSize > target) {
+                    // Remove boids
+                    while (flock->getFlockSize() > target) {
+                        flock->removeBoids();
+                    }
+                }
+                std::cout << "Flock size reset to " << flock->getFlockSize() << std::endl;
+            }
             break;
         default:
             QOpenGLWidget::keyPressEvent(_event);
@@ -1079,6 +1220,14 @@ void GLWindow::renderFPSText() {
         qDebug() << "FPS:" << m_currentFPS << "| Boids:" << (flock ? flock->getFlockSize() : 0);
     }
     
+    // Print profiling report every 5 seconds (300 frames at 60fps)
+    static int profilingCounter = 0;
+    if (profilingCounter++ % 300 == 0) {
+        std::cout << "\n=== AUTOMATIC PROFILING REPORT ===" << std::endl;
+        PerformanceProfiler::getInstance().printReport();
+        std::cout << "===================================\n" << std::endl;
+    }
+    
     // Draw a large, prominent FPS indicator bar
     float barWidth = (m_currentFPS / 60.0f) * 150.0f; // Normalize to 60 FPS, make it wider
     if (barWidth > 150.0f) barWidth = 150.0f;
@@ -1191,4 +1340,11 @@ void GLWindow::paintEvent(QPaintEvent *event) {
     }
 }
 
+void GLWindow::setObstacleEnabled(bool _enabled)
+{
+    m_obstacleEnabled = _enabled;
+    // Also control the collision checking in the flock
+    setObstacleCollisionEnabled(_enabled);
+    update(); // Force a repaint to show/hide the obstacle
+}
 

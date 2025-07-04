@@ -74,6 +74,8 @@ private slots:
 
     void on_m_obstacleDiffuseB_valueChanged(double arg1);
 
+    void on_m_enableObstacle_toggled(bool checked);
+
 private:
     Ui::MainWindow *m_ui;
 

@@ -70,6 +70,9 @@ public:
     void setSimSeparation(double separation);
     void setSimAlignment(double alignment);
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief set obstacle collision checking enabled/disabled
+    void setObstacleCollisionEnabled(bool enabled);
+    //----------------------------------------------------------------------------------------------------------------------
     /// @brief Demonstrate modern flocking system
     void demonstrateModernFlocking();
     //----------------------------------------------------------------------------------------------------------------------

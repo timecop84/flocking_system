@@ -54,6 +54,7 @@ HEADERS += \
     include/ModernExample.h \
     include/BehaviorValidator.h \
     include/SpatialHashGrid.h \
+    include/PerformanceProfiler.h \
     modules/math/include/Vector.h \
     modules/math/include/Matrix.h \
     modules/math/include/MathUtils.h \

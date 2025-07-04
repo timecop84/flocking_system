@@ -62,6 +62,7 @@ public:
     QVBoxLayout *verticalLayout_2;
     QGroupBox *groupBox_3;
     QGridLayout *gridLayout_3;
+    QCheckBox *m_enableObstacle;
     QLabel *label_6;
     QDoubleSpinBox *m_obstaclePosX;
     QDoubleSpinBox *m_obstaclePosY;
@@ -245,36 +246,42 @@ public:
         groupBox_3->setObjectName("groupBox_3");
         gridLayout_3 = new QGridLayout(groupBox_3);
         gridLayout_3->setObjectName("gridLayout_3");
+        m_enableObstacle = new QCheckBox(groupBox_3);
+        m_enableObstacle->setObjectName("m_enableObstacle");
+        m_enableObstacle->setChecked(true);
+
+        gridLayout_3->addWidget(m_enableObstacle, 0, 1, 1, 3);
+
         label_6 = new QLabel(groupBox_3);
         label_6->setObjectName("label_6");
 
-        gridLayout_3->addWidget(label_6, 0, 1, 1, 1);
+        gridLayout_3->addWidget(label_6, 1, 1, 1, 1);
 
         m_obstaclePosX = new QDoubleSpinBox(groupBox_3);
         m_obstaclePosX->setObjectName("m_obstaclePosX");
         m_obstaclePosX->setMinimum(-99.000000000000000);
         m_obstaclePosX->setValue(0.000000000000000);
 
-        gridLayout_3->addWidget(m_obstaclePosX, 1, 1, 1, 1);
+        gridLayout_3->addWidget(m_obstaclePosX, 2, 1, 1, 1);
 
         m_obstaclePosY = new QDoubleSpinBox(groupBox_3);
         m_obstaclePosY->setObjectName("m_obstaclePosY");
         m_obstaclePosY->setMinimum(-99.000000000000000);
         m_obstaclePosY->setValue(0.000000000000000);
 
-        gridLayout_3->addWidget(m_obstaclePosY, 1, 2, 1, 1);
+        gridLayout_3->addWidget(m_obstaclePosY, 2, 2, 1, 1);
 
         m_obstaclePosZ = new QDoubleSpinBox(groupBox_3);
         m_obstaclePosZ->setObjectName("m_obstaclePosZ");
         m_obstaclePosZ->setMinimum(-99.000000000000000);
         m_obstaclePosZ->setValue(0.000000000000000);
 
-        gridLayout_3->addWidget(m_obstaclePosZ, 1, 3, 1, 1);
+        gridLayout_3->addWidget(m_obstaclePosZ, 2, 3, 1, 1);
 
         label_3 = new QLabel(groupBox_3);
         label_3->setObjectName("label_3");
 
-        gridLayout_3->addWidget(label_3, 2, 1, 1, 1);
+        gridLayout_3->addWidget(label_3, 3, 1, 1, 1);
 
         m_obstacleSize = new QDoubleSpinBox(groupBox_3);
         m_obstacleSize->setObjectName("m_obstacleSize");
@@ -282,7 +289,7 @@ public:
         m_obstacleSize->setMaximum(10.000000000000000);
         m_obstacleSize->setValue(4.000000000000000);
 
-        gridLayout_3->addWidget(m_obstacleSize, 2, 2, 1, 2);
+        gridLayout_3->addWidget(m_obstacleSize, 3, 2, 1, 2);
 
 
         verticalLayout_2->addWidget(groupBox_3);
@@ -595,6 +602,13 @@ public:
         m_renderFlockWireframe->setText(QCoreApplication::translate("MainWindow", "Render Wireframe", nullptr));
         toolBox->setItemText(toolBox->indexOf(m_page1_flock), QCoreApplication::translate("MainWindow", "Flock", nullptr));
         groupBox_3->setTitle(QCoreApplication::translate("MainWindow", "General", nullptr));
+#if QT_CONFIG(tooltip)
+        m_enableObstacle->setToolTip(QCoreApplication::translate("MainWindow", "Enable or disable the obstacle in the simulation", nullptr));
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(statustip)
+        m_enableObstacle->setStatusTip(QCoreApplication::translate("MainWindow", "Enable or disable the obstacle in the simulation", nullptr));
+#endif // QT_CONFIG(statustip)
+        m_enableObstacle->setText(QCoreApplication::translate("MainWindow", "Enable Obstacle", nullptr));
         label_6->setText(QCoreApplication::translate("MainWindow", "Position:", nullptr));
         label_3->setText(QCoreApplication::translate("MainWindow", "Size:", nullptr));
         groupBox_5->setTitle(QCoreApplication::translate("MainWindow", "Appearence", nullptr));

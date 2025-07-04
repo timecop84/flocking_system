@@ -158,36 +158,42 @@ class Ui_MainWindow(object):
         self.groupBox_3.setObjectName(u"groupBox_3")
         self.gridLayout_3 = QGridLayout(self.groupBox_3)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
+        self.m_enableObstacle = QCheckBox(self.groupBox_3)
+        self.m_enableObstacle.setObjectName(u"m_enableObstacle")
+        self.m_enableObstacle.setChecked(True)
+
+        self.gridLayout_3.addWidget(self.m_enableObstacle, 0, 1, 1, 3)
+
         self.label_6 = QLabel(self.groupBox_3)
         self.label_6.setObjectName(u"label_6")
 
-        self.gridLayout_3.addWidget(self.label_6, 0, 1, 1, 1)
+        self.gridLayout_3.addWidget(self.label_6, 1, 1, 1, 1)
 
         self.m_obstaclePosX = QDoubleSpinBox(self.groupBox_3)
         self.m_obstaclePosX.setObjectName(u"m_obstaclePosX")
         self.m_obstaclePosX.setMinimum(-99.000000000000000)
         self.m_obstaclePosX.setValue(0.000000000000000)
 
-        self.gridLayout_3.addWidget(self.m_obstaclePosX, 1, 1, 1, 1)
+        self.gridLayout_3.addWidget(self.m_obstaclePosX, 2, 1, 1, 1)
 
         self.m_obstaclePosY = QDoubleSpinBox(self.groupBox_3)
         self.m_obstaclePosY.setObjectName(u"m_obstaclePosY")
         self.m_obstaclePosY.setMinimum(-99.000000000000000)
         self.m_obstaclePosY.setValue(0.000000000000000)
 
-        self.gridLayout_3.addWidget(self.m_obstaclePosY, 1, 2, 1, 1)
+        self.gridLayout_3.addWidget(self.m_obstaclePosY, 2, 2, 1, 1)
 
         self.m_obstaclePosZ = QDoubleSpinBox(self.groupBox_3)
         self.m_obstaclePosZ.setObjectName(u"m_obstaclePosZ")
         self.m_obstaclePosZ.setMinimum(-99.000000000000000)
         self.m_obstaclePosZ.setValue(0.000000000000000)
 
-        self.gridLayout_3.addWidget(self.m_obstaclePosZ, 1, 3, 1, 1)
+        self.gridLayout_3.addWidget(self.m_obstaclePosZ, 2, 3, 1, 1)
 
         self.label_3 = QLabel(self.groupBox_3)
         self.label_3.setObjectName(u"label_3")
 
-        self.gridLayout_3.addWidget(self.label_3, 2, 1, 1, 1)
+        self.gridLayout_3.addWidget(self.label_3, 3, 1, 1, 1)
 
         self.m_obstacleSize = QDoubleSpinBox(self.groupBox_3)
         self.m_obstacleSize.setObjectName(u"m_obstacleSize")
@@ -195,7 +201,7 @@ class Ui_MainWindow(object):
         self.m_obstacleSize.setMaximum(10.000000000000000)
         self.m_obstacleSize.setValue(4.000000000000000)
 
-        self.gridLayout_3.addWidget(self.m_obstacleSize, 2, 2, 1, 2)
+        self.gridLayout_3.addWidget(self.m_obstacleSize, 3, 2, 1, 2)
 
 
         self.verticalLayout_2.addWidget(self.groupBox_3)
@@ -507,6 +513,13 @@ class Ui_MainWindow(object):
         self.m_renderFlockWireframe.setText(QCoreApplication.translate("MainWindow", u"Render Wireframe", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.m_page1_flock), QCoreApplication.translate("MainWindow", u"Flock", None))
         self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"General", None))
+#if QT_CONFIG(tooltip)
+        self.m_enableObstacle.setToolTip(QCoreApplication.translate("MainWindow", u"Enable or disable the obstacle in the simulation", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(statustip)
+        self.m_enableObstacle.setStatusTip(QCoreApplication.translate("MainWindow", u"Enable or disable the obstacle in the simulation", None))
+#endif // QT_CONFIG(statustip)
+        self.m_enableObstacle.setText(QCoreApplication.translate("MainWindow", u"Enable Obstacle", None))
         self.label_6.setText(QCoreApplication.translate("MainWindow", u"Position:", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"Size:", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Appearence", None))
