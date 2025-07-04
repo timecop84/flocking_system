@@ -389,20 +389,25 @@ void GLWindow::initializeGL()
     
     // Initialize optimization systems and standard geometries
     
-    // TODO: Initialize optimization systems (temporarily commented for build stability)
-    // FlockingGraphics::RenderManager::getInstance().initialize();
+    // Initialize optimization systems
+    FlockingGraphics::RenderManager::getInstance().initialize();
     
-    // Create standard geometries for optimized rendering (stubbed for now)
-    // FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 16); // Standard boid geometry
-    // FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 12); // Lower-quality sphere for obstacles
-    // FlockingGraphics::GeometryFactory::instance().createBoundingBox();    // Wireframe bounding box
-    // FlockingGraphics::GeometryFactory::instance().createCube(1.0f);       // Standard cube
+    // Create standard geometries for optimized rendering
+    FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 16); // Standard boid geometry
+    FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 12); // Lower-quality sphere for obstacles
+    FlockingGraphics::GeometryFactory::instance().createBoundingBox();    // Wireframe bounding box
+    FlockingGraphics::GeometryFactory::instance().createCube(1.0f);       // Standard cube
     
     // Create named geometries for the rendering system
-    // auto boidGeometry = FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 12);
+    auto boidGeometry = FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 12);
     // The geometry factory automatically names spheres with the pattern: "sphere_<radius>_<segments>"
     // So our boid geometry will be named "sphere_1.0_12"
     // We can create an alias for easier access
+    
+    // Print geometry factory stats to verify it's working
+    std::cout << "=== FLOCKING GRAPHICS OPTIMIZATION SYSTEM ENABLED ===" << std::endl;
+    FlockingGraphics::GeometryFactory::instance().printStats();
+    std::cout << "======================================================" << std::endl;
     
     m_shader->createShaderProgram("Colour");
 
