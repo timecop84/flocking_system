@@ -28,7 +28,7 @@ layout(std140, binding = 1) uniform MaterialBlock {
 
 // Lighting properties UBO (binding point 3)
 layout(std140, binding = 3) uniform LightingBlock {
-    vec3 lightPos;   // Light position in world space
+    vec3 lightPos;   // Light position in view space (same as PhongInstanced)
     float pad1;      // Padding
     vec3 viewPos;    // Camera position (redundant with viewerPos above)
     float pad2;      // Padding
@@ -38,36 +38,33 @@ layout(std140, binding = 3) uniform LightingBlock {
 
 void main()
 {
-    // Since we're in view space, the view direction is simply (0,0,1)
-    vec3 viewDir = vec3(0.0, 0.0, 1.0);
+    // Normalize the normal (in case of interpolation issues)
+    vec3 norm = normalize(Normal);
     
-    // Transform light position to view space (like fixed function)
-    vec3 lightPosView = (MV * vec4(lightPos, 1.0)).xyz;
-    vec3 lightDirView = normalize(lightPosView - FragPos);
+    // Calculate lighting in view space (light position already in view space)
+    vec3 lightDir = normalize(lightPos - FragPos);
+    vec3 viewDir = normalize(-FragPos); // Camera is at origin in view space
+    vec3 reflectDir = reflect(-lightDir, norm);
     
-    // Ambient - increased for better base illumination
-    vec3 ambientColor = ambient.rgb * lightColor * 0.4;  // Increased ambient
+    // Ambient component (reduced for more natural lighting)
+    vec3 ambientColor = ambient.rgb * lightColor * 0.10; // Further reduced ambient for darker appearance
     
-    // Diffuse - much brighter with gentler falloff
-    float diff = max(dot(Normal, lightDirView), 0.0);
-    diff = diff * 0.8 + 0.2;  // Prevent complete darkness
-    vec3 diffuseColor = diffuse.rgb * lightColor * diff * 1.5;  // Increased diffuse multiplier
+    // Diffuse component (use material diffuse)
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuseColor = diff * diffuse.rgb * lightColor;
     
-    // Specular - keep the sharp highlights
-    vec3 reflectDir = reflect(-lightDirView, Normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess * 1.5);  // Reduced shininess multiplier
-    vec3 specularColor = specular.rgb * lightColor * spec * 3.0;
+    // Specular component (use material specular)
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    vec3 specularColor = spec * specular.rgb * lightColor;
     
-    // Much lighter attenuation
-    float distanceToLight = length(lightPosView - FragPos);
-    float attenuation = 1.0 / (1.0 + 0.005 * distanceToLight + 0.0001 * distanceToLight * distanceToLight);
+    // Combine lighting components
+    vec3 lighting = ambientColor + diffuseColor + specularColor;
     
-    // Final color with increased brightness
-    vec3 result = ambientColor + (diffuseColor + specularColor) * attenuation;
+    // Apply slight gamma correction for better visibility
+    vec3 result = pow(lighting, vec3(1.0/2.2));
     
-    // Optional slight boost to overall brightness
-    result *= 1.2;
+    // Ensure minimum brightness for visibility
+    result = max(result, vec3(0.10)); // Lower minimum brightness for darker shadows
     
-    // Output without gamma correction (fixed function doesn't use it)
     FragColor = vec4(result, diffuse.a);
 }

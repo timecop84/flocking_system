@@ -189,10 +189,18 @@ void GLWindow::setObstacleSize(double size)
 
 void GLWindow::setObstacleColour(QColor colour)
 {
+    // Update the material diffuse color values used in rendering
+    m_obstacleDiffuseR = colour.redF();
+    m_obstacleDiffuseG = colour.greenF();
+    m_obstacleDiffuseB = colour.blueF();
+    
+    // Also update the obstacle's internal color for consistency
     Colour colourToSet;
     colourToSet.set(colour.redF(), colour.greenF(), colour.blueF());
-
     obstacle->setColour(colourToSet);
+    
+    // Trigger a redraw to show the changes
+    update();
 }
 
 void GLWindow::setObstacleWireframe(bool value)
@@ -366,12 +374,10 @@ void GLWindow::initializeGL()
     // Initialize camera position using orbital controls
     updateCameraPosition();
     
-    // now create our light this is done after the camera so we can pass the
-    // transpose of the projection matrix to the light to do correct eye space
-    // transformations
+    // Create natural directional lighting with moderate intensity
     Matrix iv=m_cam->getViewMatrix();
     iv.transpose();
-    m_light = new Light(Vector(120,120,120,1),Colour(1,1,1,1),Colour(1,1,1,1),POINTLIGHT);
+    m_light = new Light(Vector(150,200,120,1),Colour(0.8,0.8,0.75,1),Colour(1.0,1.0,0.9,1),POINTLIGHT);  // Further reduced intensity for natural lighting
     m_light->setTransform(iv);
     
     // Initialize UBOs for modern shader pipeline
@@ -611,8 +617,9 @@ void GLWindow::paintGL()
             // Convert to GLM matrix
             glm::mat4 modelMatrix = boidTransform.getGLMMat4();
             
-            // Use a brighter color for boids that won't darken the material too much
-            glm::vec4 boidColor(1.0f, 1.0f, 1.0f, 1.0f);  // White to preserve material color
+            // Get the actual boid color from the boid object
+            flock::Color boidColorModern = boid->getColorModern();
+            glm::vec4 boidColor(boidColorModern.r, boidColorModern.g, boidColorModern.b, boidColorModern.a);
             
             // Add this boid as an instance
             m_instancedBoidRenderer->addInstance(modelMatrix, boidColor);
@@ -651,14 +658,14 @@ void GLWindow::paintGL()
             // Update UBO matrices with obstacle transform
             updateMatrixUBO(m_transformStack);
             
-            // Set up obstacle material with balanced properties for smooth standard Phong lighting
+            // Set up obstacle material with balanced Phong shading
             Material obstacleMaterial;
             
-            // Enhanced material properties for better specular visibility
-            obstacleMaterial.setAmbient(Colour(0.3f, 0.25f, 0.2f, 1.0f));  // Moderate ambient
-            obstacleMaterial.setDiffuse(Colour(m_obstacleDiffuseR, m_obstacleDiffuseG, m_obstacleDiffuseB, 1.0f));   // Warm diffuse color
-            obstacleMaterial.setSpecular(Colour(m_obstacleSpecularR, m_obstacleSpecularG, m_obstacleSpecularB, 1.0f));  // Bright specular for visibility
-            obstacleMaterial.setShininess(8.0f);  // Low shininess for broad, visible highlights
+            // Balanced Phong material properties for good 3D form and visibility
+            obstacleMaterial.setAmbient(Colour(0.25f, 0.20f, 0.15f, 1.0f));  // Moderate ambient for base visibility
+            obstacleMaterial.setDiffuse(Colour(m_obstacleDiffuseR * 1.8f, m_obstacleDiffuseG * 1.8f, m_obstacleDiffuseB * 1.8f, 1.0f));   // Strong diffuse color
+            obstacleMaterial.setSpecular(Colour(1.2f, 1.2f, 1.0f, 1.0f));  // Bright specular highlights
+            obstacleMaterial.setShininess(48.0f);  // Good shininess for defined highlights
             
             updateMaterialUBO(obstacleMaterial);
             
@@ -1080,13 +1087,13 @@ void GLWindow::updateLightingUBO() {
     lighting.viewPos = glm::vec3(0.0f, 0.0f, 0.0f);
     
     // Transform light position to view space
-    // Position light above and to the side of the flock for good visibility
-    glm::vec3 lightWorldPos = glm::vec3(80.0f, 80.0f, 80.0f);
+    // Use the same light source as the obstacle for consistency
+    glm::vec3 lightWorldPos = m_light ? glm::vec3(m_light->getPosition()) : glm::vec3(150.0f, 200.0f, 120.0f);
     glm::mat4 viewMatrix = m_cam->getViewMatrix();
     glm::vec4 lightViewPos = viewMatrix * glm::vec4(lightWorldPos, 1.0f);
     lighting.lightPos = glm::vec3(lightViewPos); // Light position in view space
     
-    lighting.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    lighting.lightColor = m_light ? glm::vec3(m_light->getColor()) * 0.6f : glm::vec3(0.6f, 0.6f, 0.55f);  // Further reduced intensity for darker, more natural appearance
     lighting.shininess = 32.0f;
     lighting.pad1 = lighting.pad2 = 0.0f;
     

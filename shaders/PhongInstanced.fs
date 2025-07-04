@@ -36,8 +36,8 @@ void main()
     vec3 viewDir = normalize(-FragPos); // Camera is at origin in view space
     vec3 reflectDir = reflect(-lightDir, norm);
     
-    // Ambient component (use material ambient with enhanced brightness)
-    vec3 ambient = material_ambient.rgb * lightColor * 0.4; // Increased ambient
+    // Ambient component (use material ambient with reduced brightness)
+    vec3 ambient = material_ambient.rgb * lightColor * 0.25; // Reduced ambient for darker appearance
     
     // Diffuse component (use material diffuse)
     float diff = max(dot(norm, lightDir), 0.0);
@@ -57,7 +57,7 @@ void main()
     result = pow(result, vec3(1.0/2.2));
     
     // Ensure minimum brightness for visibility
-    result = max(result, vec3(0.15)); // Reasonable minimum brightness
+    result = max(result, vec3(0.10)); // Lower minimum brightness for darker shadows
     
     fragColour = vec4(result, InstanceColor.a);
 }

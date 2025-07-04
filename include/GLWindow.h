@@ -336,9 +336,9 @@ private :
     double m_obstacleSpecularR = 1.0;
     double m_obstacleSpecularG = 1.0;
     double m_obstacleSpecularB = 1.0;
-    double m_obstacleDiffuseR = 0.6;
-    double m_obstacleDiffuseG = 0.4;
-    double m_obstacleDiffuseB = 0.2;
+    double m_obstacleDiffuseR = 1.0;  // Maximum brightness orange-red
+    double m_obstacleDiffuseG = 0.8;  // Maximum brightness orange
+    double m_obstacleDiffuseB = 0.4;  // Maximum brightness orange
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief flag to indicate if obstacle is enabled or not
     //----------------------------------------------------------------------------------------------------------------------

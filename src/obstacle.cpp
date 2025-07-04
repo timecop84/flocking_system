@@ -11,7 +11,7 @@ Obstacle::Obstacle(Vector spherePosition, GLfloat sphereRadius)
 {
     _spherePosition = spherePosition;
     _sphereRadius = sphereRadius;
-    m_colour.set(0.5f, 1.0f, 0.6f, 1.0f);
+    m_colour.set(1.0f, 0.8f, 0.4f, 1.0f);  // Very bright orange color for maximum visibility
     m_wireframe = false;
 
     _hit = false;
