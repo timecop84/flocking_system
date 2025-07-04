@@ -9,7 +9,7 @@ int main() {
     std::cout << "=== FLOCKING SYSTEM PERFORMANCE TEST ===" << std::endl;
     
     // Create test environment
-    BBox* bbox = new BBox(Vector(0,0,0), 120, 120, 120);
+    BBox* bbox = new BBox(Vector(0,0,0), 200, 200, 200);  // Updated to match main application
     Obstacle* obstacle = new Obstacle(Vector(50,0,0), 15.0);
     
     // Test different boid counts

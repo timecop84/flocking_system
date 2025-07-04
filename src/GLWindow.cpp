@@ -75,7 +75,7 @@ GLWindow::GLWindow(
     m_spinYFace = 0;
     
     // Initialize orbital camera controls
-    m_cameraDistance = 120.0f;  // Reduced from 250.0f for better view of the simulation
+    m_cameraDistance = 200.0f;  // Increased from 120.0f for better view of larger simulation space
     m_cameraAzimuth = 45.0f;    // degrees
     m_cameraElevation = 30.0f;  // degrees  
     m_cameraTarget.set(0, 0, 0); // look at origin
@@ -420,7 +420,7 @@ void GLWindow::initializeGL()
     glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
     
     // Initialize sphere primitive for boid rendering
-    bbox = new BBox(Vector(0,0,0),120,120,120);
+    bbox = new BBox(Vector(0,0,0),200,200,200);  // Increased from 120x120x120 for larger simulation space
     bbox->setDrawMode(GL_LINE);
     flock = new Flock(bbox, obstacle);
     
@@ -605,7 +605,6 @@ void GLWindow::paintGL()
             
             // Set up obstacle material with balanced properties for smooth standard Phong lighting
             Material obstacleMaterial;
-            flock::Color obstacleColor = obstacle->getColorModern();
             
             // Enhanced material properties for better specular visibility
             obstacleMaterial.setAmbient(Colour(0.3f, 0.25f, 0.2f, 1.0f));  // Moderate ambient

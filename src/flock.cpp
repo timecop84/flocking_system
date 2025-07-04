@@ -4,6 +4,8 @@
 #include "MathUtils.h"
 #include "QDebug"
 #include <iostream>
+#include <cstdlib>  // For rand()
+#include <ctime>    // For time-based seeding
 #include "PerformanceProfiler.h"
 
 
@@ -19,6 +21,14 @@ Flock::Flock(BBox *bbox, Obstacle *obstacle) : m_spatialGrid(15.0f) // Cell size
     m_checkSphereSphere=true;
     m_obstacle = obstacle;
     m_speedMultiplier = 1.0f;  // Default speed multiplier
+
+    // Seed random number generator for swarm randomness
+    srand(static_cast<unsigned int>(time(nullptr)));
+    
+    std::cout << "=== SWARM-OF-FLIES BEHAVIOR ENABLED ===" << std::endl;
+    std::cout << "Behavior: Tighter grouping with chaotic individual movement" << std::endl;
+    std::cout << "Parameters: Low alignment, high cohesion, random jitter" << std::endl;
+    std::cout << "=======================================" << std::endl;
 
     resetBoids();
 }
@@ -155,99 +165,139 @@ void Flock::update()
         // Cache behavior distances for faster access
         const float behaviorDistance = static_cast<float>(m_behaviours->getBehaviourDistance());
         const float flockDistance = static_cast<float>(m_behaviours->getFlockDistance());
-        const float maxBehaviorDistance = std::max(behaviorDistance, flockDistance);
         
         // Cache behavior forces for faster access
         const float separationForce = static_cast<float>(m_behaviours->getSeparationForce());
         const float cohesionForce = static_cast<float>(m_behaviours->getCohesionForce());
         const float alignmentForce = static_cast<float>(m_behaviours->getAlignment());
         
+        // Optimization: Pre-calculate squared distances to avoid sqrt() calls
+        const float behaviorDistanceSq = behaviorDistance * behaviorDistance;
+        const float flockDistanceSq = flockDistance * flockDistance;
+        
+        // Early termination limits for better performance with large flocks
+        // const int maxNeighborsForBehavior = 15; // Removed - process all neighbors for natural behavior
+        
+        // OPTIMIZATION: Pre-cache all boid positions and velocities in glm format to reduce conversions
+        const size_t boidCount = m_boidList.size();
+        std::vector<glm::vec3> boidPositions(boidCount);
+        std::vector<glm::vec3> boidVelocities(boidCount);
+        
+        for(size_t i = 0; i < boidCount; i++) {
+            Vector pos = m_boidList[i]->getPosition();
+            Vector vel = m_boidList[i]->getVelocity();
+            boidPositions[i] = glm::vec3(pos.m_x, pos.m_y, pos.m_z);
+            boidVelocities[i] = glm::vec3(vel.m_x, vel.m_y, vel.m_z);
+        }
+        
         int boidIndex = 0;
         for(Boid *boid : m_boidList)
         {
-            // Get current boid state (convert once)
-            Vector currentPos = boid->getPosition();
-            Vector currentVel = boid->getVelocity();
-            glm::vec3 glmCurrentPos(currentPos.m_x, currentPos.m_y, currentPos.m_z);
-            glm::vec3 glmCurrentVel(currentVel.m_x, currentVel.m_y, currentVel.m_z);
+            // Use pre-cached positions (significant performance improvement)
+            const glm::vec3& glmCurrentPos = boidPositions[boidIndex];
             
             // Get nearby boids using spatial partitioning
-            std::vector<std::pair<Boid*, int>> nearbyBoids = m_spatialGrid.getNearbyBoids(glmCurrentPos, maxBehaviorDistance);
+            std::vector<std::pair<Boid*, int>> nearbyBoids = m_spatialGrid.getNearbyBoids(glmCurrentPos, std::max(behaviorDistance, flockDistance));
+            
+            // Early exit if no neighbors (optimization for sparse areas)
+            if(nearbyBoids.empty()) {
+                boidIndex++;
+                continue;
+            }
             
             // Initialize behavior accumulators
             glm::vec3 coherence(0.0f);
             glm::vec3 alignmentSum(0.0f);
             glm::vec3 separation(0.0f);
-            int cohesionCount = 1; // Legacy starts with 1
-            int alignmentCount = 1; // Legacy starts with 1
+            int cohesionCount = 0; // Start with 0, only count actual neighbors
+            int alignmentCount = 0; // Start with 0, only count actual neighbors
             
-            // SINGLE PASS: Calculate all behaviors simultaneously
+            // SINGLE PASS: Calculate all behaviors simultaneously with optimized distance checks
             for(const auto& boidPair : nearbyBoids) {
-                if(boidPair.second != boidIndex) // Don't include self
+                const int neighborIndex = boidPair.second;
+                if(neighborIndex != boidIndex) // Don't include self
                 {
-                    // Get neighbor state (convert once per neighbor)
-                    Vector neighborPos = boidPair.first->getPosition();
-                    glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
+                    // Use pre-cached positions and velocities (avoid repeated conversions)
+                    const glm::vec3& glmNeighborPos = boidPositions[neighborIndex];
+                    const glm::vec3& glmNeighborVel = boidVelocities[neighborIndex];
                     
-                    // Calculate distance once per neighbor
+                    // Calculate distance vector once per neighbor
                     glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
-                    float distance = glm::length(boidDistance);
                     
-                    // COHESION: Check if within behavior distance
-                    if(distance < behaviorDistance)
+                    // Use squared distance to avoid expensive sqrt() calls
+                    float distanceSq = glm::dot(boidDistance, boidDistance);
+                    
+                    // COHESION & ALIGNMENT: Check if within behavior distance (squared)
+                    if(distanceSq < behaviorDistanceSq && distanceSq > 0.001f) // Avoid division by zero
                     {
                         coherence += glmNeighborPos;
                         cohesionCount++;
                         
                         // ALIGNMENT: Same distance check, so calculate here
-                        Vector neighborVel = boidPair.first->getVelocity();
-                        glm::vec3 glmNeighborVel(neighborVel.m_x, neighborVel.m_y, neighborVel.m_z);
                         alignmentSum += glmNeighborVel;
                         alignmentCount++;
                     }
                     
-                    // SEPARATION: Check if within flock distance
-                    if(distance < flockDistance)
+                    // SEPARATION: Check if within flock distance (squared)
+                    if(distanceSq < flockDistanceSq && distanceSq > 0.001f)
                     {
-                        separation -= boidDistance; // Use pre-calculated boidDistance
+                        // Apply distance-based separation force (no sqrt needed)
+                        float separationStrength = (flockDistanceSq - distanceSq) / flockDistanceSq;
+                        glm::vec3 separationForce = boidDistance * separationStrength;
+                        separation += separationForce;
                     }
                 }
             }
             
-            // COHESION: Finalize calculation
-            coherence /= static_cast<float>(cohesionCount);
-            coherence = coherence - glmCurrentPos;
-            if (glm::length(coherence) > 0.0001f) {
-                coherence = glm::normalize(coherence);
+            // COHESION: Finalize calculation (compute centroid first, then direction)
+            if (cohesionCount > 0) {
+                coherence /= static_cast<float>(cohesionCount);
+                coherence = coherence - glmCurrentPos;  // Direction toward centroid
+                if (glm::length(coherence) > 0.0001f) {
+                    coherence = glm::normalize(coherence);
+                } else {
+                    coherence = glm::vec3(0.0f);
+                }
             } else {
                 coherence = glm::vec3(0.0f);
             }
             
-            // ALIGNMENT: Finalize calculation
-            if (glm::length(alignmentSum) > behaviorDistance)
-            {
+            // ALIGNMENT: Finalize calculation with reduced influence for chaotic movement
+            if (alignmentCount > 0) {
+                alignmentSum /= static_cast<float>(alignmentCount);
+                // Use average velocity direction but weaken it significantly for swarm behavior
                 if (glm::length(alignmentSum) > 0.0001f) {
                     alignmentSum = glm::normalize(alignmentSum);
+                    // Reduce alignment strength by 50% for more chaotic movement
+                    alignmentSum *= 0.5f;
                 } else {
                     alignmentSum = glm::vec3(0.0f);
                 }
+            } else {
+                alignmentSum = glm::vec3(0.0f);
             }
-            alignmentSum /= static_cast<float>(alignmentCount);
-            alignmentSum = alignmentSum - glmCurrentVel;
             
-            // BEHAVIOR SETUP: Combine all forces (exactly match legacy calculation)
-            glm::vec3 separationCorrection(-1.0f, -1.0f, -1.0f);
-            glm::vec3 separationSet = (separationForce * separation) * separationCorrection;
-            glm::vec3 cohesionSet = cohesionForce * coherence;
+            // BEHAVIOR SETUP: Combine all forces with swarm-style weighting
+            glm::vec3 separationSet = separation * separationForce;
+            glm::vec3 cohesionSet = coherence * cohesionForce;
             glm::vec3 alignmentSet = alignmentSum * alignmentForce;
             
-            glm::vec3 behaviourSetup = separationSet + cohesionSet + alignmentSet;
+            // Add random jitter for fly-like chaotic movement
+            glm::vec3 randomJitter(
+                ((rand() % 1000) / 1000.0f - 0.5f) * 2.0f,  // Random -1 to 1
+                ((rand() % 1000) / 1000.0f - 0.5f) * 2.0f,
+                ((rand() % 1000) / 1000.0f - 0.5f) * 2.0f
+            );
+            randomJitter *= 1.5f;  // Reduced from 3.0f for more subtle chaos
             
-            if (glm::length(behaviourSetup) > 0.5f)
+            glm::vec3 behaviourSetup = separationSet + cohesionSet + alignmentSet + randomJitter;
+            
+            // Allow for more chaotic movement - higher force limit
+            if (glm::length(behaviourSetup) > 1.5f)  // Increased from 0.5f for more dynamic movement
             {
                 if (glm::length(behaviourSetup) > 0.0001f) {
                     behaviourSetup = glm::normalize(behaviourSetup);
-                    behaviourSetup *= 0.5f;
+                    behaviourSetup *= 1.5f;  // Increased force magnitude
                 } else {
                     behaviourSetup = glm::vec3(0.0f);
                 }
