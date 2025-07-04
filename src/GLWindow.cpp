@@ -1114,10 +1114,6 @@ void GLWindow::updateLightUBO()
     }
 }
 
-// Store obstacle material properties
-double m_obstacleSpecularR = 1.0, m_obstacleSpecularG = 1.0, m_obstacleSpecularB = 1.0;
-double m_obstacleDiffuseR = 0.6, m_obstacleDiffuseG = 0.4, m_obstacleDiffuseB = 0.2;
-
 void GLWindow::setObstacleSpecular(double r, double g, double b)
 {
     m_obstacleSpecularR = r;
