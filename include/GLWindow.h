@@ -7,8 +7,11 @@
 #include <QWheelEvent>
 #include <QTimerEvent>
 #include <QKeyEvent>
+#include <QPainter>
+#include <QPaintEvent>
 #include <glm/glm.hpp>
 #include <memory>
+#include <chrono>
 
 // Forward declaration for modular include
 class ShaderLib;
@@ -76,6 +79,9 @@ public :
     void setObstacleSpecular(double r, double g, double b);
     void setObstacleDiffuse(double r, double g, double b);
     void setObstacleWireframe(bool value);
+    
+    void setShowFPS(bool show);
+    float getCurrentFPS() const;
 
     void setSimDistance(double distance);
     void setSimFlockDistance(double distance);
@@ -198,6 +204,13 @@ private :
     FlockingShaders::MaterialBlock m_materialData;
     FlockingShaders::LightBlock m_lightData;
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief FPS tracking variables
+    //----------------------------------------------------------------------------------------------------------------------
+    std::chrono::high_resolution_clock::time_point m_lastTime;
+    int m_frameCount;
+    float m_currentFPS;
+    bool m_showFPS;
+    //----------------------------------------------------------------------------------------------------------------------
     /// @brief UBO update helper methods
     //----------------------------------------------------------------------------------------------------------------------
     void initializeUBOs();
@@ -212,6 +225,13 @@ private :
     // UBO handles
     GLuint m_matrixUBO;
     GLuint m_lightingUBO;
+    
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief FPS calculation and rendering methods
+    //----------------------------------------------------------------------------------------------------------------------
+    void updateFPS();
+    void renderFPSText();
+    void renderFPSOverlay();
 
 protected:
 
@@ -243,6 +263,11 @@ protected:
     /// be re-drawn
     //----------------------------------------------------------------------------------------------------------------------
     void paintGL();
+    
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief paint event override to draw FPS overlay using QPainter
+    //----------------------------------------------------------------------------------------------------------------------
+    void paintEvent(QPaintEvent *event) override;
 
 private :
 

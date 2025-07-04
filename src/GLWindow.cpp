@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include <QSurfaceFormat>
+#include <QDebug>
 #include "MathUtils.h"
 #include "../modules/graphics/include/Camera.h"
 #include "../modules/graphics/include/Colour.h"
@@ -77,6 +78,12 @@ GLWindow::GLWindow(
     m_cameraAzimuth = 45.0f;    // degrees
     m_cameraElevation = 30.0f;  // degrees  
     m_cameraTarget.set(0, 0, 0); // look at origin
+    
+    // Initialize FPS tracking
+    m_lastTime = std::chrono::high_resolution_clock::now();
+    m_frameCount = 0;
+    m_currentFPS = 0.0f;
+    m_showFPS = true; // Show FPS by default
     
     m_sphereUpdateTimer = startTimer(1000 / 60); //run at 60FPS
     m_animate = true;
@@ -591,6 +598,10 @@ void GLWindow::paintGL()
         m_transformStack.popTransform();
     }
     
+    // Update and render FPS counter
+    updateFPS();
+    renderFPSText();
+    
     // End frame coordination to finalize rendering
     FlockingGraphics::FrameCoordinator::getInstance().endFrame();
 }
@@ -1010,6 +1021,174 @@ void GLWindow::setBoidMaterial(Material& material, const Boid& boid)
     material.setDiffuse(Colour(boidColor.r, boidColor.g, boidColor.b, 1.0f));
     material.setSpecular(Colour(0.8f, 0.8f, 0.8f, 1.0f));
     material.setShininess(64.0f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::setShowFPS(bool show) {
+    m_showFPS = show;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+float GLWindow::getCurrentFPS() const {
+    return m_currentFPS;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateFPS() {
+    m_frameCount++;
+    
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_lastTime);
+    
+    // Update FPS every 500ms for smooth display
+    if (timeDiff.count() >= 500) {
+        m_currentFPS = (m_frameCount * 1000.0f) / timeDiff.count();
+        m_frameCount = 0;
+        m_lastTime = currentTime;
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::renderFPSText() {
+    if (!m_showFPS) return;
+    
+    // Save current OpenGL state
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    
+    // Disable depth testing for 2D overlay
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    
+    // Switch to 2D rendering mode
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(0, width(), 0, height(), -1, 1);
+    
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    
+    // Enable blending for semi-transparent background
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    // For now, we'll print to console more frequently for debugging
+    static int printCounter = 0;
+    if (printCounter++ % 30 == 0) { // Print every 30 frames (every 0.5 seconds at 60fps)
+        qDebug() << "FPS:" << m_currentFPS << "| Boids:" << (flock ? flock->getFlockSize() : 0);
+    }
+    
+    // Draw a large, prominent FPS indicator bar
+    float barWidth = (m_currentFPS / 60.0f) * 150.0f; // Normalize to 60 FPS, make it wider
+    if (barWidth > 150.0f) barWidth = 150.0f;
+    
+    // Large FPS bar background
+    glColor4f(0.0f, 0.0f, 0.0f, 0.9f); // More opaque background
+    glBegin(GL_QUADS);
+        glVertex2f(10, height() - 40);
+        glVertex2f(170, height() - 40);
+        glVertex2f(170, height() - 20);
+        glVertex2f(10, height() - 20);
+    glEnd();
+    
+    // FPS bar foreground (color-coded) - larger and brighter
+    if (m_currentFPS >= 50.0f) {
+        glColor4f(0.0f, 1.0f, 0.0f, 1.0f); // Bright green for good FPS
+    } else if (m_currentFPS >= 30.0f) {
+        glColor4f(1.0f, 1.0f, 0.0f, 1.0f); // Bright yellow for medium FPS
+    } else {
+        glColor4f(1.0f, 0.0f, 0.0f, 1.0f); // Bright red for low FPS
+    }
+    
+    glBegin(GL_QUADS);
+        glVertex2f(12, height() - 38);
+        glVertex2f(12 + barWidth, height() - 38);
+        glVertex2f(12 + barWidth, height() - 22);
+        glVertex2f(12, height() - 22);
+    glEnd();
+    
+    // Add a white border for better visibility
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(10, height() - 40);
+        glVertex2f(170, height() - 40);
+        glVertex2f(170, height() - 20);
+        glVertex2f(10, height() - 20);
+    glEnd();
+    
+    // Restore OpenGL state
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    
+    glPopAttrib();
+}
+
+void GLWindow::renderFPSOverlay() {
+    if (!m_showFPS) return;
+    
+    // This method will be called from paintEvent using QPainter
+    // The actual text rendering will be done there
+}
+
+void GLWindow::paintEvent(QPaintEvent *event) {
+    // First, perform the standard OpenGL rendering
+    QOpenGLWidget::paintEvent(event);
+    
+    // Then, draw the FPS overlay using QPainter
+    if (m_showFPS) {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        
+        // Set up the font for the FPS text
+        QFont font = painter.font();
+        font.setPointSize(12);
+        font.setBold(true);
+        painter.setFont(font);
+        
+        // Prepare the FPS text
+        QString fpsText = QString("FPS: %1").arg(m_currentFPS, 0, 'f', 1);
+        QString boidText = QString("Boids: %1").arg(flock ? flock->getFlockSize() : 0);
+        
+        // Calculate text metrics
+        QFontMetrics fm(font);
+        int textWidth = qMax(fm.horizontalAdvance(fpsText), fm.horizontalAdvance(boidText));
+        int textHeight = fm.height();
+        
+        // Draw semi-transparent background
+        int padding = 8;
+        int bgWidth = textWidth + 2 * padding;
+        int bgHeight = 2 * textHeight + 3 * padding;
+        
+        QRect bgRect(10, 10, bgWidth, bgHeight);
+        painter.fillRect(bgRect, QColor(0, 0, 0, 180));
+        
+        // Draw border
+        painter.setPen(QPen(Qt::white, 2));
+        painter.drawRect(bgRect);
+        
+        // Draw FPS text
+        QColor textColor = Qt::white;
+        if (m_currentFPS >= 50.0f) {
+            textColor = Qt::green;
+        } else if (m_currentFPS >= 30.0f) {
+            textColor = Qt::yellow;
+        } else {
+            textColor = Qt::red;
+        }
+        
+        painter.setPen(textColor);
+        painter.drawText(10 + padding, 10 + padding + textHeight, fpsText);
+        
+        // Draw boid count
+        painter.setPen(Qt::white);
+        painter.drawText(10 + padding, 10 + 2 * padding + 2 * textHeight, boidText);
+        
+        painter.end();
+    }
 }
 
 
