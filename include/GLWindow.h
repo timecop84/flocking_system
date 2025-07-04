@@ -8,6 +8,7 @@
 #include <QTimerEvent>
 #include <QKeyEvent>
 #include <glm/glm.hpp>
+#include <memory>
 
 // Forward declaration for modular include
 class ShaderLib;
@@ -22,6 +23,8 @@ class ShaderLib;
 #include "BehaviorValidator.h"
 // UBO support
 #include "../modules/graphics/include/UBOStructures.h"
+// High-performance instanced rendering
+#include "modules/graphics/include/InstancedBoidRenderer.h"
 
 // must be included after our stuff because GLEW needs to be first
 #include <QTime>
@@ -177,6 +180,10 @@ private :
     /// @brief a pointer to the flock class to have access to the methods
     Flock *flock;
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief high-performance instanced renderer for boids
+    //----------------------------------------------------------------------------------------------------------------------
+    std::unique_ptr<FlockingGraphics::InstancedBoidRenderer> m_instancedBoidRenderer;
+    //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the GL Depth Color
     //----------------------------------------------------------------------------------------------------------------------
     Colour m_backgroundColour;
@@ -200,6 +207,7 @@ private :
     void updateLightUBO();
     void updateLightingUBO();
     void setupLightingUBO();
+    void setBoidMaterial(Material& material, const Boid& boid);
 
     // UBO handles
     GLuint m_matrixUBO;

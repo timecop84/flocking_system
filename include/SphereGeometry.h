@@ -30,6 +30,13 @@ public:
     const std::vector<Vertex>& getVertices() const { return m_vertices; }
     const std::vector<unsigned int>& getIndices() const { return m_indices; }
     
+    // Get OpenGL objects for instanced rendering
+    GLuint getVAO() const { return m_VAO; }
+    GLuint getVBO() const { return m_VBO; }
+    GLuint getEBO() const { return m_EBO; }
+    size_t getIndexCount() const { return m_indices.size(); }
+    bool isInitialized() const { return m_buffersInitialized; }
+    
 private:
     void generateSphere();
     

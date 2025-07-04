@@ -9,6 +9,7 @@
 #include "Camera.h"
 #include "obstacle.h"
 #include "Behaviours.h"
+#include "SpatialHashGrid.h" // Add spatial partitioning for performance
 
 /*! \brief The Flock class */
 /// @file Flock.h
@@ -60,6 +61,7 @@ public:
     void setFlockSize(int size) {m_numberOfBoids = size;}
     void setBoidSize(double size);
     void setColour(Colour colour);
+    Colour getColour() const { return m_boidColour; }
     void setWireframe(bool value);
     void setSpeedMultiplier(float multiplier);
     void setSimDistance(double distance);
@@ -121,6 +123,9 @@ private:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief speed multiplier for controlling flock movement speed
     float m_speedMultiplier;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief spatial hash grid for efficient neighbor queries (O(N) instead of O(N²))
+    flock::SpatialHashGrid m_spatialGrid;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief do the actual sphereSphere collisions
     /// @param[in] _pos1 the position of the first sphere

@@ -52,10 +52,22 @@ struct LightingBlock {
     // Total: 48 bytes (aligned to 16-byte boundary)
 };
 
+// Camera properties UBO (Binding point 4)
+struct CameraBlock {
+    glm::vec3 position;     // 12 bytes
+    float nearPlane;        // 4 bytes
+    glm::vec3 direction;    // 12 bytes  
+    float farPlane;         // 4 bytes
+    glm::mat4 viewMatrix;   // 64 bytes
+    glm::mat4 projMatrix;   // 64 bytes
+    // Total: 160 bytes (aligned to 16-byte boundary)
+};
+
 // Binding points for UBOs
 const unsigned int MATRIX_BINDING_POINT = 0;
 const unsigned int MATERIAL_BINDING_POINT = 1;
 const unsigned int LIGHT_BINDING_POINT = 2;
 const unsigned int LIGHTING_BINDING_POINT = 3;
+const unsigned int CAMERA_BINDING_POINT = 4;
 
 } // namespace FlockingShaders

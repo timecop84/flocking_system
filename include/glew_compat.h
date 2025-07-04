@@ -49,11 +49,16 @@ typedef void (APIENTRY *PFNGLDELETEVERTEXARRAYSPROC)(GLsizei n, const GLuint *ar
 typedef void (APIENTRY *PFNGLGENBUFFERSPROC)(GLsizei n, GLuint *buffers);
 typedef void (APIENTRY *PFNGLBINDBUFFERPROC)(GLenum target, GLuint buffer);
 typedef void (APIENTRY *PFNGLBUFFERDATAPROC)(GLenum target, GLsizeiptr size, const void *data, GLenum usage);
+typedef void (APIENTRY *PFNGLBUFFERSUBDATAPROC)(GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
 typedef void (APIENTRY *PFNGLDELETEBUFFERSPROC)(GLsizei n, const GLuint *buffers);
 
 // Vertex attribute function pointers
 typedef void (APIENTRY *PFNGLVERTEXATTRIBPOINTERPROC)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
 typedef void (APIENTRY *PFNGLENABLEVERTEXATTRIBARRAYPROC)(GLuint index);
+
+// Instanced rendering function pointers
+typedef void (APIENTRY *PFNGLDRAWELEMENTSINSTANCEDPROC)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
+typedef void (APIENTRY *PFNGLVERTEXATTRIBDIVISORPROC)(GLuint index, GLuint divisor);
 
 // Global function pointers
 extern PFNGLBINDBUFFERBASEPROC glBindBufferBase;
@@ -69,11 +74,16 @@ extern PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
 extern PFNGLGENBUFFERSPROC glGenBuffers;
 extern PFNGLBINDBUFFERPROC glBindBuffer;
 extern PFNGLBUFFERDATAPROC glBufferData;
+extern PFNGLBUFFERSUBDATAPROC glBufferSubData;
 extern PFNGLDELETEBUFFERSPROC glDeleteBuffers;
 
 // Vertex attribute function pointers
 extern PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
 extern PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
+
+// Instanced rendering function pointers
+extern PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced;
+extern PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor;
 
 // Initialize function pointers
 inline int glewInit() {
@@ -93,11 +103,16 @@ inline int glewInit() {
     glGenBuffers = (PFNGLGENBUFFERSPROC)context->getProcAddress("glGenBuffers");
     glBindBuffer = (PFNGLBINDBUFFERPROC)context->getProcAddress("glBindBuffer");
     glBufferData = (PFNGLBUFFERDATAPROC)context->getProcAddress("glBufferData");
+    glBufferSubData = (PFNGLBUFFERSUBDATAPROC)context->getProcAddress("glBufferSubData");
     glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)context->getProcAddress("glDeleteBuffers");
     
     // Initialize vertex attribute functions
     glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)context->getProcAddress("glVertexAttribPointer");
     glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)context->getProcAddress("glEnableVertexAttribArray");
+    
+    // Initialize instanced rendering functions
+    glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCEDPROC)context->getProcAddress("glDrawElementsInstanced");
+    glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISORPROC)context->getProcAddress("glVertexAttribDivisor");
     
     return 0; // GLEW_OK
 }

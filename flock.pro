@@ -25,6 +25,7 @@ SOURCES += \
     src/SphereGeometry.cpp \
     src/Behaviours.cpp \
     src/BehaviorValidator.cpp \
+    src/SpatialHashGrid.cpp \
     modules/math/src/MathUtils.cpp \
     modules/graphics/src/Camera.cpp \
     modules/graphics/src/TransformStack.cpp \
@@ -32,7 +33,14 @@ SOURCES += \
     modules/graphics/src/Material.cpp \
     modules/graphics/src/Light.cpp \
     modules/graphics/src/ShaderLib.cpp \
-    modules/graphics/src/BBox.cpp
+    modules/graphics/src/BBox.cpp \
+    modules/graphics/src/RenderManager.cpp \
+    modules/graphics/src/UBOCache.cpp \
+    modules/graphics/src/GeometryFactory.cpp \
+    modules/graphics/src/SmartShaderManager.cpp \
+    modules/graphics/src/TransformBatcher.cpp \
+    modules/graphics/src/FrameCoordinator.cpp \
+    modules/graphics/src/InstancedBoidRenderer.cpp
 
 HEADERS += \
     include/mainwindow.h \
@@ -45,6 +53,7 @@ HEADERS += \
     include/FlockTypes.h \
     include/ModernExample.h \
     include/BehaviorValidator.h \
+    include/SpatialHashGrid.h \
     modules/math/include/Vector.h \
     modules/math/include/Matrix.h \
     modules/math/include/MathUtils.h \
@@ -55,7 +64,14 @@ HEADERS += \
     modules/graphics/include/Light.h \
     modules/graphics/include/ShaderLib.h \
     modules/graphics/include/BBox.h \
-
+    modules/graphics/include/UBOStructures.h \
+    modules/graphics/include/RenderManager.h \
+    modules/graphics/include/UBOCache.h \
+    modules/graphics/include/GeometryFactory.h \
+    modules/graphics/include/SmartShaderManager.h \
+    modules/graphics/include/TransformBatcher.h \
+    modules/graphics/include/FrameCoordinator.h \
+    modules/graphics/include/InstancedBoidRenderer.h \
     modules/utils/include/PerformanceMonitor.h
 
 FORMS += \

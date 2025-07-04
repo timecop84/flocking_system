@@ -79,9 +79,6 @@ void SphereGeometry::generateSphere()
             ++k2;
         }
     }
-    
-    std::cout << "Generated sphere: " << m_vertices.size() << " vertices, " 
-              << m_indices.size() << " indices" << std::endl;
 }
 
 void SphereGeometry::initializeBuffers()
@@ -89,8 +86,6 @@ void SphereGeometry::initializeBuffers()
     if (m_buffersInitialized) {
         cleanup(); // Clean up existing buffers
     }
-    
-    std::cout << "Initializing sphere buffers..." << std::endl;
     
     // Check if VAO functions are available
     if (!glGenVertexArrays || !glBindVertexArray || !glDeleteVertexArrays) {
@@ -102,8 +97,6 @@ void SphereGeometry::initializeBuffers()
     glGenVertexArrays(1, &m_VAO);
     glGenBuffers(1, &m_VBO);
     glGenBuffers(1, &m_EBO);
-    
-    std::cout << "Generated buffers: VAO=" << m_VAO << ", VBO=" << m_VBO << ", EBO=" << m_EBO << std::endl;
     
     // Check for OpenGL errors
     GLenum error = glGetError();
@@ -152,8 +145,6 @@ void SphereGeometry::initializeBuffers()
     glBindVertexArray(0);
     
     m_buffersInitialized = true;
-    
-    std::cout << "Sphere geometry buffers initialized successfully!" << std::endl;
 }
 
 void SphereGeometry::render() const
@@ -190,8 +181,6 @@ void SphereGeometry::cleanup()
         m_VBO = 0;
         m_EBO = 0;
         m_buffersInitialized = false;
-        
-        std::cout << "Sphere geometry buffers cleaned up" << std::endl;
     }
 }
 

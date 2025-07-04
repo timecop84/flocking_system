@@ -54,7 +54,6 @@ void Boid::drawModern(
     
     // Lazy initialization of sphere geometry
     if (!m_sphereGeometry) {
-        std::cout << "Initializing sphere geometry for boid rendering..." << std::endl;
         // Create sphere at origin - position will be applied via model matrix
         float boidRadius = 0.5f; // Same as in immediate mode
         m_sphereGeometry = std::make_unique<FlockingGeometry::SphereGeometry>(boidRadius, 16, 16);

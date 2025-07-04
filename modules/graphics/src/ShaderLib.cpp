@@ -24,11 +24,16 @@ PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays = nullptr;
 PFNGLGENBUFFERSPROC glGenBuffers = nullptr;
 PFNGLBINDBUFFERPROC glBindBuffer = nullptr;
 PFNGLBUFFERDATAPROC glBufferData = nullptr;
+PFNGLBUFFERSUBDATAPROC glBufferSubData = nullptr;
 PFNGLDELETEBUFFERSPROC glDeleteBuffers = nullptr;
 
 // Define global function pointers for vertex attribute functions
 PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer = nullptr;
 PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray = nullptr;
+
+// Define global function pointers for instanced rendering functions
+PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced = nullptr;
+PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor = nullptr;
 
 ShaderLib* ShaderLib::s_instance = nullptr;
 
@@ -47,10 +52,19 @@ ShaderLib* ShaderLib::instance() {
                 glGetUniformBlockIndex = (PFNGLGETUNIFORMBLOCKINDEXPROC)context->getProcAddress("glGetUniformBlockIndex");
                 glUniformBlockBinding = (PFNGLUNIFORMBLOCKBINDINGPROC)context->getProcAddress("glUniformBlockBinding");
                 
+                // Initialize VBO function pointers  
+                glBufferSubData = (PFNGLBUFFERSUBDATAPROC)context->getProcAddress("glBufferSubData");
+                
+                // Initialize instanced rendering function pointers
+                glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCEDPROC)context->getProcAddress("glDrawElementsInstanced");
+                glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISORPROC)context->getProcAddress("glVertexAttribDivisor");
+                
                 if (!glBindBufferBase || !glGetUniformBlockIndex || !glUniformBlockBinding) {
                     std::cerr << "Failed to initialize UBO function pointers" << std::endl;
-                } else {
-                    std::cout << "OpenGL functions initialized" << std::endl;
+                } else if (!glDrawElementsInstanced || !glVertexAttribDivisor) {
+                    std::cerr << "Failed to initialize instanced rendering function pointers" << std::endl;
+                } else if (!glBufferSubData) {
+                    std::cerr << "Failed to initialize VBO function pointers" << std::endl;
                 }
             }
         } else {
@@ -61,13 +75,10 @@ ShaderLib* ShaderLib::instance() {
 }
 
 void ShaderLib::createShader(const std::string& name) {
-    std::cout << "ShaderLib: Creating shader '" << name << "'" << std::endl;
     // Individual shaders are created when attachShader is called
 }
 
 void ShaderLib::createShaderProgram(const std::string& name) {
-    std::cout << "ShaderLib: Creating shader program '" << name << "'" << std::endl;
-    
     if (!m_gl) {
         std::cerr << "OpenGL functions not available" << std::endl;
         return;
@@ -84,13 +95,9 @@ void ShaderLib::createShaderProgram(const std::string& name) {
     
     m_wrappers[name] = std::move(wrapper);
     m_programs[name] = programId;
-    
-    std::cout << "Created OpenGL shader program: " << name << " (ID: " << programId << ")" << std::endl;
 }
 
 void ShaderLib::attachShader(const std::string& name, int type) {
-    std::cout << "ShaderLib: Attaching shader '" << name << "' of type " << type << std::endl;
-    
     if (!m_gl) {
         std::cerr << "OpenGL functions not available" << std::endl;
         return;
@@ -104,17 +111,12 @@ void ShaderLib::attachShader(const std::string& name, int type) {
     
     m_shaders[name] = shaderId;
     m_shaderTypes[name] = type;
-    
-    std::cout << "Created OpenGL shader: " << name << " (ID: " << shaderId << ", Type: " << type << ")" << std::endl;
 }
 
 void ShaderLib::loadShaderSource(const std::string& name, const std::string& filename) {
-    std::cout << "ShaderLib: Loading shader source '" << name << "' from '" << filename << "'" << std::endl;
-    
     std::string source;
     if (loadShaderFromFile(filename, source)) {
         m_shaderSources[name] = source;
-        std::cout << "Successfully loaded shader source: " << filename << " (" << source.length() << " chars)" << std::endl;
     } else {
         std::cerr << "Failed to load shader source: " << filename << std::endl;
         m_shaderSources[name] = "// Failed to load shader source";
@@ -122,8 +124,6 @@ void ShaderLib::loadShaderSource(const std::string& name, const std::string& fil
 }
 
 void ShaderLib::compileShader(const std::string& name) {
-    std::cout << "ShaderLib: Compiling shader '" << name << "'" << std::endl;
-    
     if (!m_gl) {
         std::cerr << "OpenGL functions not available" << std::endl;
         return;
@@ -144,21 +144,16 @@ void ShaderLib::compileShader(const std::string& name) {
         m_gl->glCompileShader(shaderId);
         
         // Check compilation status
-        if (checkShaderCompilation(shaderId, name)) {
-            std::cout << "Successfully compiled shader: " << name << std::endl;
-        }
+        checkShaderCompilation(shaderId, name);
     } else {
         std::cerr << "Shader not found for compilation: " << name << std::endl;
     }
 }
 
 void ShaderLib::attachShaderToProgram(const std::string& program, const std::string& shader) {
-    std::cout << "ShaderLib: Attaching shader '" << shader << "' to program '" << program << "'" << std::endl;
-    
     // Check if this shader is already attached to this program
     auto& attachedShaders = m_programShaderAttachments[program];
     if (attachedShaders.find(shader) != attachedShaders.end()) {
-        std::cout << "Shader '" << shader << "' is already attached to program '" << program << "', skipping" << std::endl;
         return;
     }
     
@@ -169,18 +164,12 @@ void ShaderLib::attachShaderToProgram(const std::string& program, const std::str
         unsigned int programId = programIt->second;
         unsigned int shaderId = shaderIt->second;
         
-        // Debug: Check what shaders are already attached to this program
-        int attachedCount = 0;
-        m_gl->glGetProgramiv(programId, 0x8B85, &attachedCount); // GL_ATTACHED_SHADERS
-        std::cout << "Program '" << program << "' currently has " << attachedCount << " shaders attached" << std::endl;
-        
         // Attach shader to program
         if (m_gl) {
             m_gl->glAttachShader(programId, shaderId);
             
             // Track this attachment
             attachedShaders.insert(shader);
-            std::cout << "Successfully attached shader '" << shader << "' (ID: " << shaderId << ") to program '" << program << "' (ID: " << programId << ")" << std::endl;
         } else {
             std::cerr << "OpenGL functions not available for attaching shader" << std::endl;
         }
@@ -190,14 +179,11 @@ void ShaderLib::attachShaderToProgram(const std::string& program, const std::str
 }
 
 void ShaderLib::bindAttribute(const std::string& program, int index, const std::string& name) {
-    std::cout << "ShaderLib: Binding attribute '" << name << "' to index " << index << " in program '" << program << "'" << std::endl;
-    
     auto it = m_programs.find(program);
     if (it != m_programs.end()) {
         unsigned int programId = it->second;
         if (m_gl) {
             m_gl->glBindAttribLocation(programId, index, name.c_str());
-            std::cout << "Successfully bound attribute: " << name << " to index " << index << " in program " << programId << std::endl;
         } else {
             std::cerr << "OpenGL functions not available for binding attribute" << std::endl;
         }
@@ -207,36 +193,16 @@ void ShaderLib::bindAttribute(const std::string& program, int index, const std::
 }
 
 void ShaderLib::linkProgramObject(const std::string& name) {
-    std::cout << "ShaderLib: Linking program '" << name << "'" << std::endl;
-    
     auto it = m_programs.find(name);
     if (it != m_programs.end()) {
         unsigned int programId = it->second;
         
         // Link the program
         if (m_gl) {
-            // Debug: Show attached shaders before linking
-            int attachedCount = 0;
-            m_gl->glGetProgramiv(programId, 0x8B85, &attachedCount); // GL_ATTACHED_SHADERS
-            std::cout << "About to link program '" << name << "' with " << attachedCount << " attached shaders" << std::endl;
-            
-            if (attachedCount > 0) {
-                std::vector<unsigned int> attachedShaders(attachedCount);
-                m_gl->glGetAttachedShaders(programId, attachedCount, nullptr, attachedShaders.data());
-                
-                for (int i = 0; i < attachedCount; ++i) {
-                    int shaderType = 0;
-                    m_gl->glGetShaderiv(attachedShaders[i], 0x8B4F, &shaderType); // GL_SHADER_TYPE
-                    std::cout << "  Attached shader " << i << ": ID=" << attachedShaders[i] << ", Type=" << shaderType << std::endl;
-                }
-            }
-            
             m_gl->glLinkProgram(programId);
             
             // Check linking status
-            if (checkProgramLinking(programId, name)) {
-                std::cout << "Successfully linked program: " << name << " (ID: " << programId << ")" << std::endl;
-            }
+            checkProgramLinking(programId, name);
         } else {
             std::cerr << "OpenGL functions not available for linking" << std::endl;
         }
@@ -467,7 +433,6 @@ bool ShaderLib::loadShaderFromFile(const std::string& filename, std::string& sou
             file.close();
             
             if (!source.empty()) {
-                std::cout << "Successfully loaded shader from: " << path << std::endl;
                 return true;
             }
         }
@@ -491,7 +456,6 @@ unsigned int ShaderLib::createUBO(const std::string& name, size_t size) {
     m_gl->glBindBuffer(GL_UNIFORM_BUFFER, 0);
     
     m_ubos[name] = uboId;
-    std::cout << "ShaderLib: Created UBO '" << name << "' with ID " << uboId << " and size " << size << std::endl;
     
     return uboId;
 }
@@ -509,7 +473,6 @@ void ShaderLib::bindUBOToBindingPoint(const std::string& uboName, unsigned int b
     }
     
     glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, it->second);
-    std::cout << "ShaderLib: Bound UBO '" << uboName << "' to binding point " << bindingPoint << std::endl;
 }
 
 void ShaderLib::bindUniformBlockToBindingPoint(const std::string& programName, const std::string& blockName, unsigned int bindingPoint) {
@@ -531,7 +494,6 @@ void ShaderLib::bindUniformBlockToBindingPoint(const std::string& programName, c
     }
     
     glUniformBlockBinding(it->second, blockIndex, bindingPoint);
-    std::cout << "ShaderLib: Bound uniform block '" << blockName << "' in program '" << programName << "' to binding point " << bindingPoint << std::endl;
 }
 
 void ShaderLib::updateUBO(const std::string& uboName, const void* data, size_t size, size_t offset) {
@@ -565,5 +527,4 @@ void ShaderLib::deleteUBO(const std::string& uboName) {
     
     m_gl->glDeleteBuffers(1, &it->second);
     m_ubos.erase(it);
-    std::cout << "ShaderLib: Deleted UBO '" << uboName << "'" << std::endl;
 }

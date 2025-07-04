@@ -13,6 +13,12 @@
 #include "../modules/graphics/include/Light.h"
 #include "../modules/graphics/include/ShaderLib.h"
 #include "../modules/graphics/include/UBOStructures.h"
+#include "../modules/graphics/include/FrameCoordinator.h"
+#include "../modules/graphics/include/GeometryFactory.h"
+#include "../modules/graphics/include/SmartShaderManager.h"
+#include "../modules/graphics/include/RenderManager.h"
+#include "../modules/graphics/include/UBOCache.h"
+#include "../modules/graphics/include/TransformBatcher.h"
 #include "PerformanceMonitor.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -203,56 +209,104 @@ void GLWindow::setBBoxSize(glm::vec3 size)
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::initializeGL()
 {
-    std::cout << "initializeGL called" << std::endl;
-    
     // Initialize OpenGL functions - required for QOpenGLWidget with QOpenGLFunctions
     initializeOpenGLFunctions();
-    
-    std::cout << "OpenGL functions initialized" << std::endl;
     
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
     // enable depth testing for drawing
     glEnable(GL_DEPTH_TEST);
     
     // Initialize OpenGL extensions
-    std::cout << "OpenGL functions initialized" << std::endl;
 #ifdef WIN32
     glewInit(); // Initialize GLEW on Windows
 #endif
     // now to load the shader and set the values
     // grab an instance of shader manager
     m_shader = ShaderLib::instance();
-    // we are creating a shader called Phong
+    
+    // Create shaders for optimized rendering
+    
+    // Main Phong shader for boids and obstacles
     m_shader->createShaderProgram("Phong");
-    // now we are going to create empty shaders for Frag and Vert
     m_shader->attachShader("PhongVertex",VERTEX);
     m_shader->attachShader("PhongFragment",FRAGMENT);
-    // attach the source
     m_shader->loadShaderSource("PhongVertex","shaders/Phong.vs");
     m_shader->loadShaderSource("PhongFragment","shaders/Phong.fs");
-    // compile the shaders
     m_shader->compileShader("PhongVertex");
     m_shader->compileShader("PhongFragment");
-    // add them to the program
     m_shader->attachShaderToProgram("Phong","PhongVertex");
     m_shader->attachShaderToProgram("Phong","PhongFragment");
-    // now bind the shader attributes for most NGL primitives we use the following
-    // layout attribute 0 is the vertex data (x,y,z)
+    
+    // Bind vertex attributes
     m_shader->bindAttribute("Phong",0,"inVert");
-    // attribute 1 is the UV data u,v (if present)
     m_shader->bindAttribute("Phong",1,"inUV");
-    // attribute 2 are the normals x,y,z
     m_shader->bindAttribute("Phong",2,"inNormal");
-
-    // now we have associated this data we can link the shader
+    
+    // Link and activate
     m_shader->linkProgramObject("Phong");
-    // and make it active ready to load values
     (*m_shader)["Phong"]->use();
     
     // Bind uniform blocks to binding points for UBO compatibility
     m_shader->bindUniformBlockToBindingPoint("Phong", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
     m_shader->bindUniformBlockToBindingPoint("Phong", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
     m_shader->bindUniformBlockToBindingPoint("Phong", "LightBlock", FlockingShaders::LIGHT_BINDING_POINT);
+    
+    // Create additional shaders for optimization
+    // Instanced boid shader
+    m_shader->createShaderProgram("boid_shader");
+    m_shader->attachShader("BoidVertex",VERTEX);
+    m_shader->attachShader("BoidFragment",FRAGMENT);
+    // For now, use the same Phong shaders - can be optimized later with instancing
+    m_shader->loadShaderSource("BoidVertex","shaders/Phong.vs");
+    m_shader->loadShaderSource("BoidFragment","shaders/Phong.fs");
+    m_shader->compileShader("BoidVertex");
+    m_shader->compileShader("BoidFragment");
+    m_shader->attachShaderToProgram("boid_shader","BoidVertex");
+    m_shader->attachShaderToProgram("boid_shader","BoidFragment");
+    m_shader->bindAttribute("boid_shader",0,"inVert");
+    m_shader->bindAttribute("boid_shader",1,"inUV");
+    m_shader->bindAttribute("boid_shader",2,"inNormal");
+    m_shader->linkProgramObject("boid_shader");
+    m_shader->bindUniformBlockToBindingPoint("boid_shader", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("boid_shader", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("boid_shader", "LightBlock", FlockingShaders::LIGHT_BINDING_POINT);
+    
+    // Obstacle shader  
+    m_shader->createShaderProgram("obstacle_shader");
+    m_shader->attachShader("ObstacleVertex",VERTEX);
+    m_shader->attachShader("ObstacleFragment",FRAGMENT);
+    m_shader->loadShaderSource("ObstacleVertex","shaders/Phong.vs");
+    m_shader->loadShaderSource("ObstacleFragment","shaders/Phong.fs");
+    m_shader->compileShader("ObstacleVertex");
+    m_shader->compileShader("ObstacleFragment");
+    m_shader->attachShaderToProgram("obstacle_shader","ObstacleVertex");
+    m_shader->attachShaderToProgram("obstacle_shader","ObstacleFragment");
+    m_shader->bindAttribute("obstacle_shader",0,"inVert");
+    m_shader->bindAttribute("obstacle_shader",1,"inUV");
+    m_shader->bindAttribute("obstacle_shader",2,"inNormal");
+    m_shader->linkProgramObject("obstacle_shader");
+    m_shader->bindUniformBlockToBindingPoint("obstacle_shader", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("obstacle_shader", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("obstacle_shader", "LightBlock", FlockingShaders::LIGHT_BINDING_POINT);
+    
+    // Instanced Phong shader for high-performance boid rendering
+    m_shader->createShaderProgram("PhongInstanced");
+    m_shader->attachShader("PhongInstancedVertex",VERTEX);
+    m_shader->attachShader("PhongInstancedFragment",FRAGMENT);
+    m_shader->loadShaderSource("PhongInstancedVertex","shaders/PhongInstanced.vs");
+    m_shader->loadShaderSource("PhongInstancedFragment","shaders/PhongInstanced.fs");
+    m_shader->compileShader("PhongInstancedVertex");
+    m_shader->compileShader("PhongInstancedFragment");
+    m_shader->attachShaderToProgram("PhongInstanced","PhongInstancedVertex");
+    m_shader->attachShaderToProgram("PhongInstanced","PhongInstancedFragment");
+    m_shader->bindAttribute("PhongInstanced",0,"inVert");
+    m_shader->bindAttribute("PhongInstanced",1,"inUV");
+    m_shader->bindAttribute("PhongInstanced",2,"inNormal");
+    // Instance attributes bound by InstancedBoidRenderer
+    m_shader->linkProgramObject("PhongInstanced");
+    m_shader->bindUniformBlockToBindingPoint("PhongInstanced", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("PhongInstanced", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("PhongInstanced", "LightingBlock", FlockingShaders::LIGHTING_BINDING_POINT);
     
     // the shader will use the currently active material and light0 so set them
     Material m(GOLD);
@@ -285,6 +339,24 @@ void GLWindow::initializeGL()
     // Load initial material and light data to UBOs
     updateMaterialUBO(m);
     updateLightUBO();
+    
+    // Initialize optimization systems and standard geometries
+    
+    // TODO: Initialize optimization systems (temporarily commented for build stability)
+    // FlockingGraphics::RenderManager::getInstance().initialize();
+    
+    // Create standard geometries for optimized rendering (stubbed for now)
+    // FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 16); // Standard boid geometry
+    // FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 12); // Lower-quality sphere for obstacles
+    // FlockingGraphics::GeometryFactory::instance().createBoundingBox();    // Wireframe bounding box
+    // FlockingGraphics::GeometryFactory::instance().createCube(1.0f);       // Standard cube
+    
+    // Create named geometries for the rendering system
+    // auto boidGeometry = FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 12);
+    // The geometry factory automatically names spheres with the pattern: "sphere_<radius>_<segments>"
+    // So our boid geometry will be named "sphere_1.0_12"
+    // We can create an alias for easier access
+    
     m_shader->createShaderProgram("Colour");
 
     m_shader->attachShader("ColourVertex",VERTEX);
@@ -304,16 +376,32 @@ void GLWindow::initializeGL()
     // Bind UBO blocks to the Colour shader (same as Phong shader)
     m_shader->bindUniformBlockToBindingPoint("Colour", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
     
+    // Create wireframe shader for optimized bounding box rendering
+    m_shader->createShaderProgram("wireframe_shader");
+    m_shader->attachShader("WireframeVertex",VERTEX);
+    m_shader->attachShader("WireframeFragment",FRAGMENT);
+    m_shader->loadShaderSource("WireframeVertex","shaders/Colour.vs");
+    m_shader->loadShaderSource("WireframeFragment","shaders/Colour.fs");
+    m_shader->compileShader("WireframeVertex");
+    m_shader->compileShader("WireframeFragment");
+    m_shader->attachShaderToProgram("wireframe_shader","WireframeVertex");
+    m_shader->attachShaderToProgram("wireframe_shader","WireframeFragment");
+    m_shader->bindAttribute("wireframe_shader",0,"inVert");
+    m_shader->linkProgramObject("wireframe_shader");
+    m_shader->bindUniformBlockToBindingPoint("wireframe_shader", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    
     (*m_shader)["Colour"]->use();
     m_shader->setShaderParam4f("Colour",1,1,1,1);
     glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
     
     // Initialize sphere primitive for boid rendering
-    std::cout << "Initializing sphere primitive for boid rendering" << std::endl;
     bbox = new BBox(Vector(0,0,0),120,120,120);
     bbox->setDrawMode(GL_LINE);
     flock = new Flock(bbox, obstacle);
-
+    
+    // Initialize high-performance instanced boid renderer
+    m_instancedBoidRenderer = std::make_unique<FlockingGraphics::InstancedBoidRenderer>();
+    m_instancedBoidRenderer->initialize(0.5f, 16); // 0.5f radius, 16 segments
 }
 //----------------------------------------------------------------------------------------------------------------------
 //This virtual function is called whenever the widget has been updateVelocityresized.
@@ -324,8 +412,6 @@ void GLWindow::resizeGL(
         int _h
         )
 {
-    std::cout << "resizeGL called: " << _w << "x" << _h << std::endl;
-    
     // set the viewport for openGL
     glViewport(0,0,_w,_h);
     
@@ -363,11 +449,8 @@ void GLWindow::paintGL()
     static int frame_count = 0;
     frame_count++;
     
-    // Only print debug info every 60 frames to reduce spam
-    if (frame_count % 60 == 1) {
-        std::cout << "paintGL called (frame " << frame_count << ")" << std::endl;
-        std::cout << "Camera pos: (" << m_cam->getEye().x << ", " << m_cam->getEye().y << ", " << m_cam->getEye().z << ")" << std::endl;
-    }
+    // Begin frame coordination for all optimization systems
+    FlockingGraphics::FrameCoordinator::getInstance().beginFrame();
     
     // Use the background color set by the user
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
@@ -399,9 +482,6 @@ void GLWindow::paintGL()
     m_transformStack.setModel(model);
 
     // Draw the bounding box (wireframe) with white color
-    if (bbox && frame_count % 60 == 1) {
-        std::cout << "Drawing bbox" << std::endl;
-    }
     if (bbox) {
         // Push a clean transform for the bounding box to ensure it's drawn at origin
         m_transformStack.pushTransform();
@@ -423,58 +503,57 @@ void GLWindow::paintGL()
         m_transformStack.popTransform();
     }
 
-    // Draw the flock with Phong shader using modern UBO pipeline
-    if (flock && frame_count % 60 == 1) {
-        std::cout << "Drawing flock using modern UBO pipeline" << std::endl;
-    }
-    if (flock) {
-        // Use modern UBO-based rendering pipeline for boids
-        ShaderLib *shader = ShaderLib::instance();
-        shader->use("Phong");
+    // Draw the flock using high-performance instanced rendering
+    if (flock && m_instancedBoidRenderer) {
+        // Clear previous instances
+        m_instancedBoidRenderer->clearInstances();
         
+        // Prepare view and projection matrices for instancing
         m_transformStack.pushTransform();
         
-        // Render each boid with individual transforms and materials
+        // Get all boids and add them as instances
         const std::vector<Boid*>& boidList = flock->getBoidList();
-        for(Boid* boid : boidList)
+        
+        // Update base matrices (view/projection only, no model transform)
+        Matrix identityMatrix;
+        identityMatrix.identity();
+        m_transformStack.setModel(identityMatrix.getGLMMat4());
+        updateMatrixUBO(m_transformStack);
+        
+        // Update material UBO once for all boids
+        Material goldMaterial(GOLD);
+        updateMaterialUBO(goldMaterial);
+        
+        // Add each boid as an instance
+        for(const Boid* boid : boidList)
         {
-            // Push a new transform level for each boid
-            m_transformStack.pushTransform();
-            {
-                // Set up the boid's transform (translate to boid position and scale)
-                flock::Vec3 boidPos = boid->getPositionModern();
-                Matrix boidTransform;
-                boidTransform.identity();
-                boidTransform.translate(boidPos.x, boidPos.y, boidPos.z);
-                
-                // Scale the boid (same size as in immediate mode)
-                float boidSize = 2.0f;
-                boidTransform.scale(boidSize, boidSize, boidSize);
-                
-                m_transformStack.setModel(boidTransform.getGLMMat4());
-                
-                // Update UBO matrices for this boid
-                updateMatrixUBO(m_transformStack);
-                
-                // Update material UBO for this boid
-                updateBoidMaterialUBO(*boid);
-                
-                // Render the boid using the modern pipeline
-                boid->drawModern("Phong", m_transformStack, m_cam);
-            }
-            m_transformStack.popTransform();
+            // Calculate model matrix for this boid
+            flock::Vec3 boidPos = boid->getPositionModern();
+            Matrix boidTransform;
+            boidTransform.identity();
+            boidTransform.translate(boidPos.x, boidPos.y, boidPos.z);
+            
+            // Scale the boid (same size as in immediate mode)
+            float boidSize = 2.0f;
+            boidTransform.scale(boidSize, boidSize, boidSize);
+            
+            // Convert to GLM matrix
+            glm::mat4 modelMatrix = boidTransform.getGLMMat4();
+            
+            // Use a nice color for boids (blue-ish)
+            glm::vec4 boidColor(0.3f, 0.6f, 1.0f, 1.0f);
+            
+            // Add this boid as an instance
+            m_instancedBoidRenderer->addInstance(modelMatrix, boidColor);
         }
+        
+        // Render all boids in a single instanced draw call
+        m_instancedBoidRenderer->renderInstances("PhongInstanced");
         
         m_transformStack.popTransform();
     }
 
     // Draw the obstacle with modern UBO-based Phong shader
-    if (obstacle && frame_count % 60 == 1) {
-        std::cout << "Drawing obstacle using modern UBO pipeline" << std::endl;
-        flock::Vec3 obstaclePos = obstacle->getPositionModern();
-        std::cout << "Obstacle position: (" << obstaclePos.x << ", " << obstaclePos.y << ", " << obstaclePos.z << ")" << std::endl;
-        std::cout << "Obstacle radius: " << obstacle->getRadiusModern() << std::endl;
-    }
     if (obstacle) {
         // Push a new transform level for the obstacle
         m_transformStack.pushTransform();
@@ -484,33 +563,9 @@ void GLWindow::paintGL()
             Matrix obstacleTransform;
             obstacleTransform.identity();
             
-            // Debug output disabled for performance
-            // Debug: Check the matrix after identity and translate operations
-            // std::cout << "After identity [3,0]: " << obstacleTransform.getGLMMat4()[3][0] 
-            //           << ", [3,1]: " << obstacleTransform.getGLMMat4()[3][1] 
-            //           << ", [3,2]: " << obstacleTransform.getGLMMat4()[3][2] << std::endl;
-            
-            // std::cout << "About to translate by (" << obstaclePos.x << ", " << obstaclePos.y << ", " << obstaclePos.z << ")" << std::endl;
             obstacleTransform.translate(obstaclePos.x, obstaclePos.y, obstaclePos.z);
             
-            // Debug output disabled for performance
-            // std::cout << "Created obstacleTransform [3,0]: " << obstacleTransform.getGLMMat4()[3][0] 
-            //           << ", [3,1]: " << obstacleTransform.getGLMMat4()[3][1] 
-            //           << ", [3,2]: " << obstacleTransform.getGLMMat4()[3][2] << std::endl;
-            
-            // Debug output disabled for performance
-            // glm::mat4 beforeSet = m_transformStack.getCurrentTransform();
-            // std::cout << "Transform stack before setModel [3,0]: " << beforeSet[3][0] 
-            //           << ", [3,1]: " << beforeSet[3][1] 
-            //           << ", [3,2]: " << beforeSet[3][2] << std::endl;
-            
             m_transformStack.setModel(obstacleTransform.getGLMMat4());
-            
-            // Debug output disabled for performance
-            // glm::mat4 afterSet = m_transformStack.getCurrentTransform();
-            // std::cout << "Transform stack after setModel [3,0]: " << afterSet[3][0] 
-            //           << ", [3,1]: " << afterSet[3][1] 
-            //           << ", [3,2]: " << afterSet[3][2] << std::endl;
             
             // Update UBO matrices with obstacle transform
             updateMatrixUBO(m_transformStack);
@@ -525,12 +580,6 @@ void GLWindow::paintGL()
             obstacleMaterial.setSpecular(Colour(m_obstacleSpecularR, m_obstacleSpecularG, m_obstacleSpecularB, 1.0f));  // Bright specular for visibility
             obstacleMaterial.setShininess(8.0f);  // Low shininess for broad, visible highlights
             
-            // Debug output disabled for performance
-            // static int materialDebugCounter = 0;
-            // if (materialDebugCounter++ % 120 == 0) {
-            //     std::cout << "Obstacle material - Ambient: (0.2, 0.2, 0.2), Diffuse: (0.8, 0.6, 0.4), Specular: (0.5, 0.5, 0.5), Shininess: 32.0" << std::endl;
-            // }
-            
             updateMaterialUBO(obstacleMaterial);
             
             // Use the Phong shader for obstacle rendering
@@ -538,11 +587,12 @@ void GLWindow::paintGL()
             
             // Render the obstacle using modern VBO/VAO approach
             obstacle->ObsDraw("Phong", m_transformStack, m_cam);
-            
-            // Note: No explicit shader unuse needed as next render call will use a different shader or disable shaders
         }
         m_transformStack.popTransform();
     }
+    
+    // End frame coordination to finalize rendering
+    FlockingGraphics::FrameCoordinator::getInstance().endFrame();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -738,11 +788,6 @@ void GLWindow::printPerformanceComparison()
 void GLWindow::setPerformanceMonitoring(bool enabled)
 {
     m_performanceMonitor.setEnabled(enabled);
-    if (enabled) {
-        std::cout << "Performance monitoring ENABLED" << std::endl;
-    } else {
-        std::cout << "Performance monitoring DISABLED" << std::endl;
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -760,12 +805,10 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
         case Qt::Key_C:
             // Clear performance data
             m_performanceMonitor.clear();
-            std::cout << "Performance data cleared" << std::endl;
             break;
         case Qt::Key_Space:
             // Toggle animation
             m_animate = !m_animate;
-            std::cout << "Animation " << (m_animate ? "ENABLED" : "DISABLED") << std::endl;
             break;
         case Qt::Key_V:
             // Validate behavior differences
@@ -781,7 +824,6 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
 void GLWindow::validateBehaviorDifferences()
 {
     if (!flock) {
-        std::cout << "No flock available for validation" << std::endl;
         return;
     }
     
@@ -804,8 +846,6 @@ void GLWindow::validateBehaviorDifferences()
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::initializeUBOs()
 {
-    std::cout << "Initializing UBOs for modern shader pipeline..." << std::endl;
-    
     // Create UBOs for matrix, material, and light data
     m_shader->createUBO("MatrixUBO", sizeof(FlockingShaders::MatrixBlock));
     m_shader->createUBO("MaterialUBO", sizeof(FlockingShaders::MaterialBlock));
@@ -818,8 +858,6 @@ void GLWindow::initializeUBOs()
     
     // Setup lighting UBO
     setupLightingUBO();
-    
-    std::cout << "UBOs initialized successfully" << std::endl;
 }
 
 void GLWindow::setupLightingUBO() {
@@ -960,6 +998,18 @@ void GLWindow::updateBoidMaterialUBO(const Boid& boid)
     
     // Update the UBO
     m_shader->updateUBO("MaterialUBO", &m_materialData, sizeof(FlockingShaders::MaterialBlock));
+}
+
+void GLWindow::setBoidMaterial(Material& material, const Boid& boid)
+{
+    // Get boid color
+    flock::Color boidColor = boid.getColorModern();
+    
+    // Set up boid material properties similar to immediate mode
+    material.setAmbient(Colour(boidColor.r * 0.3f, boidColor.g * 0.3f, boidColor.b * 0.3f, 1.0f));
+    material.setDiffuse(Colour(boidColor.r, boidColor.g, boidColor.b, 1.0f));
+    material.setSpecular(Colour(0.8f, 0.8f, 0.8f, 1.0f));
+    material.setShininess(64.0f);
 }
 
 
