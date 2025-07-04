@@ -28,6 +28,8 @@ class ShaderLib;
 #include "../modules/graphics/include/UBOStructures.h"
 // High-performance instanced rendering
 #include "modules/graphics/include/InstancedBoidRenderer.h"
+// GPU-accelerated flocking simulation
+#include "modules/graphics/include/GPUFlockingManager.h"
 
 // must be included after our stuff because GLEW needs to be first
 #include <QTime>
@@ -193,6 +195,10 @@ private :
     /// @brief high-performance instanced renderer for boids
     //----------------------------------------------------------------------------------------------------------------------
     std::unique_ptr<FlockingGraphics::InstancedBoidRenderer> m_instancedBoidRenderer;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief GPU-accelerated flocking simulation using compute shaders
+    //----------------------------------------------------------------------------------------------------------------------
+    std::unique_ptr<FlockingGraphics::GPUFlockingManager> m_gpuFlockingManager;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the GL Depth Color
     //----------------------------------------------------------------------------------------------------------------------

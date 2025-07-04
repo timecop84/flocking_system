@@ -96,6 +96,7 @@ GLWindow::GLWindow(
     std::cout << "\n=== PERFORMANCE PROFILER CONTROLS ===" << std::endl;
     std::cout << "Press 'R' - Print detailed performance report" << std::endl;
     std::cout << "Press 'T' - Reset profiler statistics" << std::endl;
+    std::cout << "Press 'G' - Toggle GPU/CPU flocking modes" << std::endl;
     std::cout << "Press 'Space' - Toggle animation" << std::endl;
     std::cout << "Press '+' or '-' - Add/Remove 50 boids" << std::endl;
     std::cout << "Press '0' - Reset to 200 boids (default)" << std::endl;
@@ -454,6 +455,13 @@ void GLWindow::initializeGL()
     // Initialize high-performance instanced boid renderer
     m_instancedBoidRenderer = std::make_unique<FlockingGraphics::InstancedBoidRenderer>();
     m_instancedBoidRenderer->initialize(0.5f, 16); // 0.5f radius, 16 segments
+    
+    // Initialize GPU-accelerated flocking manager
+    m_gpuFlockingManager = std::make_unique<FlockingGraphics::GPUFlockingManager>();
+    if (!m_gpuFlockingManager->initialize()) {
+        std::cerr << "Warning: GPU flocking acceleration failed to initialize, falling back to CPU" << std::endl;
+        m_gpuFlockingManager->setEnabled(false);
+    }
     
     // Apply any pending size values that were set before OpenGL initialization
     if (m_hasPendingBoidSize) {
@@ -846,7 +854,124 @@ void GLWindow::timerEvent(
             PROFILE_SCOPE("Total Frame Update");
             {
                 PROFILE_SCOPE("Flock Update");
-                flock->update();
+                
+                // Try GPU-accelerated flocking first
+                if (m_gpuFlockingManager && m_gpuFlockingManager->isEnabled()) {
+                    PROFILE_SCOPE("GPU Flocking Update");
+                    
+                    // Convert CPU boid data to GPU format
+                    const std::vector<Boid*>& boidList = flock->getBoidList();
+                    std::vector<FlockingGraphics::GPUBoidData> gpuBoidData;
+                    gpuBoidData.reserve(boidList.size());
+                    
+                    for (Boid* boid : boidList) { // Remove const
+                        FlockingGraphics::GPUBoidData gpuBoid;
+                        
+                        // Convert position
+                        Vector pos = boid->getPosition();
+                        gpuBoid.position = glm::vec3(pos.m_x, pos.m_y, pos.m_z);
+                        
+                        // Convert velocity
+                        Vector vel = boid->getVelocity();
+                        gpuBoid.velocity = glm::vec3(vel.m_x, vel.m_y, vel.m_z);
+                        
+                        // Set lastPosition (for CPU-style position integration)
+                        Vector lastPos = boid->getLastPosition();
+                        gpuBoid.lastPosition = glm::vec3(lastPos.m_x, lastPos.m_y, lastPos.m_z);
+                        
+                        // Convert color
+                        flock::Color colorModern = boid->getColorModern();
+                        gpuBoid.color = glm::vec4(colorModern.r, colorModern.g, colorModern.b, colorModern.a);
+                        
+                        gpuBoidData.push_back(gpuBoid);
+                    }
+                    
+                    // Set up flocking parameters
+                    FlockingGraphics::FlockingParameters params;
+                    params.separationDistance = static_cast<float>(flock->getBehaviours()->getFlockDistance());
+                    params.alignmentDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
+                    params.cohesionDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
+                    params.separationForce = static_cast<float>(flock->getBehaviours()->getSeparationForce());
+                    params.alignmentForce = static_cast<float>(flock->getBehaviours()->getAlignment());
+                    params.cohesionForce = static_cast<float>(flock->getBehaviours()->getCohesionForce());
+                    params.maxSpeed = 10.0f;  // Match velocity constraints
+                    params.maxForce = 0.5f;   // FIXED: Match shader force limit
+                    params.numBoids = static_cast<int>(boidList.size());
+                    params.deltaTime = 1.0f; // Simple unit time step (no time integration needed)
+                    params.speedMultiplier = flock->getSpeedMultiplier();
+                    
+                    // Debug parameter values (print once)
+                    static bool debugPrinted = false;
+                    if (!debugPrinted) {
+                        std::cout << "GPU Flocking Parameters:" << std::endl;
+                        std::cout << "  separationDistance: " << params.separationDistance << std::endl;
+                        std::cout << "  alignmentDistance: " << params.alignmentDistance << std::endl;
+                        std::cout << "  cohesionDistance: " << params.cohesionDistance << std::endl;
+                        std::cout << "  separationForce: " << params.separationForce << std::endl;
+                        std::cout << "  alignmentForce: " << params.alignmentForce << std::endl;
+                        std::cout << "  cohesionForce: " << params.cohesionForce << std::endl;
+                        std::cout << "  maxSpeed: " << params.maxSpeed << std::endl;
+                        std::cout << "  maxForce: " << params.maxForce << std::endl;
+                        std::cout << "  deltaTime: " << params.deltaTime << std::endl;
+                        std::cout << "  speedMultiplier: " << params.speedMultiplier << std::endl;
+                        std::cout << "  obstacleRadius: " << params.obstacleRadius << std::endl;
+                        debugPrinted = true;
+                    }
+                    
+                    // Set bounding box from current bbox
+                    if (bbox) {
+                        Vector center = bbox->getCenter();
+                        float width = bbox->getWidth() / 2.0f;
+                        float height = bbox->getHeight() / 2.0f;
+                        float depth = bbox->getDepth() / 2.0f;
+                        params.boundingBoxMin = glm::vec3(center.m_x - width, center.m_y - height, center.m_z - depth);
+                        params.boundingBoxMax = glm::vec3(center.m_x + width, center.m_y + height, center.m_z + depth);
+                    }
+                    
+                    // Set obstacle data
+                    if (obstacle) {
+                        Vector obsPos = obstacle->getSpherePosition();
+                        params.obstaclePosition = glm::vec3(obsPos.m_x, obsPos.m_y, obsPos.m_z);
+                        params.obstacleRadius = static_cast<float>(obstacle->getSphereRadius());
+                    }
+                    
+                    // Upload data to GPU and compute flocking
+                    m_gpuFlockingManager->updateParameters(params);
+                    m_gpuFlockingManager->uploadBoidData(gpuBoidData);
+                    m_gpuFlockingManager->computeFlocking();
+                    
+                    // Download results and update CPU boids
+                    std::vector<FlockingGraphics::GPUBoidData> results = m_gpuFlockingManager->downloadBoidData();
+                    
+                    // Apply results back to CPU boids
+                    for (size_t i = 0; i < boidList.size() && i < results.size(); i++) {
+                        const FlockingGraphics::GPUBoidData& result = results[i];
+                        
+                        // Update position
+                        Vector newPos(result.position.x, result.position.y, result.position.z);
+                        boidList[i]->setPosition(newPos);
+                        
+                        // Update velocity
+                        Vector newVel(result.velocity.x, result.velocity.y, result.velocity.z);
+                        boidList[i]->setVelocity(newVel);
+                        
+                        // Update direction based on velocity
+                        boidList[i]->boidDirection();
+                    }
+                    
+                    // Handle collisions on CPU (for now)
+                    flock->checkCollisions();
+                    
+                    // Print performance info occasionally
+                    static int frameCounter = 0;
+                    if (++frameCounter % 120 == 0) { // Every 2 seconds at 60 FPS
+                        std::cout << "GPU Flocking: " << m_gpuFlockingManager->getLastComputeTime() << "ms for " 
+                                  << boidList.size() << " boids" << std::endl;
+                    }
+                } else {
+                    // Fall back to CPU flocking
+                    flock->update();
+                }
             }
         }
         update();
@@ -921,6 +1046,18 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
         case Qt::Key_V:
             // Validate behavior differences
             validateBehaviorDifferences();
+            break;
+        case Qt::Key_G:
+            // Toggle GPU/CPU flocking modes
+            if (m_gpuFlockingManager) {
+                bool wasEnabled = m_gpuFlockingManager->isEnabled();
+                m_gpuFlockingManager->toggleGPUMode();
+                std::cout << "Switched from " << (wasEnabled ? "GPU" : "CPU") 
+                          << " to " << (m_gpuFlockingManager->isEnabled() ? "GPU" : "CPU") 
+                          << " flocking mode" << std::endl;
+            } else {
+                std::cout << "GPU flocking manager not available" << std::endl;
+            }
             break;
         case Qt::Key_Plus:
         case Qt::Key_Equal:

@@ -64,6 +64,7 @@ public:
     Colour getColour() const { return m_boidColour; }
     void setWireframe(bool value);
     void setSpeedMultiplier(float multiplier);
+    float getSpeedMultiplier() const { return m_speedMultiplier; }
     void setSimDistance(double distance);
     void setSimFlockDistance(double distance);
     void setSimCohesion(double cohesion);

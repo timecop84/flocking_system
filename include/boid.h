@@ -41,6 +41,10 @@ public:
     /// @param [in] m_position passed and gets the value of the current position.
     inline Vector getPosition()const {return m_position;}
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief returns the last position of the boid
+    /// @param [in] m_lastPosition passed and gets the value of the last position.
+    inline Vector getLastPosition()const {return m_lastPosition;}
+    //----------------------------------------------------------------------------------------------------------------------
     /// @brief takes the current position of the boid
     /// @param [in] m_position sets the value of the current position. Used in Collision method.
     inline void setPosition(Vector Position) {m_position = Position;}

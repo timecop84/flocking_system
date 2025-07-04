@@ -35,6 +35,33 @@ PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray = nullptr;
 PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced = nullptr;
 PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor = nullptr;
 
+// Define global function pointers for compute shader functions
+PFNGLDISPATCHCOMPUTEPROC glDispatchCompute = nullptr;
+PFNGLMEMORYBARRIERPROC glMemoryBarrier = nullptr;
+PFNGLUSEPROGRAMPROC glUseProgram = nullptr;
+PFNGLGETINTEGERI_VPROC glGetIntegeri_v = nullptr;
+PFNGLMAPBUFFERPROC glMapBuffer = nullptr;
+PFNGLUNMAPBUFFERPROC glUnmapBuffer = nullptr;
+
+// Define global function pointers for shader program functions
+PFNGLCREATESHADERPROC glCreateShader = nullptr;
+PFNGLSHADERSOURCEPROC glShaderSource = nullptr;
+PFNGLCOMPILESHADERPROC glCompileShader = nullptr;
+PFNGLGETSHADERIVPROC glGetShaderiv = nullptr;
+PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog = nullptr;
+PFNGLDELETESHADERPROC glDeleteShader = nullptr;
+PFNGLCREATEPROGRAMPROC glCreateProgram = nullptr;
+PFNGLATTACHSHADERPROC glAttachShader = nullptr;
+PFNGLLINKPROGRAMPROC glLinkProgram = nullptr;
+PFNGLGETPROGRAMIVPROC glGetProgramiv = nullptr;
+PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog = nullptr;
+PFNGLDELETEPROGRAMPROC glDeleteProgram = nullptr;
+
+// Define global function pointers for sync object functions
+PFNGLFENCESYNCPROC glFenceSync = nullptr;
+PFNGLCLIENTWAITSYNCPROC glClientWaitSync = nullptr;
+PFNGLDELETESYNCPROC glDeleteSync = nullptr;
+
 ShaderLib* ShaderLib::s_instance = nullptr;
 
 ShaderLib* ShaderLib::instance() {

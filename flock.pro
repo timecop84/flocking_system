@@ -40,7 +40,8 @@ SOURCES += \
     modules/graphics/src/SmartShaderManager.cpp \
     modules/graphics/src/TransformBatcher.cpp \
     modules/graphics/src/FrameCoordinator.cpp \
-    modules/graphics/src/InstancedBoidRenderer.cpp
+    modules/graphics/src/InstancedBoidRenderer.cpp \
+    modules/graphics/src/GPUFlockingManager.cpp
 
 HEADERS += \
     include/mainwindow.h \
