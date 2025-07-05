@@ -1,83 +1,71 @@
 #include "obstacle.h"
-#include "ngl_compat/VAOPrimitives.h"
-#include "ngl_compat/Material.h"
-#include "ngl_compat/ShaderLib.h"
-#include "ngl_compat/Matrix.h"
+#include "Material.h"
+#include "ShaderLib.h"
+#include "Matrix.h"
+#include "SphereGeometry.h"
 #include <GL/gl.h>
+#include <GL/glu.h>
+#include <iostream>
 
-Obstacle::Obstacle(ngl::Vector spherePosition, GLfloat sphereRadius)
+Obstacle::Obstacle(Vector spherePosition, GLfloat sphereRadius)
 {
     _spherePosition = spherePosition;
     _sphereRadius = sphereRadius;
-    m_colour.set(0.5f, 1.0f, 0.6f, 1.0f);
+    m_colour.set(1.0f, 0.8f, 0.4f, 1.0f);  // Very bright orange color for maximum visibility
     m_wireframe = false;
 
     _hit = false;
+    
+    // Initialize the sphere geometry (lazy initialization will happen in first draw)
+    m_sphereGeometry = nullptr;
 }
 
-void Obstacle::loadMatricesToShader(ngl::TransformStack &_tx, ngl::Camera *_cam) const
+Obstacle::~Obstacle()
 {
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-
-    ngl::Matrix MV;
-    ngl::Matrix MVP;
-    ngl::Mat3x3 normalMatrix;
-    ngl::Matrix M;
-    M=_tx.getCurrentTransform().getMatrix();
-    MV=  _tx.getCurrAndGlobal().getMatrix()*_cam->getViewMatrix();
-    MVP=  MV*_cam->getProjectionMatrix();
-    normalMatrix=MV;
-    normalMatrix.inverse();
-    shader->setShaderParamFromMatrix("MV",MV);
-    shader->setShaderParamFromMatrix("MVP",MVP);
-    shader->setShaderParamFromMat3x3("normalMatrix",normalMatrix);
-    shader->setShaderParamFromMatrix("M",M);
-
+    // Cleanup will be handled automatically by the unique_ptr
 }
 
-void Obstacle::ObsDraw(const std::string &_shaderName, ngl::TransformStack &_transformStack, ngl::Camera *_cam) const
+//----------------------------------------------------------------------------------------------------------------------
+// Legacy function removed - UBO-based rendering handles matrix updates automatically
+//----------------------------------------------------------------------------------------------------------------------
+
+void Obstacle::ObsDraw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const
 {
-    // Use immediate mode OpenGL instead of shader system for now
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-    
-    // Set material color
-    float diffuse[] = {m_colour.m_r, m_colour.m_g, m_colour.m_b, m_colour.m_a};
-    float ambient[] = {m_colour.m_r * 0.3f, m_colour.m_g * 0.3f, m_colour.m_b * 0.3f, m_colour.m_a};
-    float specular[] = {0.8f, 0.8f, 0.8f, 1.0f};
-    float shininess = 50.0f;
-    
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
-    glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-    glMaterialf(GL_FRONT, GL_SHININESS, shininess);
-    
-    // Set light position
-    float lightPos[] = {100.0f, 100.0f, 100.0f, 1.0f};
-    float lightDiffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
-
-    if (m_wireframe)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    else
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    glPushMatrix();
-    {
-        // Apply transformations
-        glTranslatef(_spherePosition.m_x, _spherePosition.m_y, _spherePosition.m_z);
-        glScalef(_sphereRadius, _sphereRadius, _sphereRadius);
-        
-        // Draw sphere using VAOPrimitives
-        ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
-        prim->createSphere("obstacle", _sphereRadius, 20);
-        prim->draw("obstacle");
+    // For debugging only - can be removed in production
+    if (_shaderName != "Phong") {
+        std::cerr << "Warning: Obstacle only supports Phong shader, got: " << _shaderName << std::endl;
     }
-    glPopMatrix();
+    
+    // Lazy initialization of sphere geometry
+    if (!m_sphereGeometry) {
+        std::cout << "Initializing sphere geometry for obstacle..." << std::endl;
+        // Create sphere at origin - position will be applied via model matrix
+        m_sphereGeometry = std::make_unique<FlockingGeometry::SphereGeometry>(_sphereRadius, 32, 32);
+        m_sphereGeometry->initializeBuffers();
+    }
+    
+    // The sphere geometry will be rendered at the current model transform position
+    // All transformations should be handled by the transform stack
+    // We just ensure the correct shader is bound and render using VAO
+    
+    ShaderLib *shader = ShaderLib::instance();
+    shader->use(_shaderName);
+
+    // Set polygon mode for wireframe if needed
+    GLint prevPolygonMode[2];
+    glGetIntegerv(GL_POLYGON_MODE, prevPolygonMode);
+    glPolygonMode(GL_FRONT_AND_BACK, m_wireframe ? GL_LINE : GL_FILL);
+
+    // Apply current transform from transform stack (already includes our position)
+    // The transform matrix and material should already be in the UBOs
+    
+    // Simply render the geometry with the current transform state
+    m_sphereGeometry->render();
+
+    // Restore previous polygon mode
+    glPolygonMode(GL_FRONT_AND_BACK, prevPolygonMode[0]);
 }
 
-
-
-
-
+//----------------------------------------------------------------------------------------------------------------------
+// Legacy function removed - UBO-based rendering handles matrix updates automatically
+//----------------------------------------------------------------------------------------------------------------------

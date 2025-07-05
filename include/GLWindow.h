@@ -7,15 +7,32 @@
 #include <QWheelEvent>
 #include <QTimerEvent>
 #include <QKeyEvent>
+#include <QPainter>
+#include <QPaintEvent>
 #include <glm/glm.hpp>
-#include "ngl_compat/Camera.h"
-#include "ngl_compat/Light.h"
-#include "ngl_compat/Vector.h"
-#include "ngl_compat/Colour.h"
-#include "ngl_compat/TransformStack.h"
-#include "ngl_compat/ShaderLib.h"
-#include "ngl_compat/BBox.h"
+#include <memory>
+#include <chrono>
+
+// Forward declaration for modular include
+class ShaderLib;
+
+#include "Camera.h"
+#include "Light.h"
+#include "Material.h"
+#include "Vector.h"
+#include "Colour.h"
+#include "TransformStack.h"
+#include "modules/graphics/include/BBox.h"
 #include "BehaviorValidator.h"
+// UBO support
+#include "../modules/graphics/include/UBOStructures.h"
+// High-performance instanced rendering
+#include "modules/graphics/include/InstancedBoidRenderer.h"
+
+// Forward declarations for GPU flocking
+namespace FlockingGraphics {
+    class GPUFlockingManager;
+}
 
 // must be included after our stuff because GLEW needs to be first
 #include <QTime>
@@ -59,11 +76,17 @@ public :
     void setBoidSize(double size);
     void setBoidColor(QColor colour);
     void setFlockWireframe(bool value);
+    void setFlockSpeedMultiplier(float multiplier);
 
     void setObstaclePosition(glm::vec3 position);
     void setObstacleSize(double size);
     void setObstacleColour(QColor colour);
+    void setObstacleSpecular(double r, double g, double b);
+    void setObstacleDiffuse(double r, double g, double b);
     void setObstacleWireframe(bool value);
+    
+    void setShowFPS(bool show);
+    float getCurrentFPS() const;
 
     void setSimDistance(double distance);
     void setSimFlockDistance(double distance);
@@ -71,14 +94,13 @@ public :
     void setSimSeparation(double separation);
     void setSimAlignment(double alignment);
 
-    void setBackgroundColour(ngl::Colour colour);
+    void setBackgroundColour(Colour colour);
     void setBBoxSize(glm::vec3 size);
     
-    /// @brief Toggle between legacy and modern GLM-based update methods
-    void toggleModernUpdate(bool enabled);
-    /// @brief Get current update mode
-    bool isUsingModernUpdate() const { return m_useModernUpdate; }
-    
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief set obstacle collision checking enabled/disabled
+    //----------------------------------------------------------------------------------------------------------------------
+    void setObstacleCollisionEnabled(bool enabled);
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief print performance comparison between legacy and modern modes
     //----------------------------------------------------------------------------------------------------------------------
@@ -91,6 +113,10 @@ public :
     /// @brief validate behavior differences between legacy and modern systems
     //----------------------------------------------------------------------------------------------------------------------
     void validateBehaviorDifferences();
+
+    void setObstacleAvoidanceRadiusScale(float scale);
+    void setObstacleCollisionRadiusScale(float scale);
+    void setObstacleRepulsionForce(float force);
 
     //-----------------------------------
     /// @brief
@@ -137,34 +163,34 @@ private :
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief Camera matrices and vectors
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Camera *m_cam;
+    Camera *m_cam;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief camera orbital controls
     //----------------------------------------------------------------------------------------------------------------------
     float m_cameraDistance;
     float m_cameraAzimuth;
     float m_cameraElevation;
-    ngl::Vector m_cameraTarget;
+    Vector m_cameraTarget;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief the model position for mouse movement
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Vector m_modelPos;
+    Vector m_modelPos;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a simple light use to illuminate the screen
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Light *m_light;
+    Light *m_light;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief shader lib instance
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::ShaderLib *m_shader;
+    ShaderLib *m_shader;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief transform stack for transformations
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::TransformStack m_transformStack;
+    TransformStack m_transformStack;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief bbox for the flock space
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::BBox *bbox;
+    BBox *bbox;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a sphere obstacle within the boid space
     //----------------------------------------------------------------------------------------------------------------------
@@ -173,19 +199,69 @@ private :
     /// @brief a pointer to the flock class to have access to the methods
     Flock *flock;
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief high-performance instanced renderer for boids
+    //----------------------------------------------------------------------------------------------------------------------
+    std::unique_ptr<FlockingGraphics::InstancedBoidRenderer> m_instancedBoidRenderer;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief GPU-accelerated flocking simulation using compute shaders
+    //----------------------------------------------------------------------------------------------------------------------
+    std::unique_ptr<FlockingGraphics::GPUFlockingManager> m_gpuFlockingManager;
+    //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the GL Depth Color
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Colour m_backgroundColour;
+    Colour m_backgroundColour;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief performance monitor for comparing legacy vs modern algorithms
     //----------------------------------------------------------------------------------------------------------------------
     flock::PerformanceMonitor m_performanceMonitor;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief UBO data structures for modern shader pipeline
+    //----------------------------------------------------------------------------------------------------------------------
+    FlockingShaders::MatrixBlock m_matrixData;
+    FlockingShaders::MaterialBlock m_materialData;
+    FlockingShaders::LightBlock m_lightData;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief FPS tracking variables
+    //----------------------------------------------------------------------------------------------------------------------
+    std::chrono::high_resolution_clock::time_point m_lastTime;
+    int m_frameCount;
+    float m_currentFPS;
+    bool m_showFPS;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Pending size values for UI controls set before OpenGL initialization
+    //----------------------------------------------------------------------------------------------------------------------
+    double m_pendingBoidSize;
+    double m_pendingObstacleSize;
+    bool m_hasPendingBoidSize;
+    bool m_hasPendingObstacleSize;
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief UBO update helper methods
+    //----------------------------------------------------------------------------------------------------------------------
+    void initializeUBOs();
+    void updateMatrixUBO(const TransformStack& transformStack);
+    void updateMaterialUBO(const Material& material);
+    void updateBoidMaterialUBO(const Boid& boid);
+    void updateLightUBO();
+    void updateLightingUBO();
+    void setupLightingUBO();
+    void setBoidMaterial(Material& material, const Boid& boid);
+
+    // UBO handles
+    GLuint m_matrixUBO;
+    GLuint m_lightingUBO;
+    
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief FPS calculation and rendering methods
+    //----------------------------------------------------------------------------------------------------------------------
+    void updateFPS();
+    void renderFPSText();
+    void renderFPSOverlay();
 
 protected:
 
-    void loadMatricesToColourShader(ngl::TransformStack &_tx);
+    void loadMatricesToColourShader(TransformStack &_tx);
 
-    void loadMatricesToShader(ngl::TransformStack &_tx);
+    void loadMatricesToShader(TransformStack &_tx);
 
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief update camera position based on orbital controls
@@ -211,6 +287,11 @@ protected:
     /// be re-drawn
     //----------------------------------------------------------------------------------------------------------------------
     void paintGL();
+    
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief paint event override to draw FPS overlay using QPainter
+    //----------------------------------------------------------------------------------------------------------------------
+    void paintEvent(QPaintEvent *event) override;
 
 private :
 
@@ -264,13 +345,22 @@ private :
     //----------------------------------------------------------------------------------------------------------------------
     bool m_animate;
     //----------------------------------------------------------------------------------------------------------------------
-    /// @brief flag to indicate if modern GLM-based update should be used
-    //----------------------------------------------------------------------------------------------------------------------
-    bool m_useModernUpdate;
-    //----------------------------------------------------------------------------------------------------------------------
 
+    double m_obstacleSpecularR = 1.0;
+    double m_obstacleSpecularG = 1.0;
+    double m_obstacleSpecularB = 1.0;
+    double m_obstacleDiffuseR = 1.0;  // Maximum brightness orange-red
+    double m_obstacleDiffuseG = 0.8;  // Maximum brightness orange
+    double m_obstacleDiffuseB = 0.4;  // Maximum brightness orange
+    //----------------------------------------------------------------------------------------------------------------------
+    /// @brief flag to indicate if obstacle is enabled or not
+    //----------------------------------------------------------------------------------------------------------------------
+    bool m_obstacleEnabled = true;
 
 public slots:
+    /// @brief slot to set obstacle enabled/disabled
+    /// @param [in] _enabled the enabled state
+    void setObstacleEnabled(bool _enabled);
 
 };
 

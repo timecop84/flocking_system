@@ -1,84 +1,70 @@
-#version 150
+#version 450 core
 
-/// @brief[in] the vertex normal
-in vec3 fragmentNormal;
-/// @brief our output fragment colour
-out vec4 fragColour;
+// Inputs from vertex shader (in view space, like fixed function)
+in vec3 FragPos;     // Fragment position in view space
+in vec3 Normal;      // Surface normal in view space
 
-/// @brief material structure
-struct Materials
-{
-  vec4 ambient;
-  vec4 diffuse;
-  vec4 specular;
-  float shininess;
+// Output color
+out vec4 FragColor;
+
+// Uniform Buffer for matrices (binding point 0)
+layout(std140, binding = 0) uniform MatrixBlock {
+    mat4 MVP;        // Model-View-Projection matrix
+    mat4 MV;         // Model-View matrix
+    mat4 M;          // Model matrix
+    mat3 normalMatrix; // Normal matrix
+    vec3 viewerPos;  // Camera position in world space
+    float shouldNormalize;
 };
 
-// @brief light structure
-struct Lights
-{
-  vec4 position;
-  vec4 ambient;
-  vec4 diffuse;
-  vec4 specular;
-  float constantAttenuation;
-  float linearAttenuation;
-  float quadraticAttenuation;
-  float spotCosCutoff;
-
+// Material properties UBO (binding point 1)
+layout(std140, binding = 1) uniform MaterialBlock {
+    vec4 ambient;    // Ambient material color
+    vec4 diffuse;    // Diffuse material color
+    vec4 specular;   // Specular material color
+    float shininess; // Material shininess
+    float padding[3]; // Padding for alignment
 };
-// @param material passed from our program
-uniform Materials material;
 
-uniform Lights light;
-in vec3 lightDir;
-// out the blinn half vector
-in vec3 halfVector;
-in vec3 eyeDirection;
-in vec3 vPosition;
+// Lighting properties UBO (binding point 3)
+layout(std140, binding = 3) uniform LightingBlock {
+    vec3 lightPos;   // Light position in view space (same as PhongInstanced)
+    float pad1;      // Padding
+    vec3 viewPos;    // Camera position (redundant with viewerPos above)
+    float pad2;      // Padding
+    vec3 lightColor; // Light color
+    float lightShininess; // Light-specific shininess (unused)
+};
 
-
-/// @brief a function to compute point light values
-/// @param[in] _light the number of the current light
-
-vec4 pointLight()
+void main()
 {
-  vec3 N = normalize(fragmentNormal);
-  vec3 halfV;
-  float ndothv;
-  float attenuation;
-  vec3 E = normalize(eyeDirection);
-  vec3 L = normalize(lightDir);
-  float lambertTerm = dot(N,L);
-  vec4 diffuse=vec4(0);
-  vec4 ambient=vec4(0);
-  vec4 specular=vec4(0);
-  if (lambertTerm > 0.0)
-  {
-  float d;            // distance from surface to light position
-  vec3 VP;            // direction from surface to light position
-
-  // Compute vector from surface to light position
-  VP = vec3 (light.position) - vPosition;
-
-  // Compute distance between surface and light position
-    d = length (VP);
-
-
-    diffuse+=material.diffuse*light.diffuse*lambertTerm;
-    ambient+=material.ambient*light.ambient;
-    halfV = normalize(halfVector);
-    ndothv = max(dot(N, halfV), 0.0);
-    specular+=material.specular*light.specular*pow(ndothv, material.shininess);
-  }
-return ambient + diffuse + specular;
+    // Normalize the normal (in case of interpolation issues)
+    vec3 norm = normalize(Normal);
+    
+    // Calculate lighting in view space (light position already in view space)
+    vec3 lightDir = normalize(lightPos - FragPos);
+    vec3 viewDir = normalize(-FragPos); // Camera is at origin in view space
+    vec3 reflectDir = reflect(-lightDir, norm);
+    
+    // Ambient component (reduced for more natural lighting)
+    vec3 ambientColor = ambient.rgb * lightColor * 0.10; // Further reduced ambient for darker appearance
+    
+    // Diffuse component (use material diffuse)
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuseColor = diff * diffuse.rgb * lightColor;
+    
+    // Specular component (use material specular)
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    vec3 specularColor = spec * specular.rgb * lightColor;
+    
+    // Combine lighting components
+    vec3 lighting = ambientColor + diffuseColor + specularColor;
+    
+    // Apply slight gamma correction for better visibility
+    vec3 result = pow(lighting, vec3(1.0/2.2));
+    
+    // Ensure minimum brightness for visibility
+    result = max(result, vec3(0.10)); // Lower minimum brightness for darker shadows
+    
+    FragColor = vec4(result, diffuse.a);
 }
-
-
-
-void main ()
-{
-
-fragColour=pointLight();
-}
-

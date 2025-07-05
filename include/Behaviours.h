@@ -2,7 +2,7 @@
 #define BEHAVIOURS_H
 #include <vector>
 #include "boid.h"
-#include "ngl_compat/Vector.h"
+#include "Vector.h"
 // Modern includes for gradual migration
 #include "FlockTypes.h"
 
@@ -42,7 +42,7 @@ public:
     void Seperation(int & _boidNumber, std::vector <Boid*> & _boidList);
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our behaviour set method. Sets the final velocity with all the behaviours
-    ngl::Vector m_behaviourSet();
+    Vector m_behaviourSet();
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief Calculates the destination behaviour of the flock
     /// @param [in] _boidNumber the current boid.
@@ -54,7 +54,7 @@ public:
     /// @param [in] _boidList a dynamic array of all the boids.
     void applyModernFlockingForce(int &_boidNumber, std::vector<Boid*> &_boidList);
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Vector BehaviourSetup();
+    Vector BehaviourSetup();
     /// @brief GUI related sets for the simulation
     //----------------------------------------------------------------------------------------------------------------------
     void setBehaviourDistance(double distance) {m_BehaviourDistance = distance;}
@@ -71,13 +71,13 @@ public:
     double getAlignment() const {return m_alignment;}
     
     // Getters for validation - access calculated forces
-    ngl::Vector getCoherence() const {return m_coherence;}
-    ngl::Vector getAlignmentForce() const {return m_alignmentForce;}
-    ngl::Vector getSeparation() const {return m_separation;}
-    ngl::Vector getBehaviourSetup() const {return m_behaviourSetup;}
-    ngl::Vector getCohesionSet() const {return m_cohesionSet;}
-    ngl::Vector getSeparationSet() const {return m_seperationSet;}
-    ngl::Vector getAlignmentSet() const {return m_alighmentSet;}
+    Vector getCoherence() const {return m_coherence;}
+    Vector getAlignmentForce() const {return m_alignmentForce;}
+    Vector getSeparation() const {return m_separation;}
+    Vector getBehaviourSetup() const {return m_behaviourSetup;}
+    Vector getCohesionSet() const {return m_cohesionSet;}
+    Vector getSeparationSet() const {return m_seperationSet;}
+    Vector getAlignmentSet() const {return m_alighmentSet;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our ctor
     ~Behaviours();
@@ -119,7 +119,7 @@ private:
     std::vector <Boid*> *_boidList;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the value of cohesion the check.
-    ngl::Vector m_coherence;
+    Vector m_coherence;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to check the distance between the behaviours.
     double m_BehaviourDistance;
@@ -134,28 +134,28 @@ private:
     double m_alignment;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the amount of Separation generated.
-    ngl::Vector m_separation;
+    Vector m_separation;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to contribute additional alignment force to the flock.
-    ngl::Vector m_alignmentForce;
+    Vector m_alignmentForce;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the diffence in positions between the current boid to the local boids.
-    ngl::Vector m_boidDistance;
+    Vector m_boidDistance;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the positions between the current boid to the local boids.
     double m_flockDistance;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the behaviour movement.
-    ngl::Vector m_behaviourSetup;
+    Vector m_behaviourSetup;
     /// @brief variable to store the final seperation velocity.
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Vector m_seperationSet;
+    Vector m_seperationSet;
     /// @brief variable to store the final cohesion velocity.
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Vector m_cohesionSet;
+    Vector m_cohesionSet;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the final alignment velocity.
-    ngl::Vector m_alighmentSet;
+    Vector m_alighmentSet;
     //----------------------------------------------------------------------------------------------------------------------
 };
 

@@ -6,7 +6,7 @@
  */
 
 #include "FlockTypes.h"
-#include "ModernRandom.h"
+#include "MathUtils.h"
 #include <iostream>
 
 namespace flock::examples {
@@ -94,16 +94,14 @@ public:
 inline void demonstrateModernUsage() {
     std::cout << "=== Modern Flocking System Demo ===" << std::endl;
     
-    // Create random positions using modern Random
-    flock::Random random;
-    
+    // Create random positions using MathUtils
     std::vector<flock::Vec3> boidPositions;
     std::vector<flock::Vec3> boidVelocities;
     
     // Generate 10 random boids
     for (int i = 0; i < 10; ++i) {
-        boidPositions.push_back(random.randomVec3() * 10.0f);
-        boidVelocities.push_back(random.randomNormalizedVec3() * 2.0f);
+        boidPositions.push_back(math::utils::randomVector() * 10.0f);
+        boidVelocities.push_back(math::utils::randomUnitVector() * 2.0f);
     }
     
     // Calculate flocking for first boid
@@ -125,7 +123,12 @@ inline void demonstrateModernUsage() {
     std::cout << "Normalized velocity: (" << normalized.x << ", " << normalized.y << ", " << normalized.z << ")" << std::endl;
     
     // Random colors
-    flock::Color randomColor = random.randomColor();
+    glm::vec4 randomColor = glm::vec4(
+        math::utils::randomFloat(0.0f, 1.0f),
+        math::utils::randomFloat(0.0f, 1.0f), 
+        math::utils::randomFloat(0.0f, 1.0f),
+        1.0f
+    );
     std::cout << "Random color: (" << randomColor.r << ", " << randomColor.g << ", " << randomColor.b << ", " << randomColor.a << ")" << std::endl;
 }
 
