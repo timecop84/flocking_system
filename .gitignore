@@ -103,8 +103,7 @@ performance_test.cpp
 Doxyfile.bak
 ui_mainwindow.h
 
-# Remove all shaders except if you restore the directory
-shaders/
+
 
 # Remove backup directory if present
 __backup_before_cleanup/

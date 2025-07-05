@@ -134,7 +134,7 @@ if exist Makefile.Release (
 )
 
 REM Remove generated files and directories
-for %%d in (debug release %BIN_DIR% obj moc ui build) do (
+for %%d in (debug release %BIN_DIR% obj moc build) do (
     if exist "%%d" (
         echo %BLUE%    * Removing %%d directory...%NC%
         rmdir /s /q "%%d" >nul 2>&1
@@ -190,9 +190,9 @@ echo %BLUE%  - Locating executable...%NC%
 
 REM Try multiple possible locations for the executable
 set "FOUND_EXE="
-for %%d in ("%BIN_DIR%" "%RELEASE_DIR%" "debug" ".") do (
-    if exist "%%~d\%EXECUTABLE_NAME%" (
-        set "FOUND_EXE=%%~d\%EXECUTABLE_NAME%"
+for %%d in (%BIN_DIR% %RELEASE_DIR% debug .) do (
+    if exist "%%d\%EXECUTABLE_NAME%" (
+        set "FOUND_EXE=%%d\%EXECUTABLE_NAME%"
         goto :found_exe
     )
 )
@@ -203,7 +203,7 @@ echo %YELLOW%    Please build the project first using 'build.bat build'%NC%
 exit /b 1
 
 :found_exe
-echo %GREEN%  ✓ Found executable: %FOUND_EXE%%NC%
+echo %GREEN%  ✓ Found executable: !FOUND_EXE!%NC%
 echo %BLUE%  - Starting application...%NC%
 echo.
 echo %GREEN%======================================%NC%
@@ -212,12 +212,12 @@ echo %GREEN%======================================%NC%
 echo.
 
 REM Start the application
-start "" "%FOUND_EXE%"
+start "" "!FOUND_EXE!"
 
 REM Wait a moment to see if it starts successfully
 timeout /t 2 >nul 2>&1
 
-echo %GREEN%  ✓ Application launched%NC%
+echo %GREEN%  ✓ Application launched (if no error appeared)%NC%
 goto :eof
 
 :build_failed
