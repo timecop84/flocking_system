@@ -28,8 +28,11 @@ class ShaderLib;
 #include "../modules/graphics/include/UBOStructures.h"
 // High-performance instanced rendering
 #include "modules/graphics/include/InstancedBoidRenderer.h"
-// GPU-accelerated flocking simulation
-#include "modules/graphics/include/GPUFlockingManager.h"
+
+// Forward declarations for GPU flocking
+namespace FlockingGraphics {
+    class GPUFlockingManager;
+}
 
 // must be included after our stuff because GLEW needs to be first
 #include <QTime>

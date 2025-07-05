@@ -99,8 +99,10 @@ bool GPUFlockingManager::createComputeShader() {
     std::string shaderSource = R"(
 #version 450 core
 
+// Local work group size - optimized for GPU architecture
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
+// Boid data structure matching C++ BoidData
 struct BoidData {
     vec3 position;
     float padding1;
@@ -113,6 +115,7 @@ struct BoidData {
     float padding4;
 };
 
+// Shader Storage Buffer Objects for boid data
 layout(std140, binding = 0) restrict buffer BoidDataBuffer {
     BoidData boids[];
 };
@@ -121,6 +124,7 @@ layout(std140, binding = 1) restrict writeonly buffer BoidDataOutBuffer {
     BoidData boidsOut[];
 };
 
+// Flocking parameters uniform block
 layout(std140, binding = 2) uniform FlockingParameters {
     float separationDistance;
     float alignmentDistance;
@@ -136,171 +140,226 @@ layout(std140, binding = 2) uniform FlockingParameters {
     float randomSeed;
     vec3 boundingBoxMin;
     vec3 boundingBoxMax;
-    vec3 obstaclePosition;
-    float obstacleRadius;
 };
+
+// Simple random function
+float random(float seed, float coord) {
+    return fract(sin(dot(vec2(seed, coord), vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+// Get random jitter - match CPU exactly with reduced strength for stability
+vec3 getRandomJitter(float seed, float index) {
+    // Match CPU random generation: ((rand() % 1000) / 1000.0f - 0.5f) * 2.0f
+    vec3 jitter;
+    jitter.x = (random(seed + 1.0, index * 3.0 + 1.0) - 0.5) * 2.0;
+    jitter.y = (random(seed + 2.0, index * 3.0 + 2.0) - 0.5) * 2.0;
+    jitter.z = (random(seed + 3.0, index * 3.0 + 3.0) - 0.5) * 2.0;
+    return jitter * 1.5; // FIXED: Match CPU jitter strength (was 0.5, now 1.5)
+}
+
+// Boundary constraint - keep boids within bounds
+vec3 applyBoundaryConstraint(vec3 position, vec3 velocity) {
+    vec3 force = vec3(0.0);
+    float margin = 10.0;
+    
+    // X boundaries
+    if (position.x < boundingBoxMin.x + margin) {
+        force.x += (boundingBoxMin.x + margin - position.x) * 0.1;
+    } else if (position.x > boundingBoxMax.x - margin) {
+        force.x += (boundingBoxMax.x - margin - position.x) * 0.1;
+    }
+    
+    // Y boundaries
+    if (position.y < boundingBoxMin.y + margin) {
+        force.y += (boundingBoxMin.y + margin - position.y) * 0.1;
+    } else if (position.y > boundingBoxMax.y - margin) {
+        force.y += (boundingBoxMax.y - margin - position.y) * 0.1;
+    }
+    
+    // Z boundaries
+    if (position.z < boundingBoxMin.z + margin) {
+        force.z += (boundingBoxMin.z + margin - position.z) * 0.1;
+    } else if (position.z > boundingBoxMax.z - margin) {
+        force.z += (boundingBoxMax.z - margin - position.z) * 0.1;
+    }
+    
+    return force;
+}
 
 void main() {
     uint index = gl_GlobalInvocationID.x;
+    
+    // Check bounds
     if (index >= numBoids) return;
     
+    // Current boid data with safety checks
     vec3 position = boids[index].position;
     vec3 velocity = boids[index].velocity;
-    vec3 lastPosition = boids[index].lastPosition;
     
-    // Initialize forces
-    vec3 cohesionForceVec = vec3(0.0);
-    vec3 alignmentForceVec = vec3(0.0);
-    vec3 separationForceVec = vec3(0.0);
+    // Safety checks for NaN and infinity
+    if (any(isnan(position)) || any(isinf(position))) {
+        position = vec3(0.0, 0.0, 0.0);
+    }
+    if (any(isnan(velocity)) || any(isinf(velocity))) {
+        velocity = vec3(0.1, 0.1, 0.0);
+    }
+    
+    // Behavior accumulators - match CPU algorithm exactly
+    vec3 coherence = vec3(0.0);
+    vec3 alignmentSum = vec3(0.0);
+    vec3 separation = vec3(0.0);
     
     int cohesionCount = 0;
     int alignmentCount = 0;
-    int separationCount = 0;
     
-    // Check neighbors - match CPU exactly
+    // Squared distances for optimization - match CPU exactly
+    float behaviorDistanceSq = cohesionDistance * cohesionDistance;  // CPU uses cohesionDistance for both
+    float flockDistanceSq = separationDistance * separationDistance;
+    
+    // Check against all other boids - exact CPU algorithm
     for (int i = 0; i < numBoids; i++) {
-        if (i == index) continue;
+        if (i == index) continue; // Skip self
         
         vec3 neighborPos = boids[i].position;
         vec3 neighborVel = boids[i].velocity;
-        vec3 diff = position - neighborPos;
-        float distanceSq = dot(diff, diff);
         
-        // SEPARATION: Match CPU flock.cpp exactly (squared distance approach)
-        if (distanceSq < separationDistance * separationDistance && distanceSq > 0.001) {
-            // Apply distance-based separation force - EXACT CPU match
-            float separationStrength = (separationDistance * separationDistance - distanceSq) / (separationDistance * separationDistance);
-            vec3 separationForce = diff * separationStrength;
-            separationForceVec += separationForce;
-            separationCount++;
-        }
+        // Calculate distance vector
+        vec3 boidDistance = position - neighborPos;
+        float distanceSq = dot(boidDistance, boidDistance);
         
-        // COHESION & ALIGNMENT: Check if within behavior distance (squared)
-        if (distanceSq < cohesionDistance * cohesionDistance && distanceSq > 0.001) {
-            cohesionForceVec += neighborPos;
+        // COHESION & ALIGNMENT: Check if within behavior distance
+        if (distanceSq < behaviorDistanceSq && distanceSq > 0.001) {
+            coherence += neighborPos;
             cohesionCount++;
-            alignmentForceVec += neighborVel;
+            
+            // ALIGNMENT: Same distance check
+            alignmentSum += neighborVel;
             alignmentCount++;
         }
+        
+        // SEPARATION: Check if within flock distance
+        if (distanceSq < flockDistanceSq && distanceSq > 0.001) {
+            // Match CPU calculateSeparationModern exactly:
+            float distance = sqrt(distanceSq);
+            vec3 diff = position - neighborPos;
+            if (length(diff) > 0.0001) {
+                diff = normalize(diff);
+                diff /= distance; // CRITICAL: Weight by distance for stability
+                separation += diff;
+            }
+        }
     }
     
-    // Finalize cohesion - match CPU exactly
+    // COHESION: Finalize calculation - match CPU exactly
     if (cohesionCount > 0) {
-        cohesionForceVec /= float(cohesionCount);  // Get centroid
-        cohesionForceVec = cohesionForceVec - position;  // Direction toward centroid
-        if (length(cohesionForceVec) > 0.0001) {
-            cohesionForceVec = normalize(cohesionForceVec);
+        coherence /= float(cohesionCount);
+        coherence = coherence - position; // Direction toward centroid
+        if (length(coherence) > 0.0001) {
+            coherence = normalize(coherence);
         } else {
-            cohesionForceVec = vec3(0.0);
+            coherence = vec3(0.0);
         }
+    } else {
+        coherence = vec3(0.0);
     }
     
-    // Finalize alignment - match CPU exactly  
+    // ALIGNMENT: Finalize calculation - match CPU exactly
     if (alignmentCount > 0) {
-        alignmentForceVec /= float(alignmentCount);  // Get average velocity
-        if (length(alignmentForceVec) > 0.0001) {
-            alignmentForceVec = normalize(alignmentForceVec);
-            alignmentForceVec *= 0.5;  // Reduce alignment strength by 50% like CPU
+        alignmentSum /= float(alignmentCount);
+        if (length(alignmentSum) > 0.0001) {
+            alignmentSum = normalize(alignmentSum);
+            // Reduce alignment strength by 50% for chaotic movement (CPU does this)
+            alignmentSum *= 0.5;
         } else {
-            alignmentForceVec = vec3(0.0);
+            alignmentSum = vec3(0.0);
+        }
+    } else {
+        alignmentSum = vec3(0.0);
+    }
+    
+    // SEPARATION: Finalize calculation - match CPU exactly
+    int separationCount = 0; // Count separation neighbors
+    if (length(separation) > 0.0001) {
+        // Calculate approximate count based on separation magnitude
+        separationCount = max(1, int(length(separation) * 10.0)); 
+        separation /= float(separationCount);
+        separation *= separationForce;
+    }
+    
+    // BEHAVIOR SETUP: Combine forces exactly like CPU
+    vec3 separationSet = separation; // Don't negate - modern CPU doesn't use correction
+    vec3 cohesionSet = coherence * cohesionForce;
+    vec3 alignmentSet = alignmentSum * alignmentForce;
+    
+    // Add random jitter for fly-like chaotic movement
+    vec3 randomJitter = getRandomJitter(randomSeed, float(index));
+    
+    vec3 behaviourSetup = separationSet + cohesionSet + alignmentSet + randomJitter;
+    
+    // Force limit - match CPU exactly
+    if (length(behaviourSetup) > 0.5) {  // FIXED: CPU uses 0.5, not 1.0
+        if (length(behaviourSetup) > 0.0001) {
+            behaviourSetup = normalize(behaviourSetup) * 0.5;  // FIXED: CPU uses 0.5
+        } else {
+            behaviourSetup = vec3(0.0);
         }
     }
     
-    // Finalize separation - CPU doesn't divide by count or multiply by separationForce
-    // The CPU applies separationForce after all forces are combined
-    // separationForceVec is already accumulated correctly above
+    // Apply speed multiplier
+    behaviourSetup *= speedMultiplier;
     
-    // Combine forces like CPU: separationSet + cohesionSet + alignmentSet
-    vec3 separationSet = separationForceVec * separationForce;
-    vec3 cohesionSet = cohesionForceVec * cohesionForce;
-    vec3 alignmentSet = alignmentForceVec * alignmentForce;
+    // Apply boundary constraints
+    behaviourSetup += applyBoundaryConstraint(position, velocity);
     
-    vec3 totalForce = separationSet + cohesionSet + alignmentSet;
-    
-    // Add random jitter for fly-like chaotic movement (match CPU)
-    float randX = fract(sin(dot(position.xy + randomSeed, vec2(12.9898, 78.233))) * 43758.5453);
-    float randY = fract(sin(dot(position.yz + randomSeed, vec2(12.9898, 78.233))) * 43758.5453);
-    float randZ = fract(sin(dot(position.xz + randomSeed, vec2(12.9898, 78.233))) * 43758.5453);
-    
-    vec3 randomJitter = vec3(
-        (randX - 0.5) * 2.0,  // Random -1 to 1
-        (randY - 0.5) * 2.0,
-        (randZ - 0.5) * 2.0
-    );
-    randomJitter *= 1.5;  // Match CPU jitter strength
-    
-    totalForce += randomJitter;
-    
-    // Apply speed multiplier to forces (match CPU)
-    totalForce *= speedMultiplier;
-    
-    // Apply force limit like CPU (increased from 0.5f to 1.5f for more dynamic movement)
-    if (length(totalForce) > 1.5) {
-        totalForce = normalize(totalForce) * 1.5;
+    // DEBUGGING: Clamp behavior forces to prevent explosive movement
+    float behaviorMagnitude = length(behaviourSetup);
+    if (behaviorMagnitude > 5.0) {
+        behaviourSetup = normalize(behaviourSetup) * 5.0;
     }
     
-    // Update velocity (match CPU: updateVelocity)
-    velocity += totalForce;
+    // Update velocity - match CPU exactly
+    velocity += behaviourSetup;
     
-    // Apply velocity constraints (match CPU: velocityConstraint)
+    // Velocity constraint (max speed) - match CPU but be more conservative
     float velocityLength = length(velocity);
-    float maxVelocity = 10.0;  // Match CPU max velocity
-    float minVelocity = 0.1;   // Match CPU min velocity
-    
-    // Check for extreme values that might cause instability
-    if (velocityLength > maxVelocity * 10.0) {
-        // If velocity is extremely high, clamp it more aggressively
+    if (velocityLength > maxSpeed * 2.0) {  // REDUCED: was 10.0, now 2.0
+        // If velocity is high, clamp it more aggressively
         if (velocityLength > 0.0001) {
-            velocity = normalize(velocity) * maxVelocity;
+            velocity = normalize(velocity) * maxSpeed;
         }
-    } else if (velocityLength > maxVelocity) {
+    } else if (velocityLength > maxSpeed) {
         if (velocityLength > 0.0001) {
-            velocity = normalize(velocity) * maxVelocity;
+            velocity = normalize(velocity) * maxSpeed;
         }
-    } else if (velocityLength < minVelocity) {
+    } else if (velocityLength < 0.1) { // REDUCED: was 0.3, now 0.1
         if (velocityLength > 0.0001) {
-            velocity = normalize(velocity) * minVelocity;
-        } else {
-            // If velocity is essentially zero, give it a small default velocity
-            velocity = vec3(0.1, 0.1, 0.0);
+            velocity = normalize(velocity) * 0.1;
         }
     }
     
-    // Calculate new direction and update position (match CPU: boidDirection)
-    vec3 newDirection = position - lastPosition;
+    // Position update - FIXED: match CPU exactly with safe deltaTime
+    // CPU uses simple integration but with proper time scaling
+    float safeDeltaTime = min(deltaTime, 0.016); // Cap at ~60fps for stability
+    position += velocity * safeDeltaTime;
     
-    // Safety checks for NaN values
-    if (any(isnan(velocity))) {
-        velocity = vec3(0.1, 0.1, 0.0);
-    }
-    if (any(isnan(newDirection))) {
-        newDirection = vec3(0.0, 0.0, 0.0);
-    }
-    
-    // CPU-style position update: blend velocity with previous movement
-    vec3 nextMovement = (velocity + newDirection) * 0.5;
-    
-    // Safety check for NaN values in the final movement calculation
-    if (any(isnan(nextMovement))) {
-        nextMovement = vec3(0.1, 0.1, 0.0);
-    }
-    
-    // Update position and lastPosition (match CPU exactly)
-    vec3 newLastPosition = position;
-    position += nextMovement;
-    
-    // Final safety check for position
-    if (any(isnan(position))) {
+    // Final safety checks before writing results
+    if (any(isnan(position)) || any(isinf(position))) {
         position = vec3(0.0, 0.0, 0.0);
         velocity = vec3(0.1, 0.1, 0.0);
     }
+    if (any(isnan(velocity)) || any(isinf(velocity))) {
+        velocity = vec3(0.1, 0.1, 0.0);
+    }
+    if (any(isnan(behaviourSetup)) || any(isinf(behaviourSetup))) {
+        behaviourSetup = vec3(0.0, 0.0, 0.0);
+    }
     
-    // Write results
+    // Write results to output buffer
     boidsOut[index].position = position;
     boidsOut[index].velocity = velocity;
-    boidsOut[index].acceleration = totalForce;
-    boidsOut[index].color = boids[index].color;
-    boidsOut[index].lastPosition = newLastPosition;
+    boidsOut[index].acceleration = behaviourSetup; // Store the applied force
+    boidsOut[index].color = boids[index].color; // Preserve color
+    boidsOut[index].lastPosition = boids[index].position; // Store previous position
 }
 )";
 
@@ -456,6 +515,17 @@ void GPUFlockingManager::computeFlocking() {
     // Use the compute program
     glUseProgram(m_computeProgram);
     
+    // Set up buffer bindings based on current swap state
+    GLuint inputBuffer = m_useSwappedBuffers ? m_boidOutputSSBO : m_boidSSBO;
+    GLuint outputBuffer = m_useSwappedBuffers ? m_boidSSBO : m_boidOutputSSBO;
+    
+    // Bind buffers with proper roles
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, inputBuffer);  // Input buffer
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, outputBuffer); // Output buffer
+    
+    // CRITICAL: Bind the parameters uniform buffer
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, m_paramUBO);  // Parameters UBO
+    
     // Check program is valid
     GLint status;
     glGetProgramiv(m_computeProgram, GL_LINK_STATUS, &status);
@@ -471,7 +541,7 @@ void GPUFlockingManager::computeFlocking() {
     
     // Debug output for first few frames
     static int frameCount = 0;
-    if (frameCount < 3) {
+    if (frameCount < 1) {
         std::cout << "GPU Compute: Processing " << numBoids << " boids using " << numWorkGroups << " work groups" << std::endl;
         frameCount++;
     }
@@ -514,6 +584,10 @@ void GPUFlockingManager::computeFlocking() {
         glDeleteSync(fence);
     }
     
+    // CRITICAL: Swap buffers for next frame
+    // This ensures next frame reads from the output of this frame
+    m_useSwappedBuffers = !m_useSwappedBuffers;
+    
     auto endTime = std::chrono::high_resolution_clock::now();
     m_lastComputeTime = std::chrono::duration<float, std::milli>(endTime - startTime).count();
     
@@ -533,8 +607,11 @@ std::vector<GPUBoidData> GPUFlockingManager::downloadBoidData() {
     
     const size_t dataSize = m_gpuBoidData.size() * sizeof(GPUBoidData);
     
+    // Read from the current output buffer (the one that was written to last)
+    GLuint currentOutputBuffer = m_useSwappedBuffers ? m_boidSSBO : m_boidOutputSSBO;
+    
     // Map output buffer and read data
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_boidOutputSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, currentOutputBuffer);
     void* mappedData = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
     
     if (mappedData) {

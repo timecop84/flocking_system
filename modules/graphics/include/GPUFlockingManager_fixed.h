@@ -37,27 +37,30 @@ static_assert(offsetof(GPUBoidData, color) == 48, "color offset must be 48");
 static_assert(offsetof(GPUBoidData, lastPosition) == 64, "lastPosition offset must be 64");
 
 struct FlockingParameters {
-    float separationDistance = 2.0f;      // 0
-    float alignmentDistance = 4.0f;       // 4
-    float cohesionDistance = 4.0f;        // 8
-    float separationForce = 1.5f;         // 12
-    float alignmentForce = 1.0f;          // 16
-    float cohesionForce = 1.0f;           // 20
-    float maxSpeed = 2.0f;                // 24
-    float maxForce = 0.5f;                // 28
-    float deltaTime = 0.016f;             // 32
-    float speedMultiplier = 1.0f;         // 36
-    int numBoids = 200;                   // 40
-    float randomSeed = 0.0f;              // 44
-    glm::vec3 boundingBoxMin = glm::vec3(-20.0f, -20.0f, -20.0f);  // 48
-    glm::vec3 boundingBoxMax = glm::vec3(20.0f, 20.0f, 20.0f);     // 60
-    // Total: 72 bytes (expected: 64 bytes due to std140 padding)
+    float separationDistance = 2.0f;
+    float alignmentDistance = 4.0f;
+    float cohesionDistance = 4.0f;
+    float separationForce = 1.5f;
+    float alignmentForce = 1.0f;
+    float cohesionForce = 1.0f;
+    float maxSpeed = 2.0f;
+    float maxForce = 0.5f;
+    int numBoids = 200;
+    float deltaTime = 0.016f; // ~60 FPS
+    float randomSeed = 0.0f;
+    float speedMultiplier = 1.0f;
+    glm::vec3 boundingBoxMin = glm::vec3(-20.0f, -20.0f, -20.0f);
+    float padding1 = 0.0f;
+    glm::vec3 boundingBoxMax = glm::vec3(20.0f, 20.0f, 20.0f);
+    float padding2 = 0.0f;
+    glm::vec3 obstaclePosition = glm::vec3(0.0f, 0.0f, 0.0f);
+    float obstacleRadius = 4.0f;
 };
 
-// Ensure FlockingParameters matches std140 layout (C++ struct is 72 bytes but OpenGL sees 64)
-static_assert(sizeof(FlockingParameters) == 72, "FlockingParameters size must be 72 bytes in C++");
+// Ensure FlockingParameters matches std140 layout
+static_assert(sizeof(FlockingParameters) == 80, "FlockingParameters size must be 80 bytes for std140 layout");
 static_assert(offsetof(FlockingParameters, boundingBoxMin) == 48, "boundingBoxMin offset must be 48");
-static_assert(offsetof(FlockingParameters, boundingBoxMax) == 60, "boundingBoxMax offset must be 60");
+static_assert(offsetof(FlockingParameters, boundingBoxMax) == 64, "boundingBoxMax offset must be 64");
 
 class GPUFlockingManager {
 public:

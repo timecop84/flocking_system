@@ -12,6 +12,8 @@ struct BoidData {
     vec3 acceleration;
     float padding3;
     vec4 color;
+    vec3 lastPosition;
+    float padding4;
 };
 
 // Shader Storage Buffer Objects for boid data
@@ -258,4 +260,5 @@ void main() {
     boidsOut[index].velocity = velocity;
     boidsOut[index].acceleration = behaviourSetup; // Store the applied force
     boidsOut[index].color = boids[index].color; // Preserve color
+    boidsOut[index].lastPosition = boids[index].position; // Store previous position
 }

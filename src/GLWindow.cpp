@@ -1,4 +1,5 @@
 #include "obstacle.h"
+#include "../modules/graphics/include/GPUFlockingManager.h"
 #include "GLWindow.h"
 #include "mainwindow.h"
 #include "flock.h"
@@ -897,7 +898,7 @@ void GLWindow::timerEvent(
                     params.maxSpeed = 10.0f;  // Match velocity constraints
                     params.maxForce = 0.5f;   // FIXED: Match shader force limit
                     params.numBoids = static_cast<int>(boidList.size());
-                    params.deltaTime = 1.0f; // Simple unit time step (no time integration needed)
+                    params.deltaTime = 0.016f; // 60 FPS time step for smooth movement
                     params.speedMultiplier = flock->getSpeedMultiplier();
                     
                     // Debug parameter values (print once)
@@ -914,7 +915,6 @@ void GLWindow::timerEvent(
                         std::cout << "  maxForce: " << params.maxForce << std::endl;
                         std::cout << "  deltaTime: " << params.deltaTime << std::endl;
                         std::cout << "  speedMultiplier: " << params.speedMultiplier << std::endl;
-                        std::cout << "  obstacleRadius: " << params.obstacleRadius << std::endl;
                         debugPrinted = true;
                     }
                     
@@ -928,12 +928,12 @@ void GLWindow::timerEvent(
                         params.boundingBoxMax = glm::vec3(center.m_x + width, center.m_y + height, center.m_z + depth);
                     }
                     
-                    // Set obstacle data
-                    if (obstacle) {
-                        Vector obsPos = obstacle->getSpherePosition();
-                        params.obstaclePosition = glm::vec3(obsPos.m_x, obsPos.m_y, obsPos.m_z);
-                        params.obstacleRadius = static_cast<float>(obstacle->getSphereRadius());
-                    }
+                    // TODO: Add obstacle support back to GPU flocking
+                    // if (obstacle) {
+                    //     Vector obsPos = obstacle->getSpherePosition();
+                    //     params.obstaclePosition = glm::vec3(obsPos.m_x, obsPos.m_y, obsPos.m_z);
+                    //     params.obstacleRadius = static_cast<float>(obstacle->getSphereRadius());
+                    // }
                     
                     // Upload data to GPU and compute flocking
                     m_gpuFlockingManager->updateParameters(params);
