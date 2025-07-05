@@ -90,6 +90,25 @@ desktop.ini
 config.ini
 settings.ini
 
+# Additional ignores for project cleanup
+# Old/test/example/backup files
+BOUNDARY_COLLISION_FIXES.md
+DEBUG_MATRIX_TRANSLATION.md
+GPU_COMPUTE_FIXES_SUMMARY.md
+GPU_FLOCKING_TEST.md
+OBSTACLE_TOGGLE_TEST.md
+OPTIONAL_UI_ENHANCEMENTS.txt
+example_usage.cpp
+performance_test.cpp
+Doxyfile.bak
+ui_mainwindow.h
+
+# Remove all shaders except if you restore the directory
+shaders/
+
+# Remove backup directory if present
+__backup_before_cleanup/
+
 # Keep these important files:
 # - Source code (src/, include/)
 # - Project file (flock.pro)
