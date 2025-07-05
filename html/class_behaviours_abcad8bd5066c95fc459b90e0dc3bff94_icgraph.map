@@ -1,4 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_flock.html#ab1c74f7c0e571903e0de9ea6eb85d8d7" title="the update method to do all the updates. Then the update is called in the GLWindow in the time event..." alt="" coords="216,5,320,35"/>
-<area shape="rect" id="node5" href="$class_g_l_window.html#a8901509418ab117e8613d624df9b5666" title="timer to change the sphere position by calling update()" alt="" coords="368,5,525,35"/>
-</map>

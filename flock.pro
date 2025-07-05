@@ -1,8 +1,8 @@
 QT += opengl gui core widgets openglwidgets
 
 INCLUDEPATH += include
-INCLUDEPATH += include/ngl_compat
 INCLUDEPATH += modules/math/include
+INCLUDEPATH += modules/graphics/include
 INCLUDEPATH += modules/utils/include
 INCLUDEPATH += C:/Users/detou/vcpkg/installed/x64-windows/include
 
@@ -22,15 +22,26 @@ SOURCES += \
     src/boid.cpp \
     src/flock.cpp \
     src/obstacle.cpp \
+    src/SphereGeometry.cpp \
     src/Behaviours.cpp \
-    src/ngl_compat/Camera.cpp \
-    src/ngl_compat/Light.cpp \
-    src/ngl_compat/NGLInit.cpp \
-    src/ngl_compat/VAOPrimitives.cpp \
-    src/ngl_compat/TransformStack.cpp \
-    src/ngl_compat/Random.cpp \
+    src/BehaviorValidator.cpp \
+    src/SpatialHashGrid.cpp \
     modules/math/src/MathUtils.cpp \
-    src/BehaviorValidator.cpp
+    modules/graphics/src/Camera.cpp \
+    modules/graphics/src/TransformStack.cpp \
+    modules/graphics/src/Colour.cpp \
+    modules/graphics/src/Material.cpp \
+    modules/graphics/src/Light.cpp \
+    modules/graphics/src/ShaderLib.cpp \
+    modules/graphics/src/BBox.cpp \
+    modules/graphics/src/RenderManager.cpp \
+    modules/graphics/src/UBOCache.cpp \
+    modules/graphics/src/GeometryFactory.cpp \
+    modules/graphics/src/SmartShaderManager.cpp \
+    modules/graphics/src/TransformBatcher.cpp \
+    modules/graphics/src/FrameCoordinator.cpp \
+    modules/graphics/src/InstancedBoidRenderer.cpp \
+    modules/graphics/src/GPUFlockingManager.cpp
 
 HEADERS += \
     include/mainwindow.h \
@@ -38,19 +49,32 @@ HEADERS += \
     include/boid.h \
     include/flock.h \
     include/obstacle.h \
+    include/SphereGeometry.h \
     include/Behaviours.h \
-    include/ngl_compat/Camera.h \
-    include/ngl_compat/Light.h \
-    include/ngl_compat/NGLInit.h \
-    include/ngl_compat/VAOPrimitives.h \
-    include/ngl_compat/TransformStack.h \
-    include/ngl_compat/Random.h \
-    modules/math/include/MathUtils.h \
     include/FlockTypes.h \
-    include/ModernRandom.h \
     include/ModernExample.h \
-    include/PerformanceMonitor.h \
-    include/BehaviorValidator.h
+    include/BehaviorValidator.h \
+    include/SpatialHashGrid.h \
+    include/PerformanceProfiler.h \
+    modules/math/include/Vector.h \
+    modules/math/include/Matrix.h \
+    modules/math/include/MathUtils.h \
+    modules/graphics/include/Camera.h \
+    modules/graphics/include/TransformStack.h \
+    modules/graphics/include/Colour.h \
+    modules/graphics/include/Material.h \
+    modules/graphics/include/Light.h \
+    modules/graphics/include/ShaderLib.h \
+    modules/graphics/include/BBox.h \
+    modules/graphics/include/UBOStructures.h \
+    modules/graphics/include/RenderManager.h \
+    modules/graphics/include/UBOCache.h \
+    modules/graphics/include/GeometryFactory.h \
+    modules/graphics/include/SmartShaderManager.h \
+    modules/graphics/include/TransformBatcher.h \
+    modules/graphics/include/FrameCoordinator.h \
+    modules/graphics/include/InstancedBoidRenderer.h \
+    modules/utils/include/PerformanceMonitor.h
 
 FORMS += \
     ui/mainwindow.ui

@@ -34,6 +34,8 @@ private slots:
 
     void on_m_renderFlockWireframe_toggled(bool checked);
 
+    void on_m_flockSpeedSlider_valueChanged(int value);
+
     void on_m_obstaclePosX_valueChanged(double arg1);
 
     void on_m_obstaclePosY_valueChanged(double arg1);
@@ -60,7 +62,27 @@ private slots:
 
     void on_m_bboxSize_valueChanged(double arg1);
 
-    void on_m_useModernUpdate_toggled(bool checked);
+    void on_m_obstacleSpecularR_valueChanged(double arg1);
+
+    void on_m_obstacleSpecularG_valueChanged(double arg1);
+
+    void on_m_obstacleSpecularB_valueChanged(double arg1);
+
+    void on_m_obstacleDiffuseR_valueChanged(double arg1);
+
+    void on_m_obstacleDiffuseG_valueChanged(double arg1);
+
+    void on_m_obstacleDiffuseB_valueChanged(double arg1);
+
+    void on_m_enableObstacle_toggled(bool checked);
+
+    void on_m_obstacleAvoidanceRadiusSlider_valueChanged(int value);
+    void on_m_obstacleCollisionRadiusSlider_valueChanged(int value);
+    void on_m_obstacleRepulsionForceSlider_valueChanged(int value);
+
+public:
+    /// @brief Initialize UI control values (called after OpenGL initialization)
+    void initializeUIValues();
 
 private:
     Ui::MainWindow *m_ui;

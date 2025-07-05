@@ -1,6 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_g_l_window.html#ac7381c1d4824c494671ecd1b3157fd8a" title="GUI releated methods." alt="" coords="347,5,560,35"/>
-<area shape="rect" id="node7" href="$class_g_l_window.html#ab87f4d27b29da61d9e5ddb8ec9846c03" title="GLWindow::removeBoidsFromFlock" alt="" coords="333,58,573,89"/>
-<area shape="rect" id="node5" href="$class_flock.html#a860798792837928e7280041ae8479547" title="GUI related functions." alt="" coords="623,5,764,35"/>
-<area shape="rect" id="node9" href="$class_flock.html#aa2432f9b1f95e462c6e89ff1289366c0" title="removes the last 10 boids" alt="" coords="621,58,765,89"/>
-</map>

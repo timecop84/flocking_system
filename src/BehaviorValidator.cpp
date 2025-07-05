@@ -38,8 +38,8 @@ void BehaviorValidator::logDetailedComparison(int boidIndex,
     }
     
     Boid* currentBoid = boidList[boidIndex];
-    ngl::Vector pos = currentBoid->getPosition();
-    ngl::Vector vel = currentBoid->getVelocity();
+    Vector pos = currentBoid->getPosition();
+    Vector vel = currentBoid->getVelocity();
     
     std::cout << "Boid Position: (" << pos.m_x << ", " << pos.m_y << ", " << pos.m_z << ")" << std::endl;
     std::cout << "Boid Velocity: (" << vel.m_x << ", " << vel.m_y << ", " << vel.m_z << ")" << std::endl;
@@ -78,8 +78,8 @@ BehaviorValidator::FlockingForces BehaviorValidator::calculateModernForces(int b
     }
     
     Boid* currentBoid = boidList[boidIndex];
-    ngl::Vector currentPos = currentBoid->getPosition();
-    ngl::Vector currentVel = currentBoid->getVelocity();
+    Vector currentPos = currentBoid->getPosition();
+    Vector currentVel = currentBoid->getVelocity();
     glm::vec3 glmCurrentPos(currentPos.m_x, currentPos.m_y, currentPos.m_z);
     glm::vec3 glmCurrentVel(currentVel.m_x, currentVel.m_y, currentVel.m_z);
     
@@ -89,7 +89,7 @@ BehaviorValidator::FlockingForces BehaviorValidator::calculateModernForces(int b
     
     for(int i = 0; i < static_cast<int>(boidList.size()); i++) {
         if(i != boidIndex) {
-            ngl::Vector neighborPos = boidList[i]->getPosition();
+            Vector neighborPos = boidList[i]->getPosition();
             glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
             
             glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
@@ -115,13 +115,13 @@ BehaviorValidator::FlockingForces BehaviorValidator::calculateModernForces(int b
     
     for(int i = 0; i < static_cast<int>(boidList.size()); i++) {
         if(i != boidIndex) {
-            ngl::Vector neighborPos = boidList[i]->getPosition();
+            Vector neighborPos = boidList[i]->getPosition();
             glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
             
             glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
             
             if(glm::length(boidDistance) < behaviourDistance) {
-                ngl::Vector neighborVel = boidList[i]->getVelocity();
+                Vector neighborVel = boidList[i]->getVelocity();
                 glm::vec3 glmNeighborVel(neighborVel.m_x, neighborVel.m_y, neighborVel.m_z);
                 alignmentForce += glmNeighborVel;
                 alignmentCount++;
@@ -142,7 +142,7 @@ BehaviorValidator::FlockingForces BehaviorValidator::calculateModernForces(int b
     
     for(int i = 0; i < static_cast<int>(boidList.size()); i++) {
         if(i != boidIndex) {
-            ngl::Vector neighborPos = boidList[i]->getPosition();
+            Vector neighborPos = boidList[i]->getPosition();
             glm::vec3 glmNeighborPos(neighborPos.m_x, neighborPos.m_y, neighborPos.m_z);
             
             glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
@@ -182,12 +182,12 @@ BehaviorValidator::FlockingForces BehaviorValidator::extractLegacyForces(Behavio
     FlockingForces forces;
     
     // Extract forces from legacy Behaviours class using the getter methods
-    ngl::Vector coherence = legacyBehaviours->getCoherence();
-    ngl::Vector alignment = legacyBehaviours->getAlignmentForce();
-    ngl::Vector separation = legacyBehaviours->getSeparation();
+    Vector coherence = legacyBehaviours->getCoherence();
+    Vector alignment = legacyBehaviours->getAlignmentForce();
+    Vector separation = legacyBehaviours->getSeparation();
     
     // Call BehaviourSetup() to get the properly combined force
-    ngl::Vector combined = legacyBehaviours->BehaviourSetup();
+    Vector combined = legacyBehaviours->BehaviourSetup();
     
     // Convert to GLM for comparison
     forces.cohesion = glm::vec3(coherence.m_x, coherence.m_y, coherence.m_z);

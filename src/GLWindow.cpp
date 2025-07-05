@@ -1,26 +1,34 @@
 #include "obstacle.h"
+#include "../modules/graphics/include/GPUFlockingManager.h"
 #include "GLWindow.h"
+#include "mainwindow.h"
 #include "flock.h"
+#include "boid.h"
 #include <iostream>
 #include <cmath>
 #include <QSurfaceFormat>
-#include "ngl_compat/Camera.h"
-#include "ngl_compat/Light.h"
-#include "ngl_compat/TransformStack.h"
-#include "ngl_compat/Colour.h"
-#include "ngl_compat/ShaderLib.h"
-#include "ngl_compat/BBox.h"
-#include "ngl_compat/Vector.h"
-#include "ngl_compat/NGLInit.h"
-#include "ngl_compat/VAOPrimitives.h"
-#include "ngl_compat/Material.h"
-#include "ngl_compat/Matrix.h"
-#include "ngl_compat/glew_compat.h"
+#include "MathUtils.h"
+#include "../modules/graphics/include/Camera.h"
+#include "../modules/graphics/include/Colour.h"
+#include "../modules/graphics/include/Material.h"
+#include "../modules/graphics/include/TransformStack.h"
+#include "../modules/graphics/include/Light.h"
+#include "../modules/graphics/include/ShaderLib.h"
+#include "../modules/graphics/include/UBOStructures.h"
+#include "../modules/graphics/include/FrameCoordinator.h"
+#include "../modules/graphics/include/GeometryFactory.h"
+#include "../modules/graphics/include/SmartShaderManager.h"
+#include "../modules/graphics/include/RenderManager.h"
+#include "../modules/graphics/include/UBOCache.h"
+#include "../modules/graphics/include/TransformBatcher.h"
+#include "PerformanceMonitor.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "PerformanceMonitor.h"
 #include "BehaviorValidator.h"
+#include "glew_compat.h"
+#include "shader_constants.h"
+#include "PerformanceProfiler.h"
 
 
 
@@ -50,7 +58,7 @@ GLWindow::GLWindow(
     format.setSamples(4); // 4x MSAA
     setFormat(format);
     
-    obstacle = new Obstacle(ngl::Vector(12,30,0), 4.0);
+    obstacle = new Obstacle(Vector(50,0,0), 15.0);  // Move the obstacle far to the right for clear testing
 
     // set this widget to have the initial keyboard focus
     setFocus();
@@ -68,23 +76,46 @@ GLWindow::GLWindow(
     m_spinYFace = 0;
     
     // Initialize orbital camera controls
-    m_cameraDistance = 250.0f;
+    m_cameraDistance = 200.0f;  // Increased from 120.0f for better view of larger simulation space
     m_cameraAzimuth = 45.0f;    // degrees
     m_cameraElevation = 30.0f;  // degrees  
     m_cameraTarget.set(0, 0, 0); // look at origin
     
+    // Initialize FPS tracking
+    m_lastTime = std::chrono::high_resolution_clock::now();
+    m_frameCount = 0;
+    m_currentFPS = 0.0f;
+    m_showFPS = true; // Show FPS by default
+    
+    // Initialize pending size values
+    m_pendingBoidSize = 1.0;
+    m_pendingObstacleSize = 4.0;
+    m_hasPendingBoidSize = false;
+    m_hasPendingObstacleSize = false;
+    
+    // Print profiling instructions
+    std::cout << "\n=== PERFORMANCE PROFILER CONTROLS ===" << std::endl;
+    std::cout << "Press 'R' - Print detailed performance report" << std::endl;
+    std::cout << "Press 'T' - Reset profiler statistics" << std::endl;
+    std::cout << "Press 'G' - Toggle GPU/CPU flocking modes" << std::endl;
+    std::cout << "Press 'Space' - Toggle animation" << std::endl;
+    std::cout << "Press '+' or '-' - Add/Remove 50 boids" << std::endl;
+    std::cout << "Press '0' - Reset to 200 boids (default)" << std::endl;
+    std::cout << "Press '1' - Set 500 boids" << std::endl;
+    std::cout << "Press '2' - Set 1000 boids" << std::endl;
+    std::cout << "Press '3' - Set 2000 boids (TARGET)" << std::endl;
+    std::cout << "====================================\n" << std::endl;
+    
     m_sphereUpdateTimer = startTimer(1000 / 60); //run at 60FPS
     m_animate = true;
-    m_useModernUpdate = false; // Start with legacy update, can be toggled later
     m_backgroundColour.set(0.6f, 0.6f, 0.6f, 1.0f);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 GLWindow::~GLWindow()
 {
-    ngl::NGLInit *Init = ngl::NGLInit::instance();
     delete m_light;
-    Init->NGLQuit();
+    // Qt handles OpenGL cleanup automatically
 }
 
 int GLWindow::getCurrentBoidSize()
@@ -116,12 +147,17 @@ void GLWindow::removeBoidsFromFlock()
 
 void GLWindow::setBoidSize(double size)
 {
-    flock->setBoidSize(size);
+    if (flock) {
+        flock->setBoidSize(size);
+    } else {
+        m_pendingBoidSize = size;
+        m_hasPendingBoidSize = true;
+    }
 }
 
 void GLWindow::setBoidColor(QColor colour)
 {
-    ngl::Colour colourToSet;
+    Colour colourToSet;
     colourToSet.set(colour.redF(), colour.greenF(), colour.blueF());
 
     flock->setColour(colourToSet);
@@ -132,23 +168,41 @@ void GLWindow::setFlockWireframe(bool value)
     flock->setWireframe(value);
 }
 
+void GLWindow::setFlockSpeedMultiplier(float multiplier)
+{
+    flock->setSpeedMultiplier(multiplier);
+}
+
 void GLWindow::setObstaclePosition(glm::vec3 position)
 {
-    ngl::Vector nglPos(position.x, position.y, position.z);
+    Vector nglPos(position.x, position.y, position.z);
     obstacle->setSpherePosition(nglPos);
 }
 
 void GLWindow::setObstacleSize(double size)
 {
-    obstacle->setSphereRadius(size);
+    if (obstacle) {
+        obstacle->setSphereRadius(size);
+    } else {
+        m_pendingObstacleSize = size;
+        m_hasPendingObstacleSize = true;
+    }
 }
 
 void GLWindow::setObstacleColour(QColor colour)
 {
-    ngl::Colour colourToSet;
+    // Update the material diffuse color values used in rendering
+    m_obstacleDiffuseR = colour.redF();
+    m_obstacleDiffuseG = colour.greenF();
+    m_obstacleDiffuseB = colour.blueF();
+    
+    // Also update the obstacle's internal color for consistency
+    Colour colourToSet;
     colourToSet.set(colour.redF(), colour.greenF(), colour.blueF());
-
     obstacle->setColour(colourToSet);
+    
+    // Trigger a redraw to show the changes
+    update();
 }
 
 void GLWindow::setObstacleWireframe(bool value)
@@ -181,7 +235,12 @@ void GLWindow::setSimAlignment(double alignment)
     flock->setSimAlignment(alignment);
 }
 
-void GLWindow::setBackgroundColour(ngl::Colour colour)
+void GLWindow::setObstacleCollisionEnabled(bool enabled)
+{
+    flock->setObstacleCollisionEnabled(enabled);
+}
+
+void GLWindow::setBackgroundColour(Colour colour)
 {
     m_backgroundColour = colour;
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
@@ -191,7 +250,7 @@ void GLWindow::setBackgroundColour(ngl::Colour colour)
 void GLWindow::setBBoxSize(glm::vec3 size)
 {
     delete bbox;
-    bbox = new ngl::BBox(ngl::Vector(0,0,0), size.x, size.y, size.z);
+    bbox = new BBox(Vector(0,0,0), size.x, size.y, size.z);
     bbox->setDrawMode(GL_LINE); // Ensure wireframe mode is set
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -201,87 +260,161 @@ void GLWindow::setBBoxSize(glm::vec3 size)
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::initializeGL()
 {
-    std::cout << "initializeGL called" << std::endl;
-    
     // Initialize OpenGL functions - required for QOpenGLWidget with QOpenGLFunctions
     initializeOpenGLFunctions();
-    
-    std::cout << "OpenGL functions initialized" << std::endl;
     
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
     // enable depth testing for drawing
     glEnable(GL_DEPTH_TEST);
     
-    // we need to initialise the NGL lib, under windows and linux we also need to
-    // initialise GLEW, under windows this needs to be done in the app as well
-    // as the lib hence the WIN32 define
-    ngl::NGLInit *Init = ngl::NGLInit::instance();
-    Init->initGlew();
+    // Initialize OpenGL extensions
 #ifdef WIN32
-    glewInit(); // need a local glew init as well as lib one for windows
+    glewInit(); // Initialize GLEW on Windows
 #endif
     // now to load the shader and set the values
     // grab an instance of shader manager
-    m_shader = ngl::ShaderLib::instance();
-    // we are creating a shader called Phong
+    m_shader = ShaderLib::instance();
+    
+    // Create shaders for optimized rendering
+    
+    // Main Phong shader for boids and obstacles
     m_shader->createShaderProgram("Phong");
-    // now we are going to create empty shaders for Frag and Vert
-    m_shader->attachShader("PhongVertex",ngl::VERTEX);
-    m_shader->attachShader("PhongFragment",ngl::FRAGMENT);
-    // attach the source
+    m_shader->attachShader("PhongVertex",VERTEX);
+    m_shader->attachShader("PhongFragment",FRAGMENT);
     m_shader->loadShaderSource("PhongVertex","shaders/Phong.vs");
     m_shader->loadShaderSource("PhongFragment","shaders/Phong.fs");
-    // compile the shaders
     m_shader->compileShader("PhongVertex");
     m_shader->compileShader("PhongFragment");
-    // add them to the program
     m_shader->attachShaderToProgram("Phong","PhongVertex");
     m_shader->attachShaderToProgram("Phong","PhongFragment");
-    // now bind the shader attributes for most NGL primitives we use the following
-    // layout attribute 0 is the vertex data (x,y,z)
+    
+    // Bind vertex attributes
     m_shader->bindAttribute("Phong",0,"inVert");
-    // attribute 1 is the UV data u,v (if present)
     m_shader->bindAttribute("Phong",1,"inUV");
-    // attribute 2 are the normals x,y,z
     m_shader->bindAttribute("Phong",2,"inNormal");
-
-    // now we have associated this data we can link the shader
+    
+    // Link and activate
     m_shader->linkProgramObject("Phong");
-    // and make it active ready to load values
     (*m_shader)["Phong"]->use();
-
+    
+    // Bind uniform blocks to binding points for UBO compatibility
+    m_shader->bindUniformBlockToBindingPoint("Phong", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("Phong", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("Phong", "LightBlock", FlockingShaders::LIGHT_BINDING_POINT);
+    
+    // Create additional shaders for optimization
+    // Instanced boid shader
+    m_shader->createShaderProgram("boid_shader");
+    m_shader->attachShader("BoidVertex",VERTEX);
+    m_shader->attachShader("BoidFragment",FRAGMENT);
+    // For now, use the same Phong shaders - can be optimized later with instancing
+    m_shader->loadShaderSource("BoidVertex","shaders/Phong.vs");
+    m_shader->loadShaderSource("BoidFragment","shaders/Phong.fs");
+    m_shader->compileShader("BoidVertex");
+    m_shader->compileShader("BoidFragment");
+    m_shader->attachShaderToProgram("boid_shader","BoidVertex");
+    m_shader->attachShaderToProgram("boid_shader","BoidFragment");
+    m_shader->bindAttribute("boid_shader",0,"inVert");
+    m_shader->bindAttribute("boid_shader",1,"inUV");
+    m_shader->bindAttribute("boid_shader",2,"inNormal");
+    m_shader->linkProgramObject("boid_shader");
+    m_shader->bindUniformBlockToBindingPoint("boid_shader", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("boid_shader", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("boid_shader", "LightBlock", FlockingShaders::LIGHT_BINDING_POINT);
+    
+    // Obstacle shader  
+    m_shader->createShaderProgram("obstacle_shader");
+    m_shader->attachShader("ObstacleVertex",VERTEX);
+    m_shader->attachShader("ObstacleFragment",FRAGMENT);
+    m_shader->loadShaderSource("ObstacleVertex","shaders/Phong.vs");
+    m_shader->loadShaderSource("ObstacleFragment","shaders/Phong.fs");
+    m_shader->compileShader("ObstacleVertex");
+    m_shader->compileShader("ObstacleFragment");
+    m_shader->attachShaderToProgram("obstacle_shader","ObstacleVertex");
+    m_shader->attachShaderToProgram("obstacle_shader","ObstacleFragment");
+    m_shader->bindAttribute("obstacle_shader",0,"inVert");
+    m_shader->bindAttribute("obstacle_shader",1,"inUV");
+    m_shader->bindAttribute("obstacle_shader",2,"inNormal");
+    m_shader->linkProgramObject("obstacle_shader");
+    m_shader->bindUniformBlockToBindingPoint("obstacle_shader", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("obstacle_shader", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("obstacle_shader", "LightBlock", FlockingShaders::LIGHT_BINDING_POINT);
+    
+    // Instanced Phong shader for high-performance boid rendering
+    m_shader->createShaderProgram("PhongInstanced");
+    m_shader->attachShader("PhongInstancedVertex",VERTEX);
+    m_shader->attachShader("PhongInstancedFragment",FRAGMENT);
+    m_shader->loadShaderSource("PhongInstancedVertex","shaders/PhongInstanced.vs");
+    m_shader->loadShaderSource("PhongInstancedFragment","shaders/PhongInstanced.fs");
+    m_shader->compileShader("PhongInstancedVertex");
+    m_shader->compileShader("PhongInstancedFragment");
+    m_shader->attachShaderToProgram("PhongInstanced","PhongInstancedVertex");
+    m_shader->attachShaderToProgram("PhongInstanced","PhongInstancedFragment");
+    m_shader->bindAttribute("PhongInstanced",0,"inVert");
+    m_shader->bindAttribute("PhongInstanced",1,"inUV");
+    m_shader->bindAttribute("PhongInstanced",2,"inNormal");
+    // Instance attributes bound by InstancedBoidRenderer
+    m_shader->linkProgramObject("PhongInstanced");
+    m_shader->bindUniformBlockToBindingPoint("PhongInstanced", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("PhongInstanced", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
+    m_shader->bindUniformBlockToBindingPoint("PhongInstanced", "LightingBlock", FlockingShaders::LIGHTING_BINDING_POINT);
+    
     // the shader will use the currently active material and light0 so set them
-    ngl::Material m(ngl::GOLD);
-    // load our material values to the shader into the structure material (see Vertex shader)
-    m.loadToShader("material");
+    Material m(GOLD);
+    
     // Now we will create a basic Camera from the graphics library
     // Create camera using orbital controls
-    ngl::Vector From(200,120,120);  // Initial position (will be updated by orbital controls)
-    ngl::Vector To(0,0,0);
-    ngl::Vector Up(0,1,0);
+    Vector From(200,120,120);  // Initial position (will be updated by orbital controls)
+    Vector To(0,0,0);
+    Vector Up(0,1,0);
     // now load to our new camera
-    m_cam= new ngl::Camera(From,To,Up,ngl::PERSPECTIVE);
+    m_cam= new Camera(From,To,Up,PERSPECTIVE);
     // set the shape using FOV 45 Aspect Ratio based on Width and Height
-    // The final two are near and far clipping planes of 0.5 and 10
-    m_cam->setShape(45,(float)720.0/576.0,0.05,350,ngl::PERSPECTIVE);
+    // The final two are near and far clipping planes of 0.05 and 2000 (increased for large simulations)
+    m_cam->setShape(45,(float)720.0/576.0,0.05,2000,PERSPECTIVE);
     
     // Initialize camera position using orbital controls
     updateCameraPosition();
     
-    m_shader->setShaderParam3f("viewerPos",m_cam->getEye().m_x,m_cam->getEye().m_y,m_cam->getEye().m_z);
-    // now create our light this is done after the camera so we can pass the
-    // transpose of the projection matrix to the light to do correct eye space
-    // transformations
-    ngl::Matrix iv=m_cam->getViewMatrix();
+    // Create natural directional lighting with moderate intensity
+    Matrix iv=m_cam->getViewMatrix();
     iv.transpose();
-    m_light = new ngl::Light(ngl::Vector(120,120,120,1),ngl::Colour(1,1,1,1),ngl::Colour(1,1,1,1),ngl::POINTLIGHT);
+    m_light = new Light(Vector(150,200,120,1),Colour(0.8,0.8,0.75,1),Colour(1.0,1.0,0.9,1),POINTLIGHT);  // Further reduced intensity for natural lighting
     m_light->setTransform(iv);
-    // load these values to the shader as well
-    m_light->loadToShader("light");
+    
+    // Initialize UBOs for modern shader pipeline
+    initializeUBOs();
+    
+    // Load initial material and light data to UBOs
+    updateMaterialUBO(m);
+    updateLightUBO();
+    
+    // Initialize optimization systems and standard geometries
+    
+    // Initialize optimization systems
+    FlockingGraphics::RenderManager::getInstance().initialize();
+    
+    // Create standard geometries for optimized rendering
+    FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 16); // Standard boid geometry
+    FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 12); // Lower-quality sphere for obstacles
+    FlockingGraphics::GeometryFactory::instance().createBoundingBox();    // Wireframe bounding box
+    FlockingGraphics::GeometryFactory::instance().createCube(1.0f);       // Standard cube
+    
+    // Create named geometries for the rendering system
+    auto boidGeometry = FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 12);
+    // The geometry factory automatically names spheres with the pattern: "sphere_<radius>_<segments>"
+    // So our boid geometry will be named "sphere_1.0_12"
+    // We can create an alias for easier access
+    
+    // Print geometry factory stats to verify it's working
+    std::cout << "=== FLOCKING GRAPHICS OPTIMIZATION SYSTEM ENABLED ===" << std::endl;
+    FlockingGraphics::GeometryFactory::instance().printStats();
+    std::cout << "======================================================" << std::endl;
+    
     m_shader->createShaderProgram("Colour");
 
-    m_shader->attachShader("ColourVertex",ngl::VERTEX);
-    m_shader->attachShader("ColourFragment",ngl::FRAGMENT);
+    m_shader->attachShader("ColourVertex",VERTEX);
+    m_shader->attachShader("ColourFragment",FRAGMENT);
     m_shader->loadShaderSource("ColourVertex","shaders/Colour.vs");
     m_shader->loadShaderSource("ColourFragment","shaders/Colour.fs");
 
@@ -293,15 +426,59 @@ void GLWindow::initializeGL()
     m_shader->bindAttribute("Colour",0,"inVert");
 
     m_shader->linkProgramObject("Colour");
+    
+    // Bind UBO blocks to the Colour shader (same as Phong shader)
+    m_shader->bindUniformBlockToBindingPoint("Colour", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    
+    // Create wireframe shader for optimized bounding box rendering
+    m_shader->createShaderProgram("wireframe_shader");
+    m_shader->attachShader("WireframeVertex",VERTEX);
+    m_shader->attachShader("WireframeFragment",FRAGMENT);
+    m_shader->loadShaderSource("WireframeVertex","shaders/Colour.vs");
+    m_shader->loadShaderSource("WireframeFragment","shaders/Colour.fs");
+    m_shader->compileShader("WireframeVertex");
+    m_shader->compileShader("WireframeFragment");
+    m_shader->attachShaderToProgram("wireframe_shader","WireframeVertex");
+    m_shader->attachShaderToProgram("wireframe_shader","WireframeFragment");
+    m_shader->bindAttribute("wireframe_shader",0,"inVert");
+    m_shader->linkProgramObject("wireframe_shader");
+    m_shader->bindUniformBlockToBindingPoint("wireframe_shader", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
+    
     (*m_shader)["Colour"]->use();
     m_shader->setShaderParam4f("Colour",1,1,1,1);
     glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
-    ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
-    prim->createSphere("sphere",0.8,1);
-    bbox = new ngl::BBox(ngl::Vector(0,0,0),120,120,120);
+    
+    // Initialize sphere primitive for boid rendering
+    bbox = new BBox(Vector(0,0,0),200,200,200);  // Increased from 120x120x120 for larger simulation space
     bbox->setDrawMode(GL_LINE);
     flock = new Flock(bbox, obstacle);
-
+    
+    // Initialize high-performance instanced boid renderer
+    m_instancedBoidRenderer = std::make_unique<FlockingGraphics::InstancedBoidRenderer>();
+    m_instancedBoidRenderer->initialize(0.5f, 16); // 0.5f radius, 16 segments
+    
+    // Initialize GPU-accelerated flocking manager
+    m_gpuFlockingManager = std::make_unique<FlockingGraphics::GPUFlockingManager>();
+    if (!m_gpuFlockingManager->initialize()) {
+        std::cerr << "Warning: GPU flocking acceleration failed to initialize, falling back to CPU" << std::endl;
+        m_gpuFlockingManager->setEnabled(false);
+    }
+    
+    // Apply any pending size values that were set before OpenGL initialization
+    if (m_hasPendingBoidSize) {
+        flock->setBoidSize(m_pendingBoidSize);
+        m_hasPendingBoidSize = false;
+    }
+    if (m_hasPendingObstacleSize) {
+        obstacle->setSphereRadius(m_pendingObstacleSize);
+        m_hasPendingObstacleSize = false;
+    }
+    
+    // Initialize UI values now that OpenGL is ready
+    // Get the parent MainWindow and initialize UI values
+    if (auto* mainWindow = qobject_cast<MainWindow*>(parent()->parent())) {
+        mainWindow->initializeUIValues();
+    }
 }
 //----------------------------------------------------------------------------------------------------------------------
 //This virtual function is called whenever the widget has been updateVelocityresized.
@@ -312,73 +489,33 @@ void GLWindow::resizeGL(
         int _h
         )
 {
-    std::cout << "resizeGL called: " << _w << "x" << _h << std::endl;
-    
     // set the viewport for openGL
     glViewport(0,0,_w,_h);
     
-    // Set up projection matrix using legacy OpenGL calls
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    
-    // Simple perspective projection
-    float aspect = (float)_w / (float)_h;
-    float fovy = 45.0f;
-    float near_plane = 0.1f;
-    float far_plane = 1000.0f;
-    
-    // Use gluPerspective equivalent
-    float fH = tan(fovy * 3.14159f / 360.0f) * near_plane;
-    float fW = fH * aspect;
-    glFrustum(-fW, fW, -fH, fH, near_plane, far_plane);
-    
-    // now set the camera size values as the screen size has changed
+    // Update camera with new aspect ratio (modern approach)
     if (m_cam) {
-        m_cam->setShape(45,(float)_w/_h,0.05,350,ngl::PERSPECTIVE);
+        m_cam->setShape(45,(float)_w/_h,0.05,2000,PERSPECTIVE);
     }
 }
 
 
 void GLWindow::loadMatricesToShader(
-        ngl::TransformStack &_tx
+        TransformStack &_tx
         )
 {
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-
-    ngl::Matrix MV;
-    ngl::Matrix MVP;
-    ngl::Mat3x3 normalMatrix;
-    ngl::Matrix M;
-    M=_tx.getCurrAndGlobal().getMatrix();
-    MV=  _tx.getCurrAndGlobal().getMatrix()*m_cam->getViewMatrix();
-    MVP= M*m_cam->getVPMatrix(); //MV*m_cam->getProjectionMatrix();
-    normalMatrix=MV;
-    normalMatrix.inverse();
-    //  shader->setShaderParamFromMatrix("MV",MV);
-    shader->setShaderParamFromMatrix("MVP",MVP);
-    //  shader->setShaderParamFromMat3x3("normalMatrix",normalMatrix);
-    //  shader->setShaderParamFromMatrix("M",M);
+    // Use UBO-based approach for modern shader pipeline
+    updateMatrixUBO(_tx);
 }
 void GLWindow::loadMatricesToColourShader(
-        ngl::TransformStack &_tx
+        TransformStack &_tx
         )
 
 {
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
+    // Use UBO-based approach for modern shader pipeline
+    updateMatrixUBO(_tx);
+    
+    ShaderLib *shader=ShaderLib::instance();
     (*shader)["Colour"]->use();
-    ngl::Matrix MV;
-    ngl::Matrix MVP;
-    ngl::Matrix M;
-    ngl::Mat3x3 normalMatrix;
-    normalMatrix=MV;
-    normalMatrix.inverse();
-
-    MV= _tx.getCurrAndGlobal().getMatrix()*m_cam->getViewMatrix() ;
-    MVP=MV*m_cam->getProjectionMatrix();
-    shader->setShaderParamFromMatrix("MVP",MVP);
-    shader->setShaderParamFromMatrix("M",M);
-
-
 }
 //----------------------------------------------------------------------------------------------------------------------
 //This virtual function is called whenever the widget needs to be painted.
@@ -386,23 +523,28 @@ void GLWindow::loadMatricesToColourShader(
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::paintGL()
 {
+    PROFILE_SCOPE("Total Frame Render");
+    
     static int frame_count = 0;
     frame_count++;
     
-    // Only print debug info every 60 frames to reduce spam
-    if (frame_count % 60 == 1) {
-        std::cout << "paintGL called (frame " << frame_count << ")" << std::endl;
-        std::cout << "Camera pos: (" << m_cam->getEye().m_x << ", " << m_cam->getEye().m_y << ", " << m_cam->getEye().m_z << ")" << std::endl;
-    }
+    // Begin frame coordination for all optimization systems
+    FlockingGraphics::FrameCoordinator::getInstance().beginFrame();
     
     // Use the background color set by the user
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
     
     // clear the screen and depth buffer
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    {
+        PROFILE_SCOPE("Clear Buffers");
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
     
-    // Enable depth testing
+    // Enable depth testing and face culling for proper 3D rendering
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
 
     // Use the NGL-style camera and transform stack for consistent rendering
     // Set up the view matrix for the camera
@@ -410,70 +552,152 @@ void GLWindow::paintGL()
     glm::mat4 project = m_cam->getProjectionMatrix();
     
     // Load the matrices into the transform stack (for NGL compatibility)
-    ngl::Matrix nglProject(project);
-    ngl::Matrix nglView(view);
+    Matrix nglProject(project);
+    Matrix nglView(view);
     m_transformStack.setProjection(nglProject);
     m_transformStack.setView(nglView);
     
     // Set up basic model matrix (no rotation - camera handles all movement now)
-    ngl::Matrix model;
+    Matrix model;
     model.identity();
     model.translate(m_modelPos.m_x, m_modelPos.m_y, m_modelPos.m_z);
     m_transformStack.setModel(model);
-
-    // Debug: Add immediate mode test AFTER setting up matrices
-    glMatrixMode(GL_PROJECTION);
-    glLoadMatrixf(glm::value_ptr(project));
     
-    glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf(glm::value_ptr(view));
-    glMultMatrixf(glm::value_ptr(model.m_matrix));
-
-    // Test: Draw coordinate axes for reference (smaller now that we know rendering works)
-    glDisable(GL_LIGHTING);
-    glLineWidth(2.0f);
-    glBegin(GL_LINES);
-        // X axis - Red
-        glColor3f(1.0f, 0.0f, 0.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(30.0f, 0.0f, 0.0f);
-        
-        // Y axis - Green
-        glColor3f(0.0f, 1.0f, 0.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(0.0f, 30.0f, 0.0f);
-        
-        // Z axis - Blue
-        glColor3f(0.0f, 0.0f, 1.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(0.0f, 0.0f, 30.0f);
-    glEnd();
-    glLineWidth(1.0f);
+    // Update lighting UBO every frame (light position needs to be in view space)
+    updateLightingUBO();
 
     // Draw the bounding box (wireframe) with white color
-    if (bbox && frame_count % 60 == 1) {
-        std::cout << "Drawing bbox" << std::endl;
-    }
     if (bbox) {
-        glColor3f(1.0f, 1.0f, 1.0f); // White color
-        bbox->draw();
+        PROFILE_SCOPE("Draw Bounding Box");
+        // Push a clean transform for the bounding box to ensure it's drawn at origin
+        m_transformStack.pushTransform();
+        {
+            // Reset to identity transform for bounding box (no translation)
+            Matrix bboxTransform;
+            bboxTransform.identity();
+            m_transformStack.setModel(bboxTransform.getGLMMat4());
+            
+            // Update UBO with clean transform
+            updateMatrixUBO(m_transformStack);
+            
+            // Use modern color shader for wireframe rendering
+            ShaderLib *shader = ShaderLib::instance();
+            shader->use("Colour");
+            shader->setShaderParam4f("Colour", 1.0f, 1.0f, 1.0f, 1.0f); // White color
+            bbox->draw();
+        }
+        m_transformStack.popTransform();
     }
 
-    // Draw the flock with Phong shader
-    if (flock && frame_count % 60 == 1) {
-        std::cout << "Drawing flock" << std::endl;
-    }
-    if (flock) {
-        flock->draw("Phong", m_transformStack, m_cam);
+    // Draw the flock using high-performance instanced rendering
+    if (flock && m_instancedBoidRenderer) {
+        PROFILE_SCOPE("Draw Instanced Boids");
+        // Clear previous instances
+        m_instancedBoidRenderer->clearInstances();
+        
+        // Prepare view and projection matrices for instancing
+        m_transformStack.pushTransform();
+        
+        // Get all boids and add them as instances
+        const std::vector<Boid*>& boidList = flock->getBoidList();
+        
+        // Update base matrices (view/projection only, no model transform)
+        Matrix identityMatrix;
+        identityMatrix.identity();
+        m_transformStack.setModel(identityMatrix.getGLMMat4());
+        updateMatrixUBO(m_transformStack);
+        
+        // Update material UBO once for all boids with a brighter material
+        Material boidMaterial;
+        boidMaterial.setAmbient(Colour(0.3f, 0.3f, 0.3f, 1.0f));     // Brighter ambient
+        boidMaterial.setDiffuse(Colour(0.8f, 0.6f, 0.4f, 1.0f));     // Bright gold diffuse
+        boidMaterial.setSpecular(Colour(1.0f, 1.0f, 1.0f, 1.0f));    // Bright specular
+        boidMaterial.setShininess(32.0f);                              // Moderate shininess
+        updateMaterialUBO(boidMaterial);
+        
+        // Add each boid as an instance
+        for(const Boid* boid : boidList)
+        {
+            // Calculate model matrix for this boid
+            flock::Vec3 boidPos = boid->getPositionModern();
+            Vector boidScale = boid->getScale();
+            Matrix boidTransform;
+            boidTransform.identity();
+            boidTransform.translate(boidPos.x, boidPos.y, boidPos.z);
+            
+            // Use the actual boid scale from the flock (controlled by UI)
+            boidTransform.scale(boidScale.m_x, boidScale.m_y, boidScale.m_z);
+            
+            // Convert to GLM matrix
+            glm::mat4 modelMatrix = boidTransform.getGLMMat4();
+            
+            // Get the actual boid color from the boid object
+            flock::Color boidColorModern = boid->getColorModern();
+            glm::vec4 boidColor(boidColorModern.r, boidColorModern.g, boidColorModern.b, boidColorModern.a);
+            
+            // Add this boid as an instance
+            m_instancedBoidRenderer->addInstance(modelMatrix, boidColor);
+        }
+        
+        // Render all boids in a single instanced draw call
+        m_instancedBoidRenderer->renderInstances("PhongInstanced");
+        
+        m_transformStack.popTransform();
     }
 
-    // Draw the obstacle with Phong shader
-    if (obstacle && frame_count % 60 == 1) {
-        std::cout << "Drawing obstacle" << std::endl;
+    // Draw the obstacle with modern UBO-based Phong shader
+    if (obstacle && m_obstacleEnabled) {
+        PROFILE_SCOPE("Draw Obstacle");
+        // Push a new transform level for the obstacle
+        m_transformStack.pushTransform();
+        {
+            // Set up the obstacle's transform (translate to obstacle position and scale by radius)
+            flock::Vec3 obstaclePos = obstacle->getPositionModern();
+            float obstacleRadius = obstacle->getSphereRadius();
+            
+            // Debug output for obstacle size
+            static int obstacleDebugCount = 0;
+            if (obstacleDebugCount++ % 60 == 0) { // Every 60 frames (once per second at 60fps)
+                std::cout << "Obstacle radius: " << obstacleRadius << std::endl;
+            }
+            
+            Matrix obstacleTransform;
+            obstacleTransform.identity();
+            
+            obstacleTransform.translate(obstaclePos.x, obstaclePos.y, obstaclePos.z);
+            obstacleTransform.scale(obstacleRadius, obstacleRadius, obstacleRadius);
+            
+            m_transformStack.setModel(obstacleTransform.getGLMMat4());
+            
+            // Update UBO matrices with obstacle transform
+            updateMatrixUBO(m_transformStack);
+            
+            // Set up obstacle material with balanced Phong shading
+            Material obstacleMaterial;
+            
+            // Balanced Phong material properties for good 3D form and visibility
+            obstacleMaterial.setAmbient(Colour(0.25f, 0.20f, 0.15f, 1.0f));  // Moderate ambient for base visibility
+            obstacleMaterial.setDiffuse(Colour(m_obstacleDiffuseR * 1.8f, m_obstacleDiffuseG * 1.8f, m_obstacleDiffuseB * 1.8f, 1.0f));   // Strong diffuse color
+            obstacleMaterial.setSpecular(Colour(1.2f, 1.2f, 1.0f, 1.0f));  // Bright specular highlights
+            obstacleMaterial.setShininess(48.0f);  // Good shininess for defined highlights
+            
+            updateMaterialUBO(obstacleMaterial);
+            
+            // Use the Phong shader for obstacle rendering
+            m_shader->use("Phong");
+            
+            // Render the obstacle using modern VBO/VAO approach
+            obstacle->ObsDraw("Phong", m_transformStack, m_cam);
+        }
+        m_transformStack.popTransform();
     }
-    if (obstacle) {
-        obstacle->ObsDraw("Phong", m_transformStack, m_cam);
-    }
+    
+    // Update and render FPS counter
+    updateFPS();
+    renderFPSText();
+    
+    // End frame coordination to finalize rendering
+    FlockingGraphics::FrameCoordinator::getInstance().endFrame();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -604,7 +828,7 @@ void GLWindow::wheelEvent(QWheelEvent *_event)
     {
         // Zoom out - increase camera distance
         m_cameraDistance += zoomFactor;
-        if (m_cameraDistance > 1000.0f) m_cameraDistance = 1000.0f; // Maximum distance
+        if (m_cameraDistance > 1500.0f) m_cameraDistance = 1500.0f; // Maximum distance (increased for large simulations)
     }
     
     updateCameraPosition();
@@ -626,40 +850,129 @@ void GLWindow::timerEvent(
             return;
         }
 
-        // Choose between legacy and modern update methods
-        if (m_useModernUpdate) {
-            // MODERN MODE: Use actual modern flocking methods
-            static int modernCounter = 0;
-            
-            // 1. Change flock color to bright cyan to indicate modern mode
-            if (modernCounter % 60 == 0) { // Every 60 frames (~1 second)
-                ngl::Colour modernColor(0.0f, 0.7f, 1.0f, 1.0f); // Bright cyan
-                flock->setColour(modernColor);
-            }
-            
-            // 2. Use the actual modern update method with performance monitoring
+        // Use modern GLM-based update with performance monitoring
+        {
+            PROFILE_SCOPE("Total Frame Update");
             {
-                FLOCK_TIMER(m_performanceMonitor, "Modern GLM Update");
-                flock->updateModern();
+                PROFILE_SCOPE("Flock Update");
+                
+                // Try GPU-accelerated flocking first
+                if (m_gpuFlockingManager && m_gpuFlockingManager->isEnabled()) {
+                    PROFILE_SCOPE("GPU Flocking Update");
+                    
+                    // Convert CPU boid data to GPU format
+                    const std::vector<Boid*>& boidList = flock->getBoidList();
+                    std::vector<FlockingGraphics::GPUBoidData> gpuBoidData;
+                    gpuBoidData.reserve(boidList.size());
+                    
+                    for (Boid* boid : boidList) { // Remove const
+                        FlockingGraphics::GPUBoidData gpuBoid;
+                        
+                        // Convert position
+                        Vector pos = boid->getPosition();
+                        gpuBoid.position = glm::vec3(pos.m_x, pos.m_y, pos.m_z);
+                        
+                        // Convert velocity
+                        Vector vel = boid->getVelocity();
+                        gpuBoid.velocity = glm::vec3(vel.m_x, vel.m_y, vel.m_z);
+                        
+                        // Set lastPosition (for CPU-style position integration)
+                        Vector lastPos = boid->getLastPosition();
+                        gpuBoid.lastPosition = glm::vec3(lastPos.m_x, lastPos.m_y, lastPos.m_z);
+                        
+                        // Convert color
+                        flock::Color colorModern = boid->getColorModern();
+                        gpuBoid.color = glm::vec4(colorModern.r, colorModern.g, colorModern.b, colorModern.a);
+                        
+                        gpuBoidData.push_back(gpuBoid);
+                    }
+                    
+                    // Set up flocking parameters
+                    FlockingGraphics::FlockingParameters params;
+                    params.separationDistance = static_cast<float>(flock->getBehaviours()->getFlockDistance());
+                    params.alignmentDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
+                    params.cohesionDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
+                    params.separationForce = static_cast<float>(flock->getBehaviours()->getSeparationForce());
+                    params.alignmentForce = static_cast<float>(flock->getBehaviours()->getAlignment());
+                    params.cohesionForce = static_cast<float>(flock->getBehaviours()->getCohesionForce());
+                    params.maxSpeed = 10.0f;  // Match velocity constraints
+                    params.maxForce = 0.5f;   // FIXED: Match shader force limit
+                    params.numBoids = static_cast<int>(boidList.size());
+                    params.deltaTime = 0.016f; // 60 FPS time step for smooth movement
+                    params.speedMultiplier = flock->getSpeedMultiplier();
+                    
+                    // Debug parameter values (print once)
+                    static bool debugPrinted = false;
+                    if (!debugPrinted) {
+                        std::cout << "GPU Flocking Parameters:" << std::endl;
+                        std::cout << "  separationDistance: " << params.separationDistance << std::endl;
+                        std::cout << "  alignmentDistance: " << params.alignmentDistance << std::endl;
+                        std::cout << "  cohesionDistance: " << params.cohesionDistance << std::endl;
+                        std::cout << "  separationForce: " << params.separationForce << std::endl;
+                        std::cout << "  alignmentForce: " << params.alignmentForce << std::endl;
+                        std::cout << "  cohesionForce: " << params.cohesionForce << std::endl;
+                        std::cout << "  maxSpeed: " << params.maxSpeed << std::endl;
+                        std::cout << "  maxForce: " << params.maxForce << std::endl;
+                        std::cout << "  deltaTime: " << params.deltaTime << std::endl;
+                        std::cout << "  speedMultiplier: " << params.speedMultiplier << std::endl;
+                        debugPrinted = true;
+                    }
+                    
+                    // Set bounding box from current bbox
+                    if (bbox) {
+                        Vector center = bbox->getCenter();
+                        float width = bbox->getWidth() / 2.0f;
+                        float height = bbox->getHeight() / 2.0f;
+                        float depth = bbox->getDepth() / 2.0f;
+                        params.boundingBoxMin = glm::vec3(center.m_x - width, center.m_y - height, center.m_z - depth);
+                        params.boundingBoxMax = glm::vec3(center.m_x + width, center.m_y + height, center.m_z + depth);
+                    }
+                    
+                    // TODO: Add obstacle support back to GPU flocking
+                    // if (obstacle) {
+                    //     Vector obsPos = obstacle->getSpherePosition();
+                    //     params.obstaclePosition = glm::vec3(obsPos.m_x, obsPos.m_y, obsPos.m_z);
+                    //     params.obstacleRadius = static_cast<float>(obstacle->getSphereRadius());
+                    // }
+                    
+                    // Upload data to GPU and compute flocking
+                    m_gpuFlockingManager->updateParameters(params);
+                    m_gpuFlockingManager->uploadBoidData(gpuBoidData);
+                    m_gpuFlockingManager->computeFlocking();
+                    
+                    // Download results and update CPU boids
+                    std::vector<FlockingGraphics::GPUBoidData> results = m_gpuFlockingManager->downloadBoidData();
+                    
+                    // Apply results back to CPU boids
+                    for (size_t i = 0; i < boidList.size() && i < results.size(); i++) {
+                        const FlockingGraphics::GPUBoidData& result = results[i];
+                        
+                        // Update position
+                        Vector newPos(result.position.x, result.position.y, result.position.z);
+                        boidList[i]->setPosition(newPos);
+                        
+                        // Update velocity
+                        Vector newVel(result.velocity.x, result.velocity.y, result.velocity.z);
+                        boidList[i]->setVelocity(newVel);
+                        
+                        // Update direction based on velocity
+                        boidList[i]->boidDirection();
+                    }
+                    
+                    // Handle collisions on CPU (for now)
+                    flock->checkCollisions();
+                    
+                    // Print performance info occasionally
+                    static int frameCounter = 0;
+                    if (++frameCounter % 120 == 0) { // Every 2 seconds at 60 FPS
+                        std::cout << "GPU Flocking: " << m_gpuFlockingManager->getLastComputeTime() << "ms for " 
+                                  << boidList.size() << " boids" << std::endl;
+                    }
+                } else {
+                    // Fall back to CPU flocking
+                    flock->update();
+                }
             }
-            
-            modernCounter++;
-        } else {
-            // LEGACY MODE: Normal behavior
-            static int legacyCounter = 0;
-            
-            // 1. Use normal white/light color
-            if (legacyCounter % 60 == 0) { // Every 60 frames
-                ngl::Colour legacyColor(0.8f, 0.8f, 1.0f); // Light blue-white
-                flock->setColour(legacyColor);
-            }
-            
-            // 2. Normal update rate and behavior with performance monitoring
-            {
-                FLOCK_TIMER(m_performanceMonitor, "Legacy NGL Update");
-                flock->update();
-            }
-            legacyCounter++;
         }
         update();
     }
@@ -682,33 +995,11 @@ void GLWindow::updateCameraPosition()
     float y = m_cameraDistance * sin(radElevation);
     float z = m_cameraDistance * cos(radElevation) * sin(radAzimuth);
     
-    ngl::Vector cameraPos(m_cameraTarget.m_x + x, m_cameraTarget.m_y + y, m_cameraTarget.m_z + z);
-    ngl::Vector up(0, 1, 0);
+    Vector cameraPos(m_cameraTarget.m_x + x, m_cameraTarget.m_y + y, m_cameraTarget.m_z + z);
+    Vector up(0, 1, 0);
     
     // Update camera
     m_cam->lookAt(cameraPos, m_cameraTarget, up);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void GLWindow::toggleModernUpdate(bool enabled)
-{
-    m_useModernUpdate = enabled;
-    std::cout << "\n======================================" << std::endl;
-    std::cout << "TOGGLE ACTIVATED: Switched to " << (enabled ? "MODERN GLM-based" : "LEGACY") << " update mode" << std::endl;
-    std::cout << "======================================" << std::endl;
-    std::cout << "Performance Controls:" << std::endl;
-    std::cout << "  P - Print performance comparison" << std::endl;
-    std::cout << "  M - Toggle performance monitoring" << std::endl;
-    std::cout << "  C - Clear performance data" << std::endl;
-    std::cout << "  V - Validate behavior differences" << std::endl;
-    std::cout << "  Space - Toggle animation" << std::endl;
-    std::cout << "======================================\n" << std::endl;
-    
-    // Call the demonstration method when switching to modern mode
-    if (enabled && flock) {
-        std::cout << "Activating modern GLM-based flocking system..." << std::endl;
-        flock->demonstrateModernFlocking();
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -721,11 +1012,6 @@ void GLWindow::printPerformanceComparison()
 void GLWindow::setPerformanceMonitoring(bool enabled)
 {
     m_performanceMonitor.setEnabled(enabled);
-    if (enabled) {
-        std::cout << "Performance monitoring ENABLED" << std::endl;
-    } else {
-        std::cout << "Performance monitoring DISABLED" << std::endl;
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -736,6 +1022,15 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
             // Print performance comparison
             printPerformanceComparison();
             break;
+        case Qt::Key_R:
+            // Print performance profiler report
+            PerformanceProfiler::getInstance().printReport();
+            break;
+        case Qt::Key_T:
+            // Reset performance profiler statistics
+            PerformanceProfiler::getInstance().reset();
+            std::cout << "Performance profiler statistics reset." << std::endl;
+            break;
         case Qt::Key_M:
             // Toggle performance monitoring
             setPerformanceMonitoring(!m_performanceMonitor.isEnabled());
@@ -743,16 +1038,129 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
         case Qt::Key_C:
             // Clear performance data
             m_performanceMonitor.clear();
-            std::cout << "Performance data cleared" << std::endl;
             break;
         case Qt::Key_Space:
             // Toggle animation
             m_animate = !m_animate;
-            std::cout << "Animation " << (m_animate ? "ENABLED" : "DISABLED") << std::endl;
             break;
         case Qt::Key_V:
             // Validate behavior differences
             validateBehaviorDifferences();
+            break;
+        case Qt::Key_G:
+            // Toggle GPU/CPU flocking modes
+            if (m_gpuFlockingManager) {
+                bool wasEnabled = m_gpuFlockingManager->isEnabled();
+                m_gpuFlockingManager->toggleGPUMode();
+                std::cout << "Switched from " << (wasEnabled ? "GPU" : "CPU") 
+                          << " to " << (m_gpuFlockingManager->isEnabled() ? "GPU" : "CPU") 
+                          << " flocking mode" << std::endl;
+            } else {
+                std::cout << "GPU flocking manager not available" << std::endl;
+            }
+            break;
+        case Qt::Key_Plus:
+        case Qt::Key_Equal:
+            // Add more boids for testing
+            if (flock) {
+                for (int i = 0; i < 5; i++) {  // Add 5 sets of 10 = 50 boids
+                    flock->addBoids();
+                }
+                std::cout << "Added boids. Total: " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_Minus:
+            // Remove boids for testing
+            if (flock) {
+                for (int i = 0; i < 5 && flock->getFlockSize() > 10; i++) {  // Remove 5 sets of 10 = 50 boids
+                    flock->removeBoids();
+                }
+                std::cout << "Removed boids. Total: " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_1:
+            // Set to 500 boids
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 500;
+                std::cout << "Setting flock size from " << currentSize << " to " << target << std::endl;
+                
+                if (currentSize < target) {
+                    // Add boids
+                    while (flock->getFlockSize() < target) {
+                        flock->addBoids();
+                    }
+                } else if (currentSize > target) {
+                    // Remove boids
+                    while (flock->getFlockSize() > target) {
+                        flock->removeBoids();
+                    }
+                }
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_2:
+            // Set to 1000 boids
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 1000;
+                std::cout << "Setting flock size from " << currentSize << " to " << target << std::endl;
+                
+                if (currentSize < target) {
+                    // Add boids
+                    while (flock->getFlockSize() < target) {
+                        flock->addBoids();
+                    }
+                } else if (currentSize > target) {
+                    // Remove boids
+                    while (flock->getFlockSize() > target) {
+                        flock->removeBoids();
+                    }
+                }
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_3:
+            // Set to 2000 boids
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 2000;
+                std::cout << "Setting flock size from " << currentSize << " to " << target << " - TARGET!" << std::endl;
+                
+                if (currentSize < target) {
+                    // Add boids
+                    while (flock->getFlockSize() < target) {
+                        flock->addBoids();
+                    }
+                } else if (currentSize > target) {
+                    // Remove boids
+                    while (flock->getFlockSize() > target) {
+                        flock->removeBoids();
+                    }
+                }
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_0:
+            // Reset to default 200 boids
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 200;
+                std::cout << "Resetting flock size from " << currentSize << " to " << target << " (default)" << std::endl;
+                
+                if (currentSize < target) {
+                    // Add boids
+                    while (flock->getFlockSize() < target) {
+                        flock->addBoids();
+                    }
+                } else if (currentSize > target) {
+                    // Remove boids
+                    while (flock->getFlockSize() > target) {
+                        flock->removeBoids();
+                    }
+                }
+                std::cout << "Flock size reset to " << flock->getFlockSize() << std::endl;
+            }
             break;
         default:
             QOpenGLWidget::keyPressEvent(_event);
@@ -764,12 +1172,11 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
 void GLWindow::validateBehaviorDifferences()
 {
     if (!flock) {
-        std::cout << "No flock available for validation" << std::endl;
         return;
     }
     
     std::cout << "\n=== BEHAVIOR VALIDATION STARTED ===" << std::endl;
-    std::cout << "Current mode: " << (m_useModernUpdate ? "Modern GLM" : "Legacy NGL") << std::endl;
+    std::cout << "Current mode: Modern GLM" << std::endl;
     
     // Validate the first few boids to get a sample
     int boidsToValidate = std::min(5, flock->getFlockSize());
@@ -783,5 +1190,373 @@ void GLWindow::validateBehaviorDifferences()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+/// @brief Initialize UBOs for modern shader pipeline
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::initializeUBOs()
+{
+    // Create UBOs for matrix, material, and light data
+    m_shader->createUBO("MatrixUBO", sizeof(FlockingShaders::MatrixBlock));
+    m_shader->createUBO("MaterialUBO", sizeof(FlockingShaders::MaterialBlock));
+    m_shader->createUBO("LightUBO", sizeof(FlockingShaders::LightBlock));
+    
+    // Bind UBOs to their respective binding points
+    m_shader->bindUBOToBindingPoint("MatrixUBO", FlockingShaders::MATRIX_BINDING_POINT);
+    m_shader->bindUBOToBindingPoint("MaterialUBO", FlockingShaders::MATERIAL_BINDING_POINT);
+    m_shader->bindUBOToBindingPoint("LightUBO", FlockingShaders::LIGHT_BINDING_POINT);
+    
+    // Setup lighting UBO
+    setupLightingUBO();
+}
 
+void GLWindow::setupLightingUBO() {
+    FlockingShaders::LightingBlock lighting;
+    
+    // Set default light position and color
+    lighting.lightPos = glm::vec3(50.0f, 50.0f, 50.0f);
+    lighting.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    lighting.shininess = 32.0f;
+    lighting.pad1 = lighting.pad2 = 0.0f;  // Required padding for std140 layout
+    
+    // Create and initialize the UBO
+    ShaderLib::instance()->createUBO("LightingUBO", sizeof(FlockingShaders::LightingBlock));
+    ShaderLib::instance()->updateUBO("LightingUBO", &lighting, sizeof(FlockingShaders::LightingBlock));
+    ShaderLib::instance()->bindUBOToBindingPoint("LightingUBO", FlockingShaders::LIGHTING_BINDING_POINT);
+}
+
+void GLWindow::updateLightingUBO() {
+    FlockingShaders::LightingBlock lighting;
+    // In view space, the camera is always at the origin
+    lighting.viewPos = glm::vec3(0.0f, 0.0f, 0.0f);
+    
+    // Transform light position to view space
+    // Use the same light source as the obstacle for consistency
+    glm::vec3 lightWorldPos = m_light ? glm::vec3(m_light->getPosition()) : glm::vec3(150.0f, 200.0f, 120.0f);
+    glm::mat4 viewMatrix = m_cam->getViewMatrix();
+    glm::vec4 lightViewPos = viewMatrix * glm::vec4(lightWorldPos, 1.0f);
+    lighting.lightPos = glm::vec3(lightViewPos); // Light position in view space
+    
+    lighting.lightColor = m_light ? glm::vec3(m_light->getColor()) * 0.6f : glm::vec3(0.6f, 0.6f, 0.55f);  // Further reduced intensity for darker, more natural appearance
+    lighting.shininess = 32.0f;
+    lighting.pad1 = lighting.pad2 = 0.0f;
+    
+    // Update the UBO
+    ShaderLib::instance()->updateUBO("LightingUBO", &lighting, sizeof(FlockingShaders::LightingBlock));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// @brief Update matrix UBO with current transform data
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateMatrixUBO(const TransformStack& transformStack) {
+    FlockingShaders::MatrixBlock matrices;
+    
+    // Compose matrices for UBO
+    glm::mat4 model = transformStack.getCurrentTransform();
+    glm::mat4 view = m_cam->getViewMatrix();
+    glm::mat4 proj = m_cam->getProjectionMatrix();
+    matrices.M = model;
+    matrices.MV = view * model;
+    matrices.MVP = proj * view * model;
+    matrices.normalMatrix = glm::mat3(glm::transpose(glm::inverse(view * model)));
+    matrices.viewerPos = m_cam->getEye();
+    matrices.shouldNormalize = 1.0f;
+    ShaderLib::instance()->updateUBO("MatrixUBO", &matrices, sizeof(FlockingShaders::MatrixBlock));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// @brief Update material UBO with material properties
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateMaterialUBO(const Material& material)
+{
+    // Convert NGL Material to UBO format
+    Colour ambient = material.getAmbient();
+    Colour diffuse = material.getDiffuse();
+    Colour specular = material.getSpecular();
+    
+    m_materialData.ambient = glm::vec4(ambient.m_r, ambient.m_g, ambient.m_b, ambient.m_a);
+    m_materialData.diffuse = glm::vec4(diffuse.m_r, diffuse.m_g, diffuse.m_b, diffuse.m_a);
+    m_materialData.specular = glm::vec4(specular.m_r, specular.m_g, specular.m_b, specular.m_a);
+    m_materialData.shininess = material.getShininess();
+    
+    // Update the UBO
+    m_shader->updateUBO("MaterialUBO", &m_materialData, sizeof(FlockingShaders::MaterialBlock));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// @brief Update light UBO with light properties
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateLightUBO()
+{
+    if (m_light) {
+        // Convert NGL Light to UBO format
+        glm::vec3 lightPos = m_light->getPosition();
+        glm::vec3 lightColor = m_light->getColor();
+        
+        // Debug output disabled for performance
+        // static int lightDebugCounter = 0;
+        // if (lightDebugCounter++ % 120 == 0) { // Print every 2 seconds at 60fps
+        //     std::cout << "Light position (world): (" << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << ")" << std::endl;
+        //     std::cout << "Light color: (" << lightColor.x << ", " << lightColor.y << ", " << lightColor.z << ")" << std::endl;
+        // }
+        
+        m_lightData.position = glm::vec4(lightPos, 1.0f); // Keep light in world space
+        // Enhanced lighting components for smoother appearance
+        m_lightData.ambient = glm::vec4(lightColor * 0.5f, 1.0f);  // Moderate ambient for smooth gradient support
+        m_lightData.diffuse = glm::vec4(lightColor, 1.0f);         // Full diffuse
+        m_lightData.specular = glm::vec4(lightColor * 2.0f, 1.0f); // High specular light for visible highlights
+        
+        // Set attenuation values
+        m_lightData.constantAttenuation = m_light->getConstantAttenuation();
+        m_lightData.linearAttenuation = m_light->getLinearAttenuation();
+        m_lightData.quadraticAttenuation = m_light->getQuadraticAttenuation();
+        m_lightData.spotCosCutoff = -1.0f; // No spotlight (directional/point light)
+        
+        // Update the UBO
+        m_shader->updateUBO("LightUBO", &m_lightData, sizeof(FlockingShaders::LightBlock));
+    }
+}
+
+void GLWindow::setObstacleSpecular(double r, double g, double b)
+{
+    m_obstacleSpecularR = r;
+    m_obstacleSpecularG = g;
+    m_obstacleSpecularB = b;
+    update(); // Trigger a redraw
+}
+
+void GLWindow::setObstacleDiffuse(double r, double g, double b)
+{
+    m_obstacleDiffuseR = r;
+    m_obstacleDiffuseG = g;
+    m_obstacleDiffuseB = b;
+    update(); // Trigger a redraw
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// @brief Update material UBO with boid-specific material properties
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateBoidMaterialUBO(const Boid& boid)
+{
+    // Get boid color
+    flock::Color boidColor = boid.getColorModern();
+    
+    // Set up boid material properties similar to immediate mode
+    m_materialData.ambient = glm::vec4(boidColor.r * 0.3f, boidColor.g * 0.3f, boidColor.b * 0.3f, 1.0f);
+    m_materialData.diffuse = glm::vec4(boidColor.r, boidColor.g, boidColor.b, 1.0f);
+    m_materialData.specular = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
+    m_materialData.shininess = 64.0f;
+    
+    // Update the UBO
+    m_shader->updateUBO("MaterialUBO", &m_materialData, sizeof(FlockingShaders::MaterialBlock));
+}
+
+void GLWindow::setBoidMaterial(Material& material, const Boid& boid)
+{
+    // Get boid color
+    flock::Color boidColor = boid.getColorModern();
+    
+    // Set up boid material properties similar to immediate mode
+    material.setAmbient(Colour(boidColor.r * 0.3f, boidColor.g * 0.3f, boidColor.b * 0.3f, 1.0f));
+    material.setDiffuse(Colour(boidColor.r, boidColor.g, boidColor.b, 1.0f));
+    material.setSpecular(Colour(0.8f, 0.8f, 0.8f, 1.0f));
+    material.setShininess(64.0f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::setShowFPS(bool show) {
+    m_showFPS = show;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+float GLWindow::getCurrentFPS() const {
+    return m_currentFPS;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::updateFPS() {
+    m_frameCount++;
+    
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_lastTime);
+    
+    // Update FPS every 500ms for smooth display
+    if (timeDiff.count() >= 500) {
+        m_currentFPS = (m_frameCount * 1000.0f) / timeDiff.count();
+        m_frameCount = 0;
+        m_lastTime = currentTime;
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void GLWindow::renderFPSText() {
+    if (!m_showFPS) return;
+    
+    // Save current OpenGL state
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    
+    // Disable depth testing for 2D overlay
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    
+    // Switch to 2D rendering mode
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(0, width(), 0, height(), -1, 1);
+    
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    
+    // Enable blending for semi-transparent background
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    // For now, we'll print to console more frequently for debugging
+    static int printCounter = 0;
+    if (printCounter++ % 30 == 0) { // Print every 30 frames (every 0.5 seconds at 60fps)
+        qDebug() << "FPS:" << m_currentFPS << "| Boids:" << (flock ? flock->getFlockSize() : 0);
+    }
+    
+    // Print profiling report every 5 seconds (300 frames at 60fps)
+    static int profilingCounter = 0;
+    if (profilingCounter++ % 300 == 0) {
+        std::cout << "\n=== AUTOMATIC PROFILING REPORT ===" << std::endl;
+        PerformanceProfiler::getInstance().printReport();
+        std::cout << "===================================\n" << std::endl;
+    }
+    
+    // Draw a large, prominent FPS indicator bar
+    float barWidth = (m_currentFPS / 60.0f) * 150.0f; // Normalize to 60 FPS, make it wider
+    if (barWidth > 150.0f) barWidth = 150.0f;
+    
+    // Large FPS bar background
+    glColor4f(0.0f, 0.0f, 0.0f, 0.9f); // More opaque background
+    glBegin(GL_QUADS);
+        glVertex2f(10, height() - 40);
+        glVertex2f(170, height() - 40);
+        glVertex2f(170, height() - 20);
+        glVertex2f(10, height() - 20);
+    glEnd();
+    
+    // FPS bar foreground (color-coded) - larger and brighter
+    if (m_currentFPS >= 50.0f) {
+        glColor4f(0.0f, 1.0f, 0.0f, 1.0f); // Bright green for good FPS
+    } else if (m_currentFPS >= 30.0f) {
+        glColor4f(1.0f, 1.0f, 0.0f, 1.0f); // Bright yellow for medium FPS
+    } else {
+        glColor4f(1.0f, 0.0f, 0.0f, 1.0f); // Bright red for low FPS
+    }
+    
+    glBegin(GL_QUADS);
+        glVertex2f(12, height() - 38);
+        glVertex2f(12 + barWidth, height() - 38);
+        glVertex2f(12 + barWidth, height() - 22);
+        glVertex2f(12, height() - 22);
+    glEnd();
+    
+    // Add a white border for better visibility
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(10, height() - 40);
+        glVertex2f(170, height() - 40);
+        glVertex2f(170, height() - 20);
+        glVertex2f(10, height() - 20);
+    glEnd();
+    
+    // Restore OpenGL state
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    
+    glPopAttrib();
+}
+
+void GLWindow::renderFPSOverlay() {
+    if (!m_showFPS) return;
+    
+    // This method will be called from paintEvent using QPainter
+    // The actual text rendering will be done there
+}
+
+void GLWindow::paintEvent(QPaintEvent *event) {
+    // First, perform the standard OpenGL rendering
+    QOpenGLWidget::paintEvent(event);
+    
+    // Then, draw the FPS overlay using QPainter
+    if (m_showFPS) {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        
+        // Set up the font for the FPS text
+        QFont font = painter.font();
+        font.setPointSize(12);
+        font.setBold(true);
+        painter.setFont(font);
+        
+        // Prepare the FPS text
+        QString fpsText = QString("FPS: %1").arg(m_currentFPS, 0, 'f', 1);
+        QString boidText = QString("Boids: %1").arg(flock ? flock->getFlockSize() : 0);
+        
+        // Calculate text metrics
+        QFontMetrics fm(font);
+        int textWidth = qMax(fm.horizontalAdvance(fpsText), fm.horizontalAdvance(boidText));
+        int textHeight = fm.height();
+        
+        // Draw semi-transparent background
+        int padding = 8;
+        int bgWidth = textWidth + 2 * padding;
+        int bgHeight = 2 * textHeight + 3 * padding;
+        
+        QRect bgRect(10, 10, bgWidth, bgHeight);
+        painter.fillRect(bgRect, QColor(0, 0, 0, 180));
+        
+        // Draw border
+        painter.setPen(QPen(Qt::white, 2));
+        painter.drawRect(bgRect);
+        
+        // Draw FPS text
+        QColor textColor = Qt::white;
+        if (m_currentFPS >= 50.0f) {
+            textColor = Qt::green;
+        } else if (m_currentFPS >= 30.0f) {
+            textColor = Qt::yellow;
+        } else {
+            textColor = Qt::red;
+        }
+        
+        painter.setPen(textColor);
+        painter.drawText(10 + padding, 10 + padding + textHeight, fpsText);
+        
+        // Draw boid count
+        painter.setPen(Qt::white);
+        painter.drawText(10 + padding, 10 + 2 * padding + 2 * textHeight, boidText);
+        
+        painter.end();
+    }
+}
+
+void GLWindow::setObstacleEnabled(bool _enabled)
+{
+    m_obstacleEnabled = _enabled;
+    // Also control the collision checking in the flock
+    setObstacleCollisionEnabled(_enabled);
+    update(); // Force a repaint to show/hide the obstacle
+}
+
+void GLWindow::setObstacleAvoidanceRadiusScale(float scale)
+{
+    if (flock) flock->setObstacleAvoidanceRadiusScale(scale);
+}
+
+void GLWindow::setObstacleCollisionRadiusScale(float scale)
+{
+    if (flock) flock->setObstacleCollisionRadiusScale(scale);
+}
+
+void GLWindow::setObstacleRepulsionForce(float force)
+{
+    if (flock) flock->setObstacleRepulsionForce(force);
+}
 

@@ -1,5 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_g_l_window.html#aee764525c6bc756268430d28d1aaed61" title="GLWindow::setFlockWireframe" alt="" coords="391,5,599,35"/>
-<area shape="rect" id="node5" href="$class_flock.html#a8357b02dbd080cf6f987d88947951b7e" title="Flock::setWireframe" alt="" coords="649,5,791,35"/>
-<area shape="rect" id="node7" href="$class_boid.html#a912f3114fc3388d82de403f9587580a7" title="sets the wireframe for the boids" alt="" coords="840,5,979,35"/>
-</map>
