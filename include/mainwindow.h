@@ -76,6 +76,10 @@ private slots:
 
     void on_m_enableObstacle_toggled(bool checked);
 
+    void on_m_obstacleAvoidanceRadiusSlider_valueChanged(int value);
+    void on_m_obstacleCollisionRadiusSlider_valueChanged(int value);
+    void on_m_obstacleRepulsionForceSlider_valueChanged(int value);
+
 public:
     /// @brief Initialize UI control values (called after OpenGL initialization)
     void initializeUIValues();

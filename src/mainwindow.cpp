@@ -237,3 +237,24 @@ void MainWindow::on_m_enableObstacle_toggled(bool checked)
 {
     m_gl->setObstacleEnabled(checked);
 }
+
+void MainWindow::on_m_obstacleAvoidanceRadiusSlider_valueChanged(int value)
+{
+    float scale = value / 10.0f; // Slider 10-50 -> 1.0-5.0
+    m_ui->m_obstacleAvoidanceRadiusValue->setText(QString::number(scale, 'f', 2));
+    m_gl->setObstacleAvoidanceRadiusScale(scale);
+}
+
+void MainWindow::on_m_obstacleCollisionRadiusSlider_valueChanged(int value)
+{
+    float scale = value / 10.0f; // Slider 10-30 -> 1.0-3.0
+    m_ui->m_obstacleCollisionRadiusValue->setText(QString::number(scale, 'f', 2));
+    m_gl->setObstacleCollisionRadiusScale(scale);
+}
+
+void MainWindow::on_m_obstacleRepulsionForceSlider_valueChanged(int value)
+{
+    float force = value / 100.0f; // Slider 10-100 -> 0.10-1.00
+    m_ui->m_obstacleRepulsionForceValue->setText(QString::number(force, 'f', 2));
+    m_gl->setObstacleRepulsionForce(force);
+}

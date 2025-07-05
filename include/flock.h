@@ -83,6 +83,13 @@ public:
     /// @brief Get the behaviors instance for validation and testing  
     Behaviours* getBehaviours() const { return m_behaviours; }
     //----------------------------------------------------------------------------------------------------------------------
+    /// @brief Set the scale of the obstacle avoidance radius
+    void setObstacleAvoidanceRadiusScale(float scale) { m_obstacleAvoidanceRadiusScale = scale; }
+    /// @brief Set the scale of the obstacle collision radius
+    void setObstacleCollisionRadiusScale(float scale) { m_obstacleCollisionRadiusScale = scale; }
+    /// @brief Set the strength of the repulsion force from obstacles
+    void setObstacleRepulsionForce(float force) { m_obstacleRepulsionForce = force; }
+    //----------------------------------------------------------------------------------------------------------------------
 private:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief a dynamic array to contain the boids.
@@ -145,7 +152,12 @@ private:
 
 
     protected:
-
+    /// @brief scale of the obstacle avoidance radius
+    float m_obstacleAvoidanceRadiusScale = 3.0f;
+    /// @brief scale of the obstacle collision radius
+    float m_obstacleCollisionRadiusScale = 1.3f;
+    /// @brief strength of the repulsion force from obstacles
+    float m_obstacleRepulsionForce = 0.45f;
 
 };
 

@@ -287,6 +287,70 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addWidget(self.groupBox_5)
 
+        self.groupBox_obstacleAvoidance = QGroupBox(self.m_page2_obstacle)
+        self.groupBox_obstacleAvoidance.setObjectName(u"groupBox_obstacleAvoidance")
+        self.gridLayout_obstacleAvoidance = QGridLayout(self.groupBox_obstacleAvoidance)
+        self.gridLayout_obstacleAvoidance.setObjectName(u"gridLayout_obstacleAvoidance")
+        self.label_avoidanceRadius = QLabel(self.groupBox_obstacleAvoidance)
+        self.label_avoidanceRadius.setObjectName(u"label_avoidanceRadius")
+
+        self.gridLayout_obstacleAvoidance.addWidget(self.label_avoidanceRadius, 0, 0, 1, 1)
+
+        self.m_obstacleAvoidanceRadiusSlider = QSlider(self.groupBox_obstacleAvoidance)
+        self.m_obstacleAvoidanceRadiusSlider.setObjectName(u"m_obstacleAvoidanceRadiusSlider")
+        self.m_obstacleAvoidanceRadiusSlider.setMinimum(10)
+        self.m_obstacleAvoidanceRadiusSlider.setMaximum(100)
+        self.m_obstacleAvoidanceRadiusSlider.setValue(30)
+        self.m_obstacleAvoidanceRadiusSlider.setOrientation(Qt.Horizontal)
+
+        self.gridLayout_obstacleAvoidance.addWidget(self.m_obstacleAvoidanceRadiusSlider, 0, 1, 1, 1)
+
+        self.m_obstacleAvoidanceRadiusValue = QLabel(self.groupBox_obstacleAvoidance)
+        self.m_obstacleAvoidanceRadiusValue.setObjectName(u"m_obstacleAvoidanceRadiusValue")
+
+        self.gridLayout_obstacleAvoidance.addWidget(self.m_obstacleAvoidanceRadiusValue, 0, 2, 1, 1)
+
+        self.label_collisionRadius = QLabel(self.groupBox_obstacleAvoidance)
+        self.label_collisionRadius.setObjectName(u"label_collisionRadius")
+
+        self.gridLayout_obstacleAvoidance.addWidget(self.label_collisionRadius, 1, 0, 1, 1)
+
+        self.m_obstacleCollisionRadiusSlider = QSlider(self.groupBox_obstacleAvoidance)
+        self.m_obstacleCollisionRadiusSlider.setObjectName(u"m_obstacleCollisionRadiusSlider")
+        self.m_obstacleCollisionRadiusSlider.setMinimum(10)
+        self.m_obstacleCollisionRadiusSlider.setMaximum(60)
+        self.m_obstacleCollisionRadiusSlider.setValue(13)
+        self.m_obstacleCollisionRadiusSlider.setOrientation(Qt.Horizontal)
+
+        self.gridLayout_obstacleAvoidance.addWidget(self.m_obstacleCollisionRadiusSlider, 1, 1, 1, 1)
+
+        self.m_obstacleCollisionRadiusValue = QLabel(self.groupBox_obstacleAvoidance)
+        self.m_obstacleCollisionRadiusValue.setObjectName(u"m_obstacleCollisionRadiusValue")
+
+        self.gridLayout_obstacleAvoidance.addWidget(self.m_obstacleCollisionRadiusValue, 1, 2, 1, 1)
+
+        self.label_repulsionForce = QLabel(self.groupBox_obstacleAvoidance)
+        self.label_repulsionForce.setObjectName(u"label_repulsionForce")
+
+        self.gridLayout_obstacleAvoidance.addWidget(self.label_repulsionForce, 2, 0, 1, 1)
+
+        self.m_obstacleRepulsionForceSlider = QSlider(self.groupBox_obstacleAvoidance)
+        self.m_obstacleRepulsionForceSlider.setObjectName(u"m_obstacleRepulsionForceSlider")
+        self.m_obstacleRepulsionForceSlider.setMinimum(10)
+        self.m_obstacleRepulsionForceSlider.setMaximum(200)
+        self.m_obstacleRepulsionForceSlider.setValue(45)
+        self.m_obstacleRepulsionForceSlider.setOrientation(Qt.Horizontal)
+
+        self.gridLayout_obstacleAvoidance.addWidget(self.m_obstacleRepulsionForceSlider, 2, 1, 1, 1)
+
+        self.m_obstacleRepulsionForceValue = QLabel(self.groupBox_obstacleAvoidance)
+        self.m_obstacleRepulsionForceValue.setObjectName(u"m_obstacleRepulsionForceValue")
+
+        self.gridLayout_obstacleAvoidance.addWidget(self.m_obstacleRepulsionForceValue, 2, 2, 1, 1)
+
+
+        self.verticalLayout_2.addWidget(self.groupBox_obstacleAvoidance)
+
         self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_2.addItem(self.verticalSpacer_2)
@@ -527,6 +591,13 @@ class Ui_MainWindow(object):
         self.label_specular.setText(QCoreApplication.translate("MainWindow", u"Specular (RGB):", None))
         self.label_diffuse.setText(QCoreApplication.translate("MainWindow", u"Diffuse (RGB):", None))
         self.m_obstacleWireframe.setText(QCoreApplication.translate("MainWindow", u"Render Wireframe", None))
+        self.groupBox_obstacleAvoidance.setTitle(QCoreApplication.translate("MainWindow", u"Obstacle Avoidance", None))
+        self.label_avoidanceRadius.setText(QCoreApplication.translate("MainWindow", u"Avoidance Radius Scale:", None))
+        self.m_obstacleAvoidanceRadiusValue.setText(QCoreApplication.translate("MainWindow", u"3.0", None))
+        self.label_collisionRadius.setText(QCoreApplication.translate("MainWindow", u"Collision Radius Scale:", None))
+        self.m_obstacleCollisionRadiusValue.setText(QCoreApplication.translate("MainWindow", u"1.3", None))
+        self.label_repulsionForce.setText(QCoreApplication.translate("MainWindow", u"Repulsion Force:", None))
+        self.m_obstacleRepulsionForceValue.setText(QCoreApplication.translate("MainWindow", u"0.45", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.m_page2_obstacle), QCoreApplication.translate("MainWindow", u"Obstacle", None))
         self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"General", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Neighbourhood Distance :", None))

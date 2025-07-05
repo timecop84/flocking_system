@@ -111,6 +111,10 @@ public :
     //----------------------------------------------------------------------------------------------------------------------
     void validateBehaviorDifferences();
 
+    void setObstacleAvoidanceRadiusScale(float scale);
+    void setObstacleCollisionRadiusScale(float scale);
+    void setObstacleRepulsionForce(float force);
+
     //-----------------------------------
     /// @brief
     //void update();

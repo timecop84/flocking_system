@@ -518,6 +518,105 @@
          </widget>
         </item>
         <item>
+         <widget class="QGroupBox" name="groupBox_obstacleAvoidance">
+          <property name="title">
+           <string>Obstacle Avoidance</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_obstacleAvoidance">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_avoidanceRadius">
+             <property name="text">
+              <string>Avoidance Radius Scale:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QSlider" name="m_obstacleAvoidanceRadiusSlider">
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="value">
+              <number>30</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QLabel" name="m_obstacleAvoidanceRadiusValue">
+             <property name="text">
+              <string>3.0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_collisionRadius">
+             <property name="text">
+              <string>Collision Radius Scale:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QSlider" name="m_obstacleCollisionRadiusSlider">
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>60</number>
+             </property>
+             <property name="value">
+              <number>13</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLabel" name="m_obstacleCollisionRadiusValue">
+             <property name="text">
+              <string>1.3</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_repulsionForce">
+             <property name="text">
+              <string>Repulsion Force:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QSlider" name="m_obstacleRepulsionForceSlider">
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>200</number>
+             </property>
+             <property name="value">
+              <number>45</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLabel" name="m_obstacleRepulsionForceValue">
+             <property name="text">
+              <string>0.45</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacer_2">
           <property name="orientation">
            <enum>Qt::Vertical</enum>

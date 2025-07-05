@@ -81,6 +81,17 @@ public:
     QDoubleSpinBox *m_obstacleDiffuseG;
     QDoubleSpinBox *m_obstacleDiffuseB;
     QCheckBox *m_obstacleWireframe;
+    QGroupBox *groupBox_obstacleAvoidance;
+    QGridLayout *gridLayout_obstacleAvoidance;
+    QLabel *label_avoidanceRadius;
+    QSlider *m_obstacleAvoidanceRadiusSlider;
+    QLabel *m_obstacleAvoidanceRadiusValue;
+    QLabel *label_collisionRadius;
+    QSlider *m_obstacleCollisionRadiusSlider;
+    QLabel *m_obstacleCollisionRadiusValue;
+    QLabel *label_repulsionForce;
+    QSlider *m_obstacleRepulsionForceSlider;
+    QLabel *m_obstacleRepulsionForceValue;
     QSpacerItem *verticalSpacer_2;
     QWidget *m_page3_simulation;
     QVBoxLayout *verticalLayout_4;
@@ -375,6 +386,70 @@ public:
 
         verticalLayout_2->addWidget(groupBox_5);
 
+        groupBox_obstacleAvoidance = new QGroupBox(m_page2_obstacle);
+        groupBox_obstacleAvoidance->setObjectName("groupBox_obstacleAvoidance");
+        gridLayout_obstacleAvoidance = new QGridLayout(groupBox_obstacleAvoidance);
+        gridLayout_obstacleAvoidance->setObjectName("gridLayout_obstacleAvoidance");
+        label_avoidanceRadius = new QLabel(groupBox_obstacleAvoidance);
+        label_avoidanceRadius->setObjectName("label_avoidanceRadius");
+
+        gridLayout_obstacleAvoidance->addWidget(label_avoidanceRadius, 0, 0, 1, 1);
+
+        m_obstacleAvoidanceRadiusSlider = new QSlider(groupBox_obstacleAvoidance);
+        m_obstacleAvoidanceRadiusSlider->setObjectName("m_obstacleAvoidanceRadiusSlider");
+        m_obstacleAvoidanceRadiusSlider->setMinimum(10);
+        m_obstacleAvoidanceRadiusSlider->setMaximum(100);
+        m_obstacleAvoidanceRadiusSlider->setValue(30);
+        m_obstacleAvoidanceRadiusSlider->setOrientation(Qt::Horizontal);
+
+        gridLayout_obstacleAvoidance->addWidget(m_obstacleAvoidanceRadiusSlider, 0, 1, 1, 1);
+
+        m_obstacleAvoidanceRadiusValue = new QLabel(groupBox_obstacleAvoidance);
+        m_obstacleAvoidanceRadiusValue->setObjectName("m_obstacleAvoidanceRadiusValue");
+
+        gridLayout_obstacleAvoidance->addWidget(m_obstacleAvoidanceRadiusValue, 0, 2, 1, 1);
+
+        label_collisionRadius = new QLabel(groupBox_obstacleAvoidance);
+        label_collisionRadius->setObjectName("label_collisionRadius");
+
+        gridLayout_obstacleAvoidance->addWidget(label_collisionRadius, 1, 0, 1, 1);
+
+        m_obstacleCollisionRadiusSlider = new QSlider(groupBox_obstacleAvoidance);
+        m_obstacleCollisionRadiusSlider->setObjectName("m_obstacleCollisionRadiusSlider");
+        m_obstacleCollisionRadiusSlider->setMinimum(10);
+        m_obstacleCollisionRadiusSlider->setMaximum(60);
+        m_obstacleCollisionRadiusSlider->setValue(13);
+        m_obstacleCollisionRadiusSlider->setOrientation(Qt::Horizontal);
+
+        gridLayout_obstacleAvoidance->addWidget(m_obstacleCollisionRadiusSlider, 1, 1, 1, 1);
+
+        m_obstacleCollisionRadiusValue = new QLabel(groupBox_obstacleAvoidance);
+        m_obstacleCollisionRadiusValue->setObjectName("m_obstacleCollisionRadiusValue");
+
+        gridLayout_obstacleAvoidance->addWidget(m_obstacleCollisionRadiusValue, 1, 2, 1, 1);
+
+        label_repulsionForce = new QLabel(groupBox_obstacleAvoidance);
+        label_repulsionForce->setObjectName("label_repulsionForce");
+
+        gridLayout_obstacleAvoidance->addWidget(label_repulsionForce, 2, 0, 1, 1);
+
+        m_obstacleRepulsionForceSlider = new QSlider(groupBox_obstacleAvoidance);
+        m_obstacleRepulsionForceSlider->setObjectName("m_obstacleRepulsionForceSlider");
+        m_obstacleRepulsionForceSlider->setMinimum(10);
+        m_obstacleRepulsionForceSlider->setMaximum(200);
+        m_obstacleRepulsionForceSlider->setValue(45);
+        m_obstacleRepulsionForceSlider->setOrientation(Qt::Horizontal);
+
+        gridLayout_obstacleAvoidance->addWidget(m_obstacleRepulsionForceSlider, 2, 1, 1, 1);
+
+        m_obstacleRepulsionForceValue = new QLabel(groupBox_obstacleAvoidance);
+        m_obstacleRepulsionForceValue->setObjectName("m_obstacleRepulsionForceValue");
+
+        gridLayout_obstacleAvoidance->addWidget(m_obstacleRepulsionForceValue, 2, 2, 1, 1);
+
+
+        verticalLayout_2->addWidget(groupBox_obstacleAvoidance);
+
         verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding);
 
         verticalLayout_2->addItem(verticalSpacer_2);
@@ -616,6 +691,13 @@ public:
         label_specular->setText(QCoreApplication::translate("MainWindow", "Specular (RGB):", nullptr));
         label_diffuse->setText(QCoreApplication::translate("MainWindow", "Diffuse (RGB):", nullptr));
         m_obstacleWireframe->setText(QCoreApplication::translate("MainWindow", "Render Wireframe", nullptr));
+        groupBox_obstacleAvoidance->setTitle(QCoreApplication::translate("MainWindow", "Obstacle Avoidance", nullptr));
+        label_avoidanceRadius->setText(QCoreApplication::translate("MainWindow", "Avoidance Radius Scale:", nullptr));
+        m_obstacleAvoidanceRadiusValue->setText(QCoreApplication::translate("MainWindow", "3.0", nullptr));
+        label_collisionRadius->setText(QCoreApplication::translate("MainWindow", "Collision Radius Scale:", nullptr));
+        m_obstacleCollisionRadiusValue->setText(QCoreApplication::translate("MainWindow", "1.3", nullptr));
+        label_repulsionForce->setText(QCoreApplication::translate("MainWindow", "Repulsion Force:", nullptr));
+        m_obstacleRepulsionForceValue->setText(QCoreApplication::translate("MainWindow", "0.45", nullptr));
         toolBox->setItemText(toolBox->indexOf(m_page2_obstacle), QCoreApplication::translate("MainWindow", "Obstacle", nullptr));
         groupBox_7->setTitle(QCoreApplication::translate("MainWindow", "General", nullptr));
         label_5->setText(QCoreApplication::translate("MainWindow", "Neighbourhood Distance :", nullptr));

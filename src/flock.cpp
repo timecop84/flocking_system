@@ -7,7 +7,10 @@
 #include <ctime>    // For time-based seeding
 #include "PerformanceProfiler.h"
 
-
+// Obstacle avoidance tuning parameters
+constexpr float OBSTACLE_AVOIDANCE_RADIUS_SCALE = 3.0f;   // Was 2.5f, increase for earlier avoidance
+constexpr float OBSTACLE_COLLISION_RADIUS_SCALE = 1.3f;   // Was 1.2f, increase for more buffer
+constexpr float OBSTACLE_REPULSION_FORCE = 0.45f;         // Was 0.3f, increase for stronger avoidance
 
 //----------------------------------------------------------------------------------------------------------------------
 const static int s_extents=5;  // Original legacy value - spawn in small central area
@@ -63,8 +66,9 @@ void Flock::draw(const std::string &_shaderName, TransformStack &_transformStack
                 boidTransform.translate(boidPos.x, boidPos.y, boidPos.z);
                 
                 // Scale the boid (same size as in immediate mode)
-                float boidSize = 2.0f;
-                boidTransform.scale(boidSize, boidSize, boidSize);
+                // Use each boid's randomized scale
+                Vector scaleVec = b->getScale();
+                boidTransform.scale(scaleVec.m_x * 2.0f, scaleVec.m_y * 2.0f, scaleVec.m_z * 2.0f);
                 
                 _transformStack.setModel(boidTransform.getGLMMat4());
                 
@@ -96,10 +100,11 @@ void Flock::addBoids()
         // add the spheres to the end of the particle list
         for(int i=0; i<10; i++)
         {
-            //std::cout<<"adding boid"<<endl;
             glm::vec3 pos = math::utils::randomPoint(s_extents, s_extents, s_extents);
-            m_boidList.push_back(new Boid(Vector(pos.x, pos.y, pos.z), dir));
-
+            Boid* boid = new Boid(Vector(pos.x, pos.y, pos.z), dir);
+            float scale = 0.7f + static_cast<float>(rand()) / RAND_MAX * 0.8f;
+            boid->setScale(Vector(scale, scale, scale));
+            m_boidList.push_back(boid);
             ++m_numberOfBoids;
         }
     }
@@ -130,7 +135,11 @@ void Flock::resetBoids()
         dir.m_z = dirVec.z;
         
         glm::vec3 pos = math::utils::randomPoint(s_extents, s_extents, s_extents);
-        m_boidList.push_back(new Boid(Vector(pos.x, pos.y, pos.z), dir));
+        Boid* boid = new Boid(Vector(pos.x, pos.y, pos.z), dir);
+        // Randomize scale between 0.7 and 1.5 (can be adjusted)
+        float scale = 0.7f + static_cast<float>(rand()) / RAND_MAX * 0.8f;
+        boid->setScale(Vector(scale, scale, scale));
+        m_boidList.push_back(boid);
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -480,9 +489,9 @@ void  Flock::checkSphereCollisions()
         Vector toObstacle = obstaclePos - boidPos;
         GLfloat distance = toObstacle.length();
         
-        // Define avoidance zones
-        GLfloat avoidanceRadius = obstacleRadius * 2.5f;  // Start avoiding at this distance
-        GLfloat collisionRadius = obstacleRadius * 1.2f;  // Hard collision boundary
+        // Use member variables for avoidance/collision/force
+        GLfloat avoidanceRadius = obstacleRadius * m_obstacleAvoidanceRadiusScale;
+        GLfloat collisionRadius = obstacleRadius * m_obstacleCollisionRadiusScale;
         
         if (distance < avoidanceRadius && distance > 0.0001f) {
             // Calculate smooth repulsion force
@@ -494,7 +503,7 @@ void  Flock::checkSphereCollisions()
             forceStrength = forceStrength * forceStrength; // Quadratic falloff for smoother transition
             
             // Apply gentle repulsion force (add to existing velocity, don't replace it)
-            Vector repulsionForce = repulsionDir * (forceStrength * 0.3f);
+            Vector repulsionForce = repulsionDir * (forceStrength * m_obstacleRepulsionForce);
             m_boidList.at(Current)->addVelocity(repulsionForce);
             
             // Hard collision: push boid away if too close

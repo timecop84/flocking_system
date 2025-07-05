@@ -1545,3 +1545,18 @@ void GLWindow::setObstacleEnabled(bool _enabled)
     update(); // Force a repaint to show/hide the obstacle
 }
 
+void GLWindow::setObstacleAvoidanceRadiusScale(float scale)
+{
+    if (flock) flock->setObstacleAvoidanceRadiusScale(scale);
+}
+
+void GLWindow::setObstacleCollisionRadiusScale(float scale)
+{
+    if (flock) flock->setObstacleCollisionRadiusScale(scale);
+}
+
+void GLWindow::setObstacleRepulsionForce(float force)
+{
+    if (flock) flock->setObstacleRepulsionForce(force);
+}
+
