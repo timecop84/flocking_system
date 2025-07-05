@@ -5,6 +5,7 @@ INCLUDEPATH += modules/math/include
 INCLUDEPATH += modules/graphics/include
 INCLUDEPATH += modules/utils/include
 INCLUDEPATH += C:/Users/detou/vcpkg/installed/x64-windows/include
+INCLUDEPATH += C:/Users/detou/vcpkg/packages/glm_x64-windows/include
 
 OBJECTS_DIR = obj/
 MOC_DIR = moc/
@@ -98,6 +99,7 @@ macx:DEFINES += DARWIN
 win32-g++: {
     INCLUDEPATH += $$[QT_INSTALL_HEADERS]/QtWidgets
     INCLUDEPATH += $$[QT_INSTALL_HEADERS]/QtOpenGLWidgets
+    INCLUDEPATH += C:\Users\detou\vcpkg\packages\glm_x64-windows\include
     LIBS += -lopengl32 -lglu32
     # Exclude Qt6 Entry Point and define our own
     LIBS -= -lQt6EntryPoint

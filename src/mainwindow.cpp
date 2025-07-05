@@ -8,6 +8,108 @@ MainWindow::MainWindow(QWidget *parent) :
     m_ui(new Ui::MainWindow)
 {
     m_ui->setupUi(this);
+
+    // Modern dark theme stylesheet
+    QString darkStyle = R"(
+    QWidget {
+        background-color: #232629;
+        color: #e0e0e0;
+        font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+        font-size: 9pt;
+    }
+    QMainWindow::separator {
+        background: #444;
+    }
+    QGroupBox {
+        border: 1px solid #444;
+        border-radius: 8px;
+        margin-top: 4px;
+        padding: 4px;
+        background-color: #282c34;
+        font-weight: bold;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 10px;
+        padding: 0 4px 0 4px;
+        color: #7fd6ff;
+    }
+    QToolBox, QTabWidget::pane {
+        background: #232629;
+        border: 1px solid #333;
+        border-radius: 8px;
+    }
+    QPushButton {
+        background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                         stop:0 #3a3f44, stop:0.5 #31363b, stop:1 #232629);
+        color: #e0e0e0;
+        border: 1px solid #555;
+        border-radius: 6px;
+        padding: 2px 6px;
+        font-weight: 500;
+        /* Qt-specific shadow effect for depth */
+        /* Use a subtle drop shadow for depth */
+        /* Qt doesn't support box-shadow, so use border and gradient for 3D look */
+    }
+    QPushButton:hover {
+        background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                         stop:0 #4ec3ff, stop:1 #3daee9);
+        color: #fff;
+        border: 1px solid #3daee9;
+    }
+    QPushButton:pressed {
+        background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                         stop:0 #007acc, stop:1 #005f99);
+        border: 1px solid #007acc;
+    }
+    QLabel {
+        color: #e0e0e0;
+    }
+    QSlider::groove:horizontal {
+        border: 1px solid #444;
+        height: 6px;
+        background: #31363b;
+        border-radius: 3px;
+    }
+    QSlider::handle:horizontal {
+        background: #3daee9;
+        border: 1px solid #007acc;
+        width: 16px;
+        margin: -5px 0;
+        border-radius: 8px;
+    }
+    QSpinBox, QDoubleSpinBox {
+        background: #232629;
+        color: #e0e0e0;
+        border: 1px solid #555;
+        border-radius: 4px;
+        padding: 2px 6px;
+    }
+    QCheckBox {
+        spacing: 8px;
+    }
+    QCheckBox::indicator {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        border: 1px solid #3daee9;
+        background: #232629;
+    }
+    QCheckBox::indicator:checked {
+        background: #3daee9;
+        border: 1px solid #3daee9;
+    }
+    QMenuBar, QMenu, QStatusBar {
+        background: #232629;
+        color: #e0e0e0;
+    }
+    QMenu::item:selected {
+        background: #3daee9;
+        color: #fff;
+    }
+    )";
+    this->setStyleSheet(darkStyle);
+
     m_gl = new GLWindow(this);
     m_ui->s_mainWindowGridLayout->addWidget(m_gl, 0, 0 ,2, 1);
     this->setWindowTitle(QString("Swarm Flock"));
@@ -152,29 +254,39 @@ void MainWindow::on_m_obstacleWireframe_toggled(bool checked)
     m_gl->setObstacleWireframe(checked);
 }
 
-void MainWindow::on_m_simDistance_valueChanged(double arg1)
+void MainWindow::on_m_simDistanceSlider_valueChanged(int value)
 {
-    m_gl->setSimDistance(arg1);
+    double simDistance = static_cast<double>(value);
+    m_ui->m_simDistanceValue->setText(QString::number(simDistance, 'f', 1));
+    m_gl->setSimDistance(simDistance);
 }
 
-void MainWindow::on_m_simFlockDistance_valueChanged(double arg1)
+void MainWindow::on_m_simFlockDistanceSlider_valueChanged(int value)
 {
-    m_gl->setSimFlockDistance(arg1);
+    double flockDistance = static_cast<double>(value);
+    m_ui->m_simFlockDistanceValue->setText(QString::number(flockDistance, 'f', 1));
+    m_gl->setSimFlockDistance(flockDistance);
 }
 
-void MainWindow::on_m_simCohesion_valueChanged(double arg1)
+void MainWindow::on_m_simCohesionSlider_valueChanged(int value)
 {
-    m_gl->setSimCohesion(arg1);
+    double cohesion = static_cast<double>(value);
+    m_ui->m_simCohesionValue->setText(QString::number(cohesion, 'f', 1));
+    m_gl->setSimCohesion(cohesion);
 }
 
-void MainWindow::on_m_simSeparation_valueChanged(double arg1)
+void MainWindow::on_m_simSeparationSlider_valueChanged(int value)
 {
-    m_gl->setSimSeparation(arg1);
+    double separation = static_cast<double>(value);
+    m_ui->m_simSeparationValue->setText(QString::number(separation, 'f', 1));
+    m_gl->setSimSeparation(separation);
 }
 
-void MainWindow::on_m_simAlignment_valueChanged(double arg1)
+void MainWindow::on_m_simAlignmentSlider_valueChanged(int value)
 {
-    m_gl->setSimAlignment(arg1);
+    double alignment = static_cast<double>(value);
+    m_ui->m_simAlignmentValue->setText(QString::number(alignment, 'f', 1));
+    m_gl->setSimAlignment(alignment);
 }
 
 void MainWindow::on_m_backColour_clicked()

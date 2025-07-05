@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <chrono>
+#include <QString>
 
 // Forward declaration for modular include
 class ShaderLib;
@@ -356,6 +357,8 @@ private :
     /// @brief flag to indicate if obstacle is enabled or not
     //----------------------------------------------------------------------------------------------------------------------
     bool m_obstacleEnabled = true;
+
+    QString m_gpuName; // Stores the GPU renderer name for overlay display
 
 public slots:
     /// @brief slot to set obstacle enabled/disabled

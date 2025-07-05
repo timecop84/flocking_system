@@ -1,6 +1,7 @@
 #include "obstacle.h"
-#include "../modules/graphics/include/GPUFlockingManager.h"
+#include <GPUFlockingManager.h>
 #include "GLWindow.h"
+#include <QMainWindow>
 #include "mainwindow.h"
 #include "flock.h"
 #include "boid.h"
@@ -8,19 +9,19 @@
 #include <cmath>
 #include <QSurfaceFormat>
 #include "MathUtils.h"
-#include "../modules/graphics/include/Camera.h"
-#include "../modules/graphics/include/Colour.h"
-#include "../modules/graphics/include/Material.h"
-#include "../modules/graphics/include/TransformStack.h"
-#include "../modules/graphics/include/Light.h"
-#include "../modules/graphics/include/ShaderLib.h"
-#include "../modules/graphics/include/UBOStructures.h"
-#include "../modules/graphics/include/FrameCoordinator.h"
-#include "../modules/graphics/include/GeometryFactory.h"
-#include "../modules/graphics/include/SmartShaderManager.h"
-#include "../modules/graphics/include/RenderManager.h"
-#include "../modules/graphics/include/UBOCache.h"
-#include "../modules/graphics/include/TransformBatcher.h"
+#include <Camera.h>
+#include <Colour.h>
+#include <Material.h>
+#include <TransformStack.h>
+#include <Light.h>
+#include <ShaderLib.h>
+#include <UBOStructures.h>
+#include <FrameCoordinator.h>
+#include <GeometryFactory.h>
+#include <SmartShaderManager.h>
+#include <RenderManager.h>
+#include <UBOCache.h>
+#include <TransformBatcher.h>
 #include "PerformanceMonitor.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -262,7 +263,14 @@ void GLWindow::initializeGL()
 {
     // Initialize OpenGL functions - required for QOpenGLWidget with QOpenGLFunctions
     initializeOpenGLFunctions();
-    
+
+    // Cache GPU renderer name for overlay
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    if (renderer)
+        m_gpuName = QString::fromUtf8(reinterpret_cast<const char*>(renderer));
+    else
+        m_gpuName = "Unknown GPU";
+
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
     // enable depth testing for drawing
     glEnable(GL_DEPTH_TEST);
@@ -1483,39 +1491,44 @@ void GLWindow::renderFPSOverlay() {
 void GLWindow::paintEvent(QPaintEvent *event) {
     // First, perform the standard OpenGL rendering
     QOpenGLWidget::paintEvent(event);
-    
+
     // Then, draw the FPS overlay using QPainter
     if (m_showFPS) {
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
-        
+
         // Set up the font for the FPS text
         QFont font = painter.font();
         font.setPointSize(12);
         font.setBold(true);
         painter.setFont(font);
-        
+
         // Prepare the FPS text
         QString fpsText = QString("FPS: %1").arg(m_currentFPS, 0, 'f', 1);
         QString boidText = QString("Boids: %1").arg(flock ? flock->getFlockSize() : 0);
-        
+        QString modeText;
+        if (m_gpuFlockingManager && m_gpuFlockingManager->isEnabled()) {
+            modeText = QString("Mode: GPU - %1").arg(m_gpuName);
+        } else {
+            modeText = "Mode: CPU";
+        }
+
         // Calculate text metrics
         QFontMetrics fm(font);
-        int textWidth = qMax(fm.horizontalAdvance(fpsText), fm.horizontalAdvance(boidText));
+        int textWidth = qMax(qMax(fm.horizontalAdvance(fpsText), fm.horizontalAdvance(boidText)), fm.horizontalAdvance(modeText));
         int textHeight = fm.height();
-        
+
         // Draw semi-transparent background
         int padding = 8;
         int bgWidth = textWidth + 2 * padding;
-        int bgHeight = 2 * textHeight + 3 * padding;
-        
+        int bgHeight = 3 * textHeight + 4 * padding;
         QRect bgRect(10, 10, bgWidth, bgHeight);
         painter.fillRect(bgRect, QColor(0, 0, 0, 180));
-        
+
         // Draw border
         painter.setPen(QPen(Qt::white, 2));
         painter.drawRect(bgRect);
-        
+
         // Draw FPS text
         QColor textColor = Qt::white;
         if (m_currentFPS >= 50.0f) {
@@ -1525,14 +1538,16 @@ void GLWindow::paintEvent(QPaintEvent *event) {
         } else {
             textColor = Qt::red;
         }
-        
         painter.setPen(textColor);
         painter.drawText(10 + padding, 10 + padding + textHeight, fpsText);
-        
+
         // Draw boid count
         painter.setPen(Qt::white);
         painter.drawText(10 + padding, 10 + 2 * padding + 2 * textHeight, boidText);
-        
+
+        // Draw GPU/CPU mode and GPU name
+        painter.drawText(10 + padding, 10 + 3 * padding + 3 * textHeight, modeText);
+
         painter.end();
     }
 }

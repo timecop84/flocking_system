@@ -48,15 +48,11 @@ private slots:
 
     void on_m_obstacleWireframe_toggled(bool checked);
 
-    void on_m_simDistance_valueChanged(double arg1);
-
-    void on_m_simFlockDistance_valueChanged(double arg1);
-
-    void on_m_simCohesion_valueChanged(double arg1);
-
-    void on_m_simSeparation_valueChanged(double arg1);
-
-    void on_m_simAlignment_valueChanged(double arg1);
+    void on_m_simDistanceSlider_valueChanged(int value);
+    void on_m_simFlockDistanceSlider_valueChanged(int value);
+    void on_m_simCohesionSlider_valueChanged(int value);
+    void on_m_simSeparationSlider_valueChanged(int value);
+    void on_m_simAlignmentSlider_valueChanged(int value);
 
     void on_m_backColour_clicked();
 

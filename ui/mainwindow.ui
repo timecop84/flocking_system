@@ -13,12 +13,98 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">
+color: rgb(52, 52, 52);
+selection-background-color: #d3883c;
+
+QToolBox::tab {
+    background: #222;
+    color: #fff;
+    border: 1px solid #444;
+    border-bottom: none;
+    padding: 6px 12px;
+}
+QToolBox::tab:selected {
+    background: #d3883c;
+    color: #fff;
+    border: 1px solid #d3883c;
+}
+QToolBox::tab:hover {
+    background: #b86a2c;
+    color: #fff;
+}
+QTabBar::tab {
+    background: #222;
+    color: #fff;
+    border: 1px solid #444;
+    padding: 6px 12px;
+}
+QTabBar::tab:selected {
+    background: #d3883c;
+    color: #fff;
+    border: 1px solid #d3883c;
+}
+QTabBar::tab:hover {
+    background: #b86a2c;
+    color: #fff;
+}
+QAbstractItemView::item:selected, QAbstractItemView::item:focus {
+    background: #d3883c;
+    color: #fff;
+}
+QSlider::handle:focus, QSlider::handle:hover {
+    background: #d3883c;
+}
+QSlider::groove:focus, QSlider::groove:hover {
+    background: #d3883c33;
+}
+QMenu::item:selected {
+    background: #d3883c;
+    color: #fff;
+}
+QTreeView::item:selected, QListView::item:selected {
+    background: #d3883c;
+    color: #fff;
+}
+QSlider::groove:horizontal {
+    border: 1px solid #222;
+    height: 6px;
+    background: #444;
+    margin: 0 0;
+    border-radius: 3px;
+}
+QSlider::handle:horizontal {
+    background: #d3883c;
+    border: 1px solid #b86a2c;
+    width: 18px;
+    height: 18px;
+    margin: -7px 0;
+    border-radius: 9px;
+}
+QSlider::handle:horizontal:hover, QSlider::handle:horizontal:focus {
+    background: #ffb36b;
+    border: 1.5px solid #d3883c;
+}
+QSlider::sub-page:horizontal {
+    background: #d3883c;
+    border-radius: 3px;
+}
+QSlider::add-page:horizontal {
+    background: #222;
+    border-radius: 3px;
+}
+</string>
+  </property>
+  <property name="dockNestingEnabled">
+   <bool>true</bool>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="s_mainWindowGridLayout">
     <item row="0" column="0">
      <spacer name="horizontalSpacer">
       <property name="orientation">
-       <enum>Qt::Horizontal</enum>
+       <enum>Qt::Orientation::Horizontal</enum>
       </property>
       <property name="sizeHint" stdset="0">
        <size>
@@ -30,28 +116,46 @@
     </item>
     <item row="0" column="1">
      <widget class="QToolBox" name="toolBox">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>330</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="maximumSize">
        <size>
-        <width>310</width>
+        <width>330</width>
         <height>16777215</height>
        </size>
       </property>
+      <property name="styleSheet">
+       <string notr="true">color: rgb(52, 52, 52);
+color: rgb(255, 255, 255);
+selection-background-color: #d3883c;
+</string>
+      </property>
       <property name="frameShape">
-       <enum>QFrame::Box</enum>
+       <enum>QFrame::Shape::Box</enum>
       </property>
       <property name="frameShadow">
-       <enum>QFrame::Sunken</enum>
+       <enum>QFrame::Shadow::Sunken</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="m_page1_flock">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>308</width>
-         <height>529</height>
+         <width>326</width>
+         <height>535</height>
         </rect>
        </property>
        <attribute name="label">
@@ -60,6 +164,9 @@
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QGroupBox" name="groupBox">
+          <property name="styleSheet">
+           <string notr="true">color: rgb(255, 240, 244);</string>
+          </property>
           <property name="title">
            <string>General</string>
           </property>
@@ -150,6 +257,9 @@
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_2">
+          <property name="styleSheet">
+           <string notr="true">color: rgb(255, 255, 255);</string>
+          </property>
           <property name="title">
            <string>Appearence</string>
           </property>
@@ -204,6 +314,9 @@
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_4">
+          <property name="styleSheet">
+           <string notr="true">color: rgb(255, 255, 255);</string>
+          </property>
           <property name="title">
            <string>Movement</string>
           </property>
@@ -236,20 +349,20 @@
               <number>100</number>
              </property>
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
             </widget>
            </item>
            <item row="0" column="2">
             <widget class="QLabel" name="m_flockSpeedLabel">
-             <property name="text">
-              <string>100%</string>
-             </property>
              <property name="minimumSize">
               <size>
                <width>40</width>
                <height>0</height>
               </size>
+             </property>
+             <property name="text">
+              <string>100%</string>
              </property>
             </widget>
            </item>
@@ -264,6 +377,9 @@
           <property name="statusTip">
            <string>Renders the boids in wireframe mode if checked</string>
           </property>
+          <property name="styleSheet">
+           <string notr="true">color: rgb(255, 255, 255);</string>
+          </property>
           <property name="text">
            <string>Render Wireframe</string>
           </property>
@@ -272,7 +388,7 @@
         <item>
          <spacer name="verticalSpacer">
           <property name="orientation">
-           <enum>Qt::Vertical</enum>
+           <enum>Qt::Orientation::Vertical</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -289,8 +405,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>308</width>
-         <height>529</height>
+         <width>326</width>
+         <height>535</height>
         </rect>
        </property>
        <attribute name="label">
@@ -395,7 +511,6 @@
              </property>
             </widget>
            </item>
-           <!-- Specular RGB Controls -->
            <item row="2" column="0" colspan="3">
             <widget class="QLabel" name="label_specular">
              <property name="text">
@@ -406,48 +521,48 @@
            <item row="3" column="0">
             <widget class="QDoubleSpinBox" name="m_obstacleSpecularR">
              <property name="minimum">
-              <double>0.000000</double>
+              <double>0.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>1.000000</double>
+              <double>1.000000000000000</double>
              </property>
              <property name="singleStep">
-              <double>0.01</double>
+              <double>0.010000000000000</double>
              </property>
              <property name="value">
-              <double>1.000000</double>
+              <double>1.000000000000000</double>
              </property>
             </widget>
            </item>
            <item row="3" column="1">
             <widget class="QDoubleSpinBox" name="m_obstacleSpecularG">
              <property name="minimum">
-              <double>0.000000</double>
+              <double>0.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>1.000000</double>
+              <double>1.000000000000000</double>
              </property>
              <property name="singleStep">
-              <double>0.01</double>
+              <double>0.010000000000000</double>
              </property>
              <property name="value">
-              <double>1.000000</double>
+              <double>1.000000000000000</double>
              </property>
             </widget>
            </item>
            <item row="3" column="2">
             <widget class="QDoubleSpinBox" name="m_obstacleSpecularB">
              <property name="minimum">
-              <double>0.000000</double>
+              <double>0.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>1.000000</double>
+              <double>1.000000000000000</double>
              </property>
              <property name="singleStep">
-              <double>0.01</double>
+              <double>0.010000000000000</double>
              </property>
              <property name="value">
-              <double>1.000000</double>
+              <double>1.000000000000000</double>
              </property>
             </widget>
            </item>
@@ -461,52 +576,51 @@
            <item row="5" column="0">
             <widget class="QDoubleSpinBox" name="m_obstacleDiffuseR">
              <property name="minimum">
-              <double>0.000000</double>
+              <double>0.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>1.000000</double>
+              <double>1.000000000000000</double>
              </property>
              <property name="singleStep">
-              <double>0.01</double>
+              <double>0.010000000000000</double>
              </property>
              <property name="value">
-              <double>0.6</double>
+              <double>0.600000000000000</double>
              </property>
             </widget>
            </item>
            <item row="5" column="1">
             <widget class="QDoubleSpinBox" name="m_obstacleDiffuseG">
              <property name="minimum">
-              <double>0.000000</double>
+              <double>0.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>1.000000</double>
+              <double>1.000000000000000</double>
              </property>
              <property name="singleStep">
-              <double>0.01</double>
+              <double>0.010000000000000</double>
              </property>
              <property name="value">
-              <double>0.4</double>
+              <double>0.400000000000000</double>
              </property>
             </widget>
            </item>
            <item row="5" column="2">
             <widget class="QDoubleSpinBox" name="m_obstacleDiffuseB">
              <property name="minimum">
-              <double>0.000000</double>
+              <double>0.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>1.000000</double>
+              <double>1.000000000000000</double>
              </property>
              <property name="singleStep">
-              <double>0.01</double>
+              <double>0.010000000000000</double>
              </property>
              <property name="value">
-              <double>0.2</double>
+              <double>0.200000000000000</double>
              </property>
             </widget>
            </item>
-           <!-- End Specular/Diffuse RGB Controls -->
            <item row="1" column="0">
             <widget class="QCheckBox" name="m_obstacleWireframe">
              <property name="text">
@@ -542,7 +656,7 @@
               <number>30</number>
              </property>
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -572,7 +686,7 @@
               <number>13</number>
              </property>
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -602,7 +716,7 @@
               <number>45</number>
              </property>
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -619,7 +733,7 @@
         <item>
          <spacer name="verticalSpacer_2">
           <property name="orientation">
-           <enum>Qt::Vertical</enum>
+           <enum>Qt::Orientation::Vertical</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -636,8 +750,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>308</width>
-         <height>529</height>
+         <width>326</width>
+         <height>535</height>
         </rect>
        </property>
        <attribute name="label">
@@ -658,51 +772,31 @@
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QDoubleSpinBox" name="m_simDistance">
+            <widget class="QSlider" name="m_simDistanceSlider">
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>100</number>
+             </property>
              <property name="value">
-              <double>20.000000000000000</double>
+              <number>20</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::TickPosition::TicksBelow</enum>
+             </property>
+             <property name="tickInterval">
+              <number>1</number>
              </property>
             </widget>
            </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="label_7">
+           <item row="1" column="1">
+            <widget class="QLabel" name="m_simDistanceValue">
              <property name="text">
-              <string>Cohesion Force :</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0">
-            <widget class="QDoubleSpinBox" name="m_simCohesion">
-             <property name="value">
-              <double>2.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="label_8">
-             <property name="text">
-              <string>Separation Force :</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="0">
-            <widget class="QDoubleSpinBox" name="m_simSeparation">
-             <property name="value">
-              <double>9.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="0">
-            <widget class="QLabel" name="label_9">
-             <property name="text">
-              <string>Alignment Weight :</string>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="0">
-            <widget class="QDoubleSpinBox" name="m_simAlignment">
-             <property name="value">
-              <double>10.000000000000000</double>
+              <string>20.0</string>
              </property>
             </widget>
            </item>
@@ -714,9 +808,139 @@
             </widget>
            </item>
            <item row="3" column="0">
-            <widget class="QDoubleSpinBox" name="m_simFlockDistance">
+            <widget class="QSlider" name="m_simFlockDistanceSlider">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>10</number>
+             </property>
              <property name="value">
-              <double>4.000000000000000</double>
+              <number>4</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::TickPosition::TicksBelow</enum>
+             </property>
+             <property name="tickInterval">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLabel" name="m_simFlockDistanceValue">
+             <property name="text">
+              <string>4.0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Cohesion Force :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QSlider" name="m_simCohesionSlider">
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>10</number>
+             </property>
+             <property name="value">
+              <number>2</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::TickPosition::TicksBelow</enum>
+             </property>
+             <property name="tickInterval">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLabel" name="m_simCohesionValue">
+             <property name="text">
+              <string>2.0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Separation Force :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="0">
+            <widget class="QSlider" name="m_simSeparationSlider">
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>20</number>
+             </property>
+             <property name="value">
+              <number>9</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::TickPosition::TicksBelow</enum>
+             </property>
+             <property name="tickInterval">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="1">
+            <widget class="QLabel" name="m_simSeparationValue">
+             <property name="text">
+              <string>9.0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="0">
+            <widget class="QLabel" name="label_9">
+             <property name="text">
+              <string>Alignment Weight :</string>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="0">
+            <widget class="QSlider" name="m_simAlignmentSlider">
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>20</number>
+             </property>
+             <property name="value">
+              <number>10</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::TickPosition::TicksBelow</enum>
+             </property>
+             <property name="tickInterval">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="1">
+            <widget class="QLabel" name="m_simAlignmentValue">
+             <property name="text">
+              <string>10.0</string>
              </property>
             </widget>
            </item>
@@ -730,8 +954,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>308</width>
-         <height>529</height>
+         <width>326</width>
+         <height>535</height>
         </rect>
        </property>
        <attribute name="label">
@@ -789,7 +1013,7 @@
         <item>
          <spacer name="verticalSpacer_3">
           <property name="orientation">
-           <enum>Qt::Vertical</enum>
+           <enum>Qt::Orientation::Vertical</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -811,7 +1035,7 @@
      <x>0</x>
      <y>0</y>
      <width>1280</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
@@ -832,10 +1056,6 @@
   <tabstop>m_obstacleSize</tabstop>
   <tabstop>m_obstacleColour</tabstop>
   <tabstop>m_obstacleWireframe</tabstop>
-  <tabstop>m_simDistance</tabstop>
-  <tabstop>m_simCohesion</tabstop>
-  <tabstop>m_simSeparation</tabstop>
-  <tabstop>m_simAlignment</tabstop>
   <tabstop>m_bboxSize</tabstop>
   <tabstop>m_backColour</tabstop>
  </tabstops>
