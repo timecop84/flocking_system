@@ -686,15 +686,92 @@ void GLWindow::mouseMoveEvent (
         m_origYPos=_event->position().y();
         update();
     }
+    // Obstacle dragging
+    if (m_obstacleSelected && _event->buttons() == Qt::LeftButton) {
+        // Update drag plane if modifier keys change during drag
+        if (_event->modifiers() & Qt::ShiftModifier) {
+            m_obstacleDragPlane = ObstacleDragPlane::XZ;
+        } else if (_event->modifiers() & Qt::ControlModifier) {
+            m_obstacleDragPlane = ObstacleDragPlane::YZ;
+        } else {
+            m_obstacleDragPlane = ObstacleDragPlane::XY;
+        }
+        float x = 2.0f * _event->position().x() / width() - 1.0f;
+        float y = 1.0f - 2.0f * _event->position().y() / height();
+        glm::vec4 rayClip(x, y, -1.0f, 1.0f);
+        glm::mat4 proj = m_cam->getProjectionMatrix();
+        glm::mat4 view = m_cam->getViewMatrix();
+        glm::vec4 rayEye = glm::inverse(proj) * rayClip;
+        rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0, 0.0);
+        glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
+        glm::vec3 camPos = m_cam->getEye();
+        glm::vec3 hitPoint;
+        if (m_obstacleDragPlane == ObstacleDragPlane::XY) {
+            float denom = rayWorld.z;
+            if (fabs(denom) > 1e-6) {
+                float t = (m_obstacleDragPlaneZ - camPos.z) / denom;
+                hitPoint = camPos + t * rayWorld;
+            }
+        } else if (m_obstacleDragPlane == ObstacleDragPlane::XZ) {
+            float denom = rayWorld.y;
+            if (fabs(denom) > 1e-6) {
+                float t = (m_obstacleDragPlaneZ - camPos.y) / denom;
+                hitPoint = camPos + t * rayWorld;
+            }
+        } else if (m_obstacleDragPlane == ObstacleDragPlane::YZ) {
+            float denom = rayWorld.x;
+            if (fabs(denom) > 1e-6) {
+                float t = (m_obstacleDragPlaneZ - camPos.x) / denom;
+                hitPoint = camPos + t * rayWorld;
+            }
+        }
+        if (!std::isnan(hitPoint.x) && !std::isnan(hitPoint.y) && !std::isnan(hitPoint.z)) {
+            obstacle->setSpherePosition(Vector(hitPoint.x, hitPoint.y, hitPoint.z));
+            update();
+        }
+        m_lastMousePos = _event->pos();
+        return;
+    }
 }
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::mousePressEvent (
         QMouseEvent * _event
         )
 {
-    // Left mouse button - rotation
-    if(_event->button() == Qt::LeftButton)
-    {
+    if (_event->button() == Qt::LeftButton) {
+        // Convert mouse position to normalized device coordinates
+        float x = 2.0f * _event->position().x() / width() - 1.0f;
+        float y = 1.0f - 2.0f * _event->position().y() / height();
+        glm::vec4 rayClip(x, y, -1.0f, 1.0f);
+        glm::mat4 proj = m_cam->getProjectionMatrix();
+        glm::mat4 view = m_cam->getViewMatrix();
+        glm::mat4 invVP = glm::inverse(proj * view);
+        glm::vec4 rayEye = glm::inverse(proj) * rayClip;
+        rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0, 0.0);
+        glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
+        glm::vec3 camPos = m_cam->getEye();
+        glm::vec3 sphereCenter = glm::vec3(obstacle->getPositionModern().x, obstacle->getPositionModern().y, obstacle->getPositionModern().z);
+        float sphereRadius = obstacle->getSphereRadius();
+        float tHit;
+        if (intersectRaySphere(camPos, rayWorld, sphereCenter, sphereRadius, tHit)) {
+            m_obstacleSelected = true;
+            m_lastMousePos = _event->pos();
+            glm::vec3 hitPoint = camPos + tHit * rayWorld;
+            m_obstacleDragStartWorld = Vector(hitPoint.x, hitPoint.y, hitPoint.z);
+            // Determine drag plane based on modifier keys
+            if (_event->modifiers() & Qt::ShiftModifier) {
+                m_obstacleDragPlane = ObstacleDragPlane::XZ;
+                m_obstacleDragPlaneZ = hitPoint.y; // Y fixed
+            } else if (_event->modifiers() & Qt::ControlModifier) {
+                m_obstacleDragPlane = ObstacleDragPlane::YZ;
+                m_obstacleDragPlaneZ = hitPoint.x; // X fixed
+            } else {
+                m_obstacleDragPlane = ObstacleDragPlane::XY;
+                m_obstacleDragPlaneZ = hitPoint.z; // Z fixed
+            }
+            return;
+        }
+        // Left mouse button - orbital rotation
         m_origX = _event->position().x();
         m_origY = _event->position().y();
         m_rotate = true;
@@ -733,6 +810,12 @@ void GLWindow::mouseReleaseEvent (
     else if (_event->button() == Qt::MiddleButton)
     {
         m_pan = false;
+    }
+
+    // If obstacle was selected, release it
+    if (_event->button() == Qt::LeftButton && m_obstacleSelected) {
+        m_obstacleSelected = false;
+        return;
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -1494,5 +1577,16 @@ void GLWindow::setObstacleCollisionRadiusScale(float scale)
 void GLWindow::setObstacleRepulsionForce(float force)
 {
     if (flock) flock->setObstacleRepulsionForce(force);
+}
+
+bool GLWindow::intersectRaySphere(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit) const {
+    glm::vec3 oc = rayOrigin - sphereCenter;
+    float a = glm::dot(rayDir, rayDir);
+    float b = 2.0f * glm::dot(oc, rayDir);
+    float c = glm::dot(oc, oc) - sphereRadius * sphereRadius;
+    float discriminant = b * b - 4 * a * c;
+    if (discriminant < 0) return false;
+    tHit = (-b - sqrt(discriminant)) / (2.0f * a);
+    return tHit >= 0;
 }
 

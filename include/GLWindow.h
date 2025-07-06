@@ -507,6 +507,17 @@ private :
     // Renderer for the obstacle (modularized).
     std::unique_ptr<ObstacleRenderer> m_obstacleRenderer;
 
+    // --- Obstacle selection and dragging ---
+    bool m_obstacleSelected = false;
+    QPoint m_lastMousePos;
+    Vector m_obstacleDragOffset; // Offset from obstacle center to intersection point
+    Vector m_obstacleDragStartWorld; // The world-space point where the drag started
+    float m_obstacleDragPlaneZ = 0.0f; // The Z value of the drag plane
+    enum class ObstacleDragPlane { XY, XZ, YZ };
+    ObstacleDragPlane m_obstacleDragPlane = ObstacleDragPlane::XY;
+    // Helper for ray-sphere intersection
+    bool intersectRaySphere(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit) const;
+
 public slots:
     /// @brief slot to set obstacle enabled/disabled
     /// @param [in] _enabled the enabled state
