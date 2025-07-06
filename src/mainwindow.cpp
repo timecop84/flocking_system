@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QColorDialog>
 #include <glm/glm.hpp>
+#include <iostream> // Include for debug output
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -222,6 +223,7 @@ void MainWindow::on_m_flockSpeedSlider_valueChanged(int value)
 
 void MainWindow::on_m_obstaclePosX_valueChanged(double arg1)
 {
+    std::cout << "[MainWindow] on_m_obstaclePosX_valueChanged: " << arg1 << std::endl;
     glm::vec3 pos(arg1, m_ui->m_obstaclePosY->value(), m_ui->m_obstaclePosZ->value());
     m_gl->setObstaclePosition(pos);
 }
@@ -246,6 +248,7 @@ void MainWindow::on_m_obstacleSize_valueChanged(double arg1)
 void MainWindow::on_m_obstacleColour_clicked()
 {
     QColor colour = QColorDialog::getColor();
+    std::cout << "[MainWindow] on_m_obstacleColour_clicked: " << colour.redF() << ", " << colour.greenF() << ", " << colour.blueF() << std::endl;
     m_gl->setObstacleColour(colour);
 }
 

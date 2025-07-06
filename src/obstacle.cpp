@@ -9,6 +9,7 @@
 
 Obstacle::Obstacle(Vector spherePosition, GLfloat sphereRadius)
 {
+    std::cout << "[Obstacle::ctor] this=" << this << std::endl;
     _spherePosition = spherePosition;
     _sphereRadius = sphereRadius;
     m_colour.set(1.0f, 0.8f, 0.4f, 1.0f);  // Very bright orange color for maximum visibility

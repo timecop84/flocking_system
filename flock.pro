@@ -42,6 +42,8 @@ SOURCES += \
     modules/graphics/src/TransformBatcher.cpp \
     modules/graphics/src/FrameCoordinator.cpp \
     modules/graphics/src/InstancedBoidRenderer.cpp \
+    modules/graphics/src/BoidRenderer.cpp \
+    modules/graphics/src/ObstacleRenderer.cpp \
     modules/graphics/src/GPUFlockingManager.cpp
 
 HEADERS += \

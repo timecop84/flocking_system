@@ -11,6 +11,7 @@
 #include "FlockTypes.h"
 #include "SphereGeometry.h"
 #include <memory>
+#include <iostream> // Include iostream for debug output
 
 /*! \brief the boids class */
 /// @file boids.h
@@ -121,7 +122,9 @@ public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the colour of the boid
     /// @param [in] colour the new colour for the boid
-    inline void setColour(const Colour& colour) {m_colour = colour;}
+    inline void setColour(const Colour& colour) {
+        m_colour = colour;
+    }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the wireframe mode of the boid
     /// @param [in] value true for wireframe, false for solid
@@ -163,7 +166,7 @@ public:
     
     /// @brief Get color as modern GLM vector
     flock::Color getColorModern() const { 
-        return flock::Color(m_colour.m_r, m_colour.m_g, m_colour.m_b, m_colour.m_a); 
+        return flock::Color(m_colour.m_r, m_colour.m_g, m_colour.m_b, m_colour.m_a);
     }
     
     /// @brief Set color from modern GLM vector

@@ -29,6 +29,8 @@ class ShaderLib;
 #include "../modules/graphics/include/UBOStructures.h"
 // High-performance instanced rendering
 #include "modules/graphics/include/InstancedBoidRenderer.h"
+#include "modules/graphics/include/BoidRenderer.h"
+#include "modules/graphics/include/ObstacleRenderer.h"
 
 // Forward declarations for GPU flocking
 namespace FlockingGraphics {
@@ -48,75 +50,215 @@ namespace FlockingGraphics {
 /// @brief modified from Jon Maceys BBox Collision. NGL Demos.
 /// @date 13/06/12
 /// @revision 8/07/12
-/// @class GLWindow
-/// @brief the main glwindow widget for our flock application using NGL.
-/// put in this file
+/**
+ * @class GLWindow
+ * @brief Main OpenGL widget for visualizing and interacting with the flocking simulation.
+ *
+ * Provides rendering, user interaction, and simulation control for the flocking system.
+ * Integrates modern OpenGL, GPU compute, and advanced UI/UX features.
+ *
+ * @author Dionysios Toufexis
+ * @date 13/06/12 (modified 2025)
+ * @details Modernized and extended for advanced GPU/CPU flocking, dynamic UI, and performance profiling.
+ */
 class GLWindow : public QOpenGLWidget, protected QOpenGLFunctions
 {
-    Q_OBJECT        // must include this if you use Qt signals/slots
-public :
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief Constructor for GLWindow
-    /// @param [in] _parent the parent window to create the GL context in
-    //----------------------------------------------------------------------------------------------------------------------
-    GLWindow(
-            QWidget *_parent
-            );
+    Q_OBJECT
+public:
+    /**
+     * @brief Constructor for GLWindow.
+     * @param _parent The parent widget for this OpenGL context.
+     */
+    GLWindow(QWidget *_parent);
 
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief dtor
-    //----------------------------------------------------------------------------------------------------------------------
+    /**
+     * @brief Destructor for GLWindow.
+     */
     ~GLWindow();
-    /// @brief GUI releated methods
-    //-----------------------------
-    int  getCurrentBoidSize();
+
+    /**
+     * @brief Get the current number of boids in the flock.
+     * @return The number of boids.
+     */
+    int getCurrentBoidSize();
+
+    /**
+     * @brief Reset the flock to its default state and size.
+     */
     void resetFlock();
+
+    /**
+     * @brief Set the flock to a specific size and reset all boids.
+     * @param size The desired number of boids.
+     */
     void applyFlock(int size);
+
+    /**
+     * @brief Add a batch of boids to the flock.
+     */
     void addBoidsToFlock();
+
+    /**
+     * @brief Remove a batch of boids from the flock.
+     */
     void removeBoidsFromFlock();
+
+    /**
+     * @brief Set the size (scale) of each boid.
+     * @param size The new boid size.
+     */
     void setBoidSize(double size);
+
+    /**
+     * @brief Set the color of all boids.
+     * @param colour The new color (QColor).
+     */
     void setBoidColor(QColor colour);
+
+    /**
+     * @brief Enable or disable wireframe rendering for the flock.
+     * @param value True for wireframe, false for solid.
+     */
     void setFlockWireframe(bool value);
+
+    /**
+     * @brief Set the speed multiplier for the flock simulation.
+     * @param multiplier The speed multiplier value.
+     */
     void setFlockSpeedMultiplier(float multiplier);
 
+    /**
+     * @brief Set the position of the obstacle in the simulation.
+     * @param position The new position (glm::vec3).
+     */
     void setObstaclePosition(glm::vec3 position);
+
+    /**
+     * @brief Set the size (radius) of the obstacle.
+     * @param size The new obstacle radius.
+     */
     void setObstacleSize(double size);
+
+    /**
+     * @brief Set the color of the obstacle.
+     * @param colour The new color (QColor).
+     */
     void setObstacleColour(QColor colour);
+
+    /**
+     * @brief Set the specular color of the obstacle material.
+     * @param r Red component (0-1)
+     * @param g Green component (0-1)
+     * @param b Blue component (0-1)
+     */
     void setObstacleSpecular(double r, double g, double b);
+
+    /**
+     * @brief Set the diffuse color of the obstacle material.
+     * @param r Red component (0-1)
+     * @param g Green component (0-1)
+     * @param b Blue component (0-1)
+     */
     void setObstacleDiffuse(double r, double g, double b);
+
+    /**
+     * @brief Enable or disable wireframe rendering for the obstacle.
+     * @param value True for wireframe, false for solid.
+     */
     void setObstacleWireframe(bool value);
-    
+
+    /**
+     * @brief Show or hide the FPS overlay.
+     * @param show True to show FPS, false to hide.
+     */
     void setShowFPS(bool show);
+
+    /**
+     * @brief Get the current frames per second (FPS).
+     * @return The current FPS value.
+     */
     float getCurrentFPS() const;
 
+    /**
+     * @brief Set the simulation distance parameter (for flocking behavior).
+     * @param distance The new simulation distance.
+     */
     void setSimDistance(double distance);
+
+    /**
+     * @brief Set the flock distance parameter (for flocking behavior).
+     * @param distance The new flock distance.
+     */
     void setSimFlockDistance(double distance);
+
+    /**
+     * @brief Set the cohesion parameter for flocking.
+     * @param cohesion The new cohesion value.
+     */
     void setSimCohesion(double cohesion);
+
+    /**
+     * @brief Set the separation parameter for flocking.
+     * @param separation The new separation value.
+     */
     void setSimSeparation(double separation);
+
+    /**
+     * @brief Set the alignment parameter for flocking.
+     * @param alignment The new alignment value.
+     */
     void setSimAlignment(double alignment);
 
+    /**
+     * @brief Set the background color of the OpenGL scene.
+     * @param colour The new background color.
+     */
     void setBackgroundColour(Colour colour);
+
+    /**
+     * @brief Set the size of the bounding box for the simulation.
+     * @param size The new bounding box size (glm::vec3).
+     */
     void setBBoxSize(glm::vec3 size);
-    
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief set obstacle collision checking enabled/disabled
-    //----------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @brief Enable or disable obstacle collision checking.
+     * @param enabled True to enable, false to disable.
+     */
     void setObstacleCollisionEnabled(bool enabled);
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief print performance comparison between legacy and modern modes
-    //----------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @brief Print a performance comparison between legacy and modern simulation modes.
+     */
     void printPerformanceComparison();
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief enable/disable performance monitoring
-    //----------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @brief Enable or disable performance monitoring.
+     * @param enabled True to enable, false to disable.
+     */
     void setPerformanceMonitoring(bool enabled);
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief validate behavior differences between legacy and modern systems
-    //----------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @brief Validate and log differences between legacy and modern flocking behaviors.
+     */
     void validateBehaviorDifferences();
 
+    /**
+     * @brief Set the obstacle avoidance radius scale.
+     * @param scale The new scale value.
+     */
     void setObstacleAvoidanceRadiusScale(float scale);
+
+    /**
+     * @brief Set the obstacle collision radius scale.
+     * @param scale The new scale value.
+     */
     void setObstacleCollisionRadiusScale(float scale);
+
+    /**
+     * @brief Set the obstacle repulsion force.
+     * @param force The new force value.
+     */
     void setObstacleRepulsionForce(float force);
 
     //-----------------------------------
@@ -359,6 +501,11 @@ private :
     bool m_obstacleEnabled = true;
 
     QString m_gpuName; // Stores the GPU renderer name for overlay display
+
+    // Renderer for all boids in the simulation (modularized).
+    std::unique_ptr<BoidRenderer> m_boidRenderer;
+    // Renderer for the obstacle (modularized).
+    std::unique_ptr<ObstacleRenderer> m_obstacleRenderer;
 
 public slots:
     /// @brief slot to set obstacle enabled/disabled

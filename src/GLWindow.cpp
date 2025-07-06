@@ -30,6 +30,7 @@
 #include "glew_compat.h"
 #include "shader_constants.h"
 #include "PerformanceProfiler.h"
+#include <modules/graphics/include/BoidRenderer.h>
 
 
 
@@ -59,7 +60,8 @@ GLWindow::GLWindow(
     format.setSamples(4); // 4x MSAA
     setFormat(format);
     
-    obstacle = new Obstacle(Vector(50,0,0), 15.0);  // Move the obstacle far to the right for clear testing
+    obstacle = new Obstacle(Vector(0,0,0), 4.0);  // Initialize at origin with size 4.0 to match UI controls
+    std::cout << "[GLWindow] Created obstacle at address: " << obstacle << std::endl;
 
     // set this widget to have the initial keyboard focus
     setFocus();
@@ -110,6 +112,9 @@ GLWindow::GLWindow(
     m_sphereUpdateTimer = startTimer(1000 / 60); //run at 60FPS
     m_animate = true;
     m_backgroundColour.set(0.6f, 0.6f, 0.6f, 1.0f);
+    
+    m_boidRenderer = std::make_unique<BoidRenderer>();
+    m_obstacleRenderer = std::make_unique<ObstacleRenderer>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -176,39 +181,40 @@ void GLWindow::setFlockSpeedMultiplier(float multiplier)
 
 void GLWindow::setObstaclePosition(glm::vec3 position)
 {
-    Vector nglPos(position.x, position.y, position.z);
-    obstacle->setSpherePosition(nglPos);
+    std::cout << "[GLWindow] setObstaclePosition: this->obstacle=" << obstacle << std::endl;
+    // Only use modern representation
+    if (obstacle) {
+        obstacle->setPositionModern(flock::Vec3(position.x, position.y, position.z));
+    }
+    update();
 }
 
 void GLWindow::setObstacleSize(double size)
 {
     if (obstacle) {
-        obstacle->setSphereRadius(size);
+        obstacle->setRadiusModern(static_cast<float>(size));
     } else {
         m_pendingObstacleSize = size;
         m_hasPendingObstacleSize = true;
     }
+    update();
 }
 
 void GLWindow::setObstacleColour(QColor colour)
 {
-    // Update the material diffuse color values used in rendering
-    m_obstacleDiffuseR = colour.redF();
-    m_obstacleDiffuseG = colour.greenF();
-    m_obstacleDiffuseB = colour.blueF();
-    
-    // Also update the obstacle's internal color for consistency
-    Colour colourToSet;
-    colourToSet.set(colour.redF(), colour.greenF(), colour.blueF());
-    obstacle->setColour(colourToSet);
-    
-    // Trigger a redraw to show the changes
+    std::cout << "[GLWindow] setObstacleColour: this->obstacle=" << obstacle << std::endl;
+    if (obstacle) {
+        obstacle->setColorModern(flock::Color(colour.redF(), colour.greenF(), colour.blueF(), 1.0f));
+    }
     update();
 }
 
 void GLWindow::setObstacleWireframe(bool value)
 {
-    obstacle->setWireframe(value);
+    if (obstacle) {
+        obstacle->setWireframe(value);
+    }
+    update();
 }
 
 void GLWindow::setSimDistance(double distance)
@@ -464,6 +470,7 @@ void GLWindow::initializeGL()
     // Initialize high-performance instanced boid renderer
     m_instancedBoidRenderer = std::make_unique<FlockingGraphics::InstancedBoidRenderer>();
     m_instancedBoidRenderer->initialize(0.5f, 16); // 0.5f radius, 16 segments
+    m_boidRenderer->setInstancedBoidRenderer(m_instancedBoidRenderer.get());
     
     // Initialize GPU-accelerated flocking manager
     m_gpuFlockingManager = std::make_unique<FlockingGraphics::GPUFlockingManager>();
@@ -599,105 +606,13 @@ void GLWindow::paintGL()
 
     // Draw the flock using high-performance instanced rendering
     if (flock && m_instancedBoidRenderer) {
-        PROFILE_SCOPE("Draw Instanced Boids");
-        // Clear previous instances
-        m_instancedBoidRenderer->clearInstances();
-        
-        // Prepare view and projection matrices for instancing
-        m_transformStack.pushTransform();
-        
-        // Get all boids and add them as instances
-        const std::vector<Boid*>& boidList = flock->getBoidList();
-        
-        // Update base matrices (view/projection only, no model transform)
-        Matrix identityMatrix;
-        identityMatrix.identity();
-        m_transformStack.setModel(identityMatrix.getGLMMat4());
-        updateMatrixUBO(m_transformStack);
-        
-        // Update material UBO once for all boids with a brighter material
-        Material boidMaterial;
-        boidMaterial.setAmbient(Colour(0.3f, 0.3f, 0.3f, 1.0f));     // Brighter ambient
-        boidMaterial.setDiffuse(Colour(0.8f, 0.6f, 0.4f, 1.0f));     // Bright gold diffuse
-        boidMaterial.setSpecular(Colour(1.0f, 1.0f, 1.0f, 1.0f));    // Bright specular
-        boidMaterial.setShininess(32.0f);                              // Moderate shininess
-        updateMaterialUBO(boidMaterial);
-        
-        // Add each boid as an instance
-        for(const Boid* boid : boidList)
-        {
-            // Calculate model matrix for this boid
-            flock::Vec3 boidPos = boid->getPositionModern();
-            Vector boidScale = boid->getScale();
-            Matrix boidTransform;
-            boidTransform.identity();
-            boidTransform.translate(boidPos.x, boidPos.y, boidPos.z);
-            
-            // Use the actual boid scale from the flock (controlled by UI)
-            boidTransform.scale(boidScale.m_x, boidScale.m_y, boidScale.m_z);
-            
-            // Convert to GLM matrix
-            glm::mat4 modelMatrix = boidTransform.getGLMMat4();
-            
-            // Get the actual boid color from the boid object
-            flock::Color boidColorModern = boid->getColorModern();
-            glm::vec4 boidColor(boidColorModern.r, boidColorModern.g, boidColorModern.b, boidColorModern.a);
-            
-            // Add this boid as an instance
-            m_instancedBoidRenderer->addInstance(modelMatrix, boidColor);
-        }
-        
-        // Render all boids in a single instanced draw call
-        m_instancedBoidRenderer->renderInstances("PhongInstanced");
-        
-        m_transformStack.popTransform();
+        m_boidRenderer->render(flock->getBoidList(), m_transformStack, m_cam);
     }
 
     // Draw the obstacle with modern UBO-based Phong shader
     if (obstacle && m_obstacleEnabled) {
-        PROFILE_SCOPE("Draw Obstacle");
-        // Push a new transform level for the obstacle
-        m_transformStack.pushTransform();
-        {
-            // Set up the obstacle's transform (translate to obstacle position and scale by radius)
-            flock::Vec3 obstaclePos = obstacle->getPositionModern();
-            float obstacleRadius = obstacle->getSphereRadius();
-            
-            // Debug output for obstacle size
-            static int obstacleDebugCount = 0;
-            if (obstacleDebugCount++ % 60 == 0) { // Every 60 frames (once per second at 60fps)
-                std::cout << "Obstacle radius: " << obstacleRadius << std::endl;
-            }
-            
-            Matrix obstacleTransform;
-            obstacleTransform.identity();
-            
-            obstacleTransform.translate(obstaclePos.x, obstaclePos.y, obstaclePos.z);
-            obstacleTransform.scale(obstacleRadius, obstacleRadius, obstacleRadius);
-            
-            m_transformStack.setModel(obstacleTransform.getGLMMat4());
-            
-            // Update UBO matrices with obstacle transform
-            updateMatrixUBO(m_transformStack);
-            
-            // Set up obstacle material with balanced Phong shading
-            Material obstacleMaterial;
-            
-            // Balanced Phong material properties for good 3D form and visibility
-            obstacleMaterial.setAmbient(Colour(0.25f, 0.20f, 0.15f, 1.0f));  // Moderate ambient for base visibility
-            obstacleMaterial.setDiffuse(Colour(m_obstacleDiffuseR * 1.8f, m_obstacleDiffuseG * 1.8f, m_obstacleDiffuseB * 1.8f, 1.0f));   // Strong diffuse color
-            obstacleMaterial.setSpecular(Colour(1.2f, 1.2f, 1.0f, 1.0f));  // Bright specular highlights
-            obstacleMaterial.setShininess(48.0f);  // Good shininess for defined highlights
-            
-            updateMaterialUBO(obstacleMaterial);
-            
-            // Use the Phong shader for obstacle rendering
-            m_shader->use("Phong");
-            
-            // Render the obstacle using modern VBO/VAO approach
-            obstacle->ObsDraw("Phong", m_transformStack, m_cam);
-        }
-        m_transformStack.popTransform();
+        std::cout << "[GLWindow] Rendering obstacle" << std::endl;
+        m_obstacleRenderer->render(obstacle, m_transformStack, m_cam);
     }
     
     // Update and render FPS counter
@@ -1336,6 +1251,12 @@ void GLWindow::setObstacleDiffuse(double r, double g, double b)
     m_obstacleDiffuseR = r;
     m_obstacleDiffuseG = g;
     m_obstacleDiffuseB = b;
+    if (obstacle) {
+        Colour colourToSet;
+        colourToSet.set(r, g, b);
+        obstacle->setColour(colourToSet);
+        obstacle->setColorModern(flock::Color(r, g, b, 1.0f));
+    }
     update(); // Trigger a redraw
 }
 

@@ -8,14 +8,6 @@ in vec4 InstanceColor; // Color from instance data
 // Output
 out vec4 fragColour;
 
-// Uniform Buffer Object for material
-layout(std140, binding = 1) uniform MaterialBlock {
-    vec4 material_ambient;
-    vec4 material_diffuse;
-    vec4 material_specular;
-    float material_shininess;
-};
-
 // Lighting UBO  
 layout(std140, binding = 3) uniform LightingBlock {
     vec3 lightPos;    // Light position in view space
@@ -36,22 +28,28 @@ void main()
     vec3 viewDir = normalize(-FragPos); // Camera is at origin in view space
     vec3 reflectDir = reflect(-lightDir, norm);
     
-    // Ambient component (use material ambient with reduced brightness)
-    vec3 ambient = material_ambient.rgb * lightColor * 0.25; // Reduced ambient for darker appearance
+    // Use instance color as base material properties
+    vec3 baseColor = InstanceColor.rgb;
+    vec3 ambient = baseColor * 0.25; // Ambient
+    vec3 diffuse = baseColor * 1.0;  // Diffuse
+    vec3 specular = vec3(0.8, 0.8, 0.8); // Specular
     
-    // Diffuse component (use material diffuse)
+    // Ambient component
+    vec3 ambientColor = ambient * lightColor * 0.25;
+    
+    // Diffuse component
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * material_diffuse.rgb * lightColor;
+    vec3 diffuseColor = diff * diffuse * lightColor;
     
-    // Specular component (use material specular)
+    // Specular component
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-    vec3 specular = spec * material_specular.rgb * lightColor;
+    vec3 specularColor = spec * specular * lightColor;
     
     // Combine lighting components
-    vec3 lighting = ambient + diffuse + specular;
+    vec3 lighting = ambientColor + diffuseColor + specularColor;
     
-    // Mix with instance color for variety (instead of multiplying)
-    vec3 result = mix(lighting, InstanceColor.rgb, 0.1); // 10% instance color tinting
+    // Use instance color as the result
+    vec3 result = lighting;
     
     // Apply slight gamma correction for better visibility
     result = pow(result, vec3(1.0/2.2));

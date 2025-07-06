@@ -11,6 +11,7 @@
 #include <string>
 #include <memory>
 #include <GL/gl.h>
+#include <iostream> // Include for debug output
 
 /*! \brief The obstacle class */
 /// @file obstacle.h
@@ -62,7 +63,10 @@ public:
     //----------------------------------------------------------------------------------------------------------------------   
     /// @brief sets the obstacle radius
     /// @param [in] _spherePosition sets the obstacle size value.
-    void setSphereRadius(float radius) {_sphereRadius = radius;}
+    void setSphereRadius(float radius) {
+        _sphereRadius = radius;
+        m_sphereGeometry = nullptr; // Force geometry to be recreated with new size
+    }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the color of the obstacle
     /// @param [in] m_color sets color value for the obstacle
@@ -78,22 +82,26 @@ public:
     
     /// @brief Get obstacle position as modern GLM vector
     flock::Vec3 getPositionModern() const { 
+        std::cout << "[Obstacle] getPositionModern: " << _spherePosition.m_x << ", " << _spherePosition.m_y << ", " << _spherePosition.m_z << std::endl;
         return flock::Vec3(_spherePosition.m_x, _spherePosition.m_y, _spherePosition.m_z); 
     }
     
     /// @brief Set obstacle position from modern GLM vector
     void setPositionModern(const flock::Vec3& pos) { 
-        _spherePosition.set(pos.x, pos.y, pos.z); 
+        std::cout << "[Obstacle] setPositionModern: " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
+        _spherePosition.set(pos.x, pos.y, pos.z); // sync legacy
     }
     
     /// @brief Get obstacle color as modern GLM vector
     flock::Color getColorModern() const { 
+        std::cout << "[Obstacle] getColorModern: " << m_colour.m_r << ", " << m_colour.m_g << ", " << m_colour.m_b << ", " << m_colour.m_a << std::endl;
         return flock::Color(m_colour.m_r, m_colour.m_g, m_colour.m_b, m_colour.m_a); 
     }
     
     /// @brief Set obstacle color from modern GLM vector
     void setColorModern(const flock::Color& color) { 
-        m_colour.set(color.r, color.g, color.b, color.a); 
+        std::cout << "[Obstacle] setColorModern: " << color.r << ", " << color.g << ", " << color.b << ", " << color.a << std::endl;
+        m_colour.set(color.r, color.g, color.b, color.a); // sync legacy
     }
     
     /// @brief Get obstacle radius (same for modern, no conversion needed)
@@ -103,7 +111,9 @@ public:
     
     /// @brief Set obstacle radius (same for modern, no conversion needed)
     void setRadiusModern(float radius) {
+        std::cout << "[Obstacle] setRadiusModern: " << radius << std::endl;
         _sphereRadius = radius;
+        m_sphereGeometry = nullptr; // Force geometry to be recreated with new size
     }
     
     //----------------------------------------------------------------------------------------------------------------------

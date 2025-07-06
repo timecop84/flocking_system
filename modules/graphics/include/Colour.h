@@ -22,7 +22,9 @@ public:
     operator glm::vec4() const { return glm::vec4(m_r, m_g, m_b, m_a); }
     
     // Setters
-    void set(float r, float g, float b, float a = 1.0f) { m_r = r; m_g = g; m_b = b; m_a = a; }
+    void set(float r, float g, float b, float a = 1.0f) {
+        m_r = r; m_g = g; m_b = b; m_a = a;
+    }
     void setR(float r) { m_r = r; }
     void setG(float g) { m_g = g; }
     void setB(float b) { m_b = b; }
