@@ -1,6 +1,6 @@
+#include <glad/gl.h>
 #include "../include/GPUFlockingManager.h"
 #include "../include/ShaderLib.h"
-#include "../../../include/glew_compat.h"  // Include proper OpenGL function loader
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -8,6 +8,7 @@
 #include <chrono>
 #include <vector>
 #include <cstdio>  // For FILE operations
+#include <cstring> // For memcpy
 
 namespace FlockingGraphics {
 

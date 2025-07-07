@@ -1,5 +1,5 @@
+#include <glad/gl.h>
 #include "SphereGeometry.h"
-#include "glew_compat.h"
 #include <iostream>
 #include <cmath>
 #include <GL/gl.h>

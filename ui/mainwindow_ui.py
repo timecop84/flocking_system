@@ -27,58 +27,19 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(1280, 720)
         MainWindow.setStyleSheet(u"\n"
-"color: rgb(52, 52, 52);\n"
-"selection-background-color: #d3883c;\n"
-"\n"
-"QToolBox::tab {\n"
-"    background: #222;\n"
-"    color: #fff;\n"
-"    border: 1px solid #444;\n"
-"    border-bottom: none;\n"
-"    padding: 6px 12px;\n"
+"/* --- DARK THEME WITH LAVA COLOR --- */\n"
+"QWidget {\n"
+"    background-color: #181818;\n"
+"    color: #e0e0e0;\n"
 "}\n"
-"QToolBox::tab:selected {\n"
-"    background: #d3883c;\n"
-"    color: #fff;\n"
-"    border: 1px solid #d3883c;\n"
+"QMainWindow, QMenuBar, QStatusBar {\n"
+"    background-color: #181818;\n"
+"    color: #e0e0e0;\n"
 "}\n"
-"QToolBox::tab:hover {\n"
-"    background: #b86a2c;\n"
-"    color: #fff;\n"
-"}\n"
-"QTabBar::tab {\n"
-"    background: #222;\n"
-"    color: #fff;\n"
-"    border: 1px solid #444;\n"
-"    padding: 6px 12px;\n"
-"}\n"
-"QTabBar::tab:selected {\n"
-"    background: #d3883c;\n"
-"    color: #fff;\n"
-"    border: 1px solid #d3883c;\n"
-"}\n"
-"QTabBar::tab:hover {\n"
-"    background: #b86a2c;\n"
-"    color: #fff;\n"
-"}\n"
-"QAbstractItemView::item:selected, QAbstractItemView::item:focus {\n"
-"    background: #d3883c;\n"
-"    color: #fff;\n"
-"}\n"
-"QSlider::handle:focus, QSlider::handle:hover {\n"
-"    background: #d3883c;\n"
-"}\n"
-"QSlider::groove:focus, QSlider::groove:h"
-                        "over {\n"
-"    background: #d3883c33;\n"
-"}\n"
-"QMenu::item:selected {\n"
-"    background: #d3883c;\n"
-"    color: #fff;\n"
-"}\n"
-"QTreeView::item:selected, QListView::item:selected {\n"
-"    background: #d3883c;\n"
-"    color: #fff;\n"
+"QGroupBox {\n"
+"    background-color: #181818;\n"
+"    border: 1px solid #333;\n"
+"    color: #e0e0e0;\n"
 "}\n"
 "QSlider::groove:horizontal {\n"
 "    border: 1px solid #222;\n"
@@ -88,7 +49,7 @@ class Ui_MainWindow(object):
 "    border-radius: 3px;\n"
 "}\n"
 "QSlider::handle:horizontal {\n"
-"    background: #d3883c;\n"
+"    background: #ff4500; /* Deep orange lava color */\n"
 "    border: 1px solid #b86a2c;\n"
 "    width: 18px;\n"
 "    height: 18px;\n"
@@ -96,18 +57,57 @@ class Ui_MainWindow(object):
 "    border-radius: 9px;\n"
 "}\n"
 "QSlider::handle:horizontal:hover, QSlider::handle:horizontal:focus {\n"
-"    background: #ffb36b;\n"
+"    background: #ff6347; /* Slightly lighter lava color */\n"
 "    border: 1.5px solid #d3883c;\n"
 "}\n"
+"QSlider::handle:horizontal:pressed {\n"
+"    background: #ff7f50; /* Even lighter lava color */\n"
+"    b"
+                        "order: 2px solid #e09b5c;\n"
+"}\n"
 "QSlider::sub-page:horizontal {\n"
-"    background: #d3883c;\n"
+"    background: #ff4500; /* Deep orange lava color */\n"
 "    border-radius: 3px;\n"
 "}\n"
 "QSlider::add-page:horizontal {\n"
 "    background: #222;\n"
 "    border-radius: 3px;\n"
 "}\n"
-"")
+"QPushButton {\n"
+"    background-color: #232323;\n"
+"    color: #e0e0e0;\n"
+"    border: 1px solid #444;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 4px;\n"
+"}\n"
+"QPushButton:hover, QPushButton:focus {\n"
+"    background-color: #ff4500; /* Deep orange lava color */\n"
+"    color: #fff;\n"
+"    border: 1px solid #d3883c;\n"
+"}\n"
+"QCheckBox, QRadioButton, QLabel {\n"
+"    color: #ff4500; /* Deep orange lava color */\n"
+"}\n"
+"QSpinBox, QDoubleSpinBox, QComboBox, QLineEdit {\n"
+"    background-color: #232323;\n"
+"    color: #e0e0e0;\n"
+"    border: 1px solid #444;\n"
+"}\n"
+"QToolBox::tab {\n"
+"    background-color: #232323;\n"
+"    color: #e0e0e0;\n"
+"    border: 1px solid #444;\n"
+"    padding: 6px;\n"
+"    border-radius: 4px;\n"
+"}\n"
+"QToolBox::tab:"
+                        "selected {\n"
+"    background-color: #ff4500; /* Deep orange lava color */\n"
+"    color: #fff;\n"
+"    border: 1px solid #d3883c;\n"
+"}\n"
+"/* --- END DARK THEME WITH LAVA COLOR --- */\n"
+"   ")
         MainWindow.setDockNestingEnabled(True)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -126,10 +126,7 @@ class Ui_MainWindow(object):
         self.toolBox.setSizePolicy(sizePolicy)
         self.toolBox.setMinimumSize(QSize(330, 0))
         self.toolBox.setMaximumSize(QSize(330, 16777215))
-        self.toolBox.setStyleSheet(u"color: rgb(52, 52, 52);\n"
-"color: rgb(255, 255, 255);\n"
-"selection-background-color: #d3883c;\n"
-"")
+        self.toolBox.setStyleSheet(u"")
         self.toolBox.setFrameShape(QFrame.Shape.Box)
         self.toolBox.setFrameShadow(QFrame.Shadow.Sunken)
         self.m_page1_flock = QWidget()
@@ -139,9 +136,9 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox = QGroupBox(self.m_page1_flock)
         self.groupBox.setObjectName(u"groupBox")
-        self.groupBox.setStyleSheet(u"color: rgb(255, 240, 244);")
         self.gridLayout = QGridLayout(self.groupBox)
         self.gridLayout.setObjectName(u"gridLayout")
+        self.gridLayout.setContentsMargins(-1, 20, -1, -1)
         self.label = QLabel(self.groupBox)
         self.label.setObjectName(u"label")
 
@@ -182,9 +179,9 @@ class Ui_MainWindow(object):
 
         self.groupBox_2 = QGroupBox(self.m_page1_flock)
         self.groupBox_2.setObjectName(u"groupBox_2")
-        self.groupBox_2.setStyleSheet(u"color: rgb(255, 255, 255);")
         self.gridLayout_2 = QGridLayout(self.groupBox_2)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.gridLayout_2.setContentsMargins(-1, 20, -1, -1)
         self.m_changeFlockColour = QPushButton(self.groupBox_2)
         self.m_changeFlockColour.setObjectName(u"m_changeFlockColour")
 
@@ -209,9 +206,9 @@ class Ui_MainWindow(object):
 
         self.groupBox_4 = QGroupBox(self.m_page1_flock)
         self.groupBox_4.setObjectName(u"groupBox_4")
-        self.groupBox_4.setStyleSheet(u"color: rgb(255, 255, 255);")
         self.gridLayout_4 = QGridLayout(self.groupBox_4)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
+        self.gridLayout_4.setContentsMargins(-1, 20, -1, -1)
         self.label_4 = QLabel(self.groupBox_4)
         self.label_4.setObjectName(u"label_4")
 
@@ -237,7 +234,6 @@ class Ui_MainWindow(object):
 
         self.m_renderFlockWireframe = QCheckBox(self.m_page1_flock)
         self.m_renderFlockWireframe.setObjectName(u"m_renderFlockWireframe")
-        self.m_renderFlockWireframe.setStyleSheet(u"color: rgb(255, 255, 255);")
 
         self.verticalLayout.addWidget(self.m_renderFlockWireframe)
 
@@ -255,6 +251,7 @@ class Ui_MainWindow(object):
         self.groupBox_3.setObjectName(u"groupBox_3")
         self.gridLayout_3 = QGridLayout(self.groupBox_3)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
+        self.gridLayout_3.setContentsMargins(-1, 20, -1, -1)
         self.m_enableObstacle = QCheckBox(self.groupBox_3)
         self.m_enableObstacle.setObjectName(u"m_enableObstacle")
         self.m_enableObstacle.setChecked(True)
@@ -269,6 +266,7 @@ class Ui_MainWindow(object):
         self.m_obstaclePosX = QDoubleSpinBox(self.groupBox_3)
         self.m_obstaclePosX.setObjectName(u"m_obstaclePosX")
         self.m_obstaclePosX.setMinimum(-99.000000000000000)
+        self.m_obstaclePosX.setMaximum(99.000000000000000)
         self.m_obstaclePosX.setValue(0.000000000000000)
 
         self.gridLayout_3.addWidget(self.m_obstaclePosX, 2, 1, 1, 1)
@@ -276,6 +274,7 @@ class Ui_MainWindow(object):
         self.m_obstaclePosY = QDoubleSpinBox(self.groupBox_3)
         self.m_obstaclePosY.setObjectName(u"m_obstaclePosY")
         self.m_obstaclePosY.setMinimum(-99.000000000000000)
+        self.m_obstaclePosY.setMaximum(99.000000000000000)
         self.m_obstaclePosY.setValue(0.000000000000000)
 
         self.gridLayout_3.addWidget(self.m_obstaclePosY, 2, 2, 1, 1)
@@ -283,6 +282,7 @@ class Ui_MainWindow(object):
         self.m_obstaclePosZ = QDoubleSpinBox(self.groupBox_3)
         self.m_obstaclePosZ.setObjectName(u"m_obstaclePosZ")
         self.m_obstaclePosZ.setMinimum(-99.000000000000000)
+        self.m_obstaclePosZ.setMaximum(99.000000000000000)
         self.m_obstaclePosZ.setValue(0.000000000000000)
 
         self.gridLayout_3.addWidget(self.m_obstaclePosZ, 2, 3, 1, 1)
@@ -307,6 +307,7 @@ class Ui_MainWindow(object):
         self.groupBox_5.setObjectName(u"groupBox_5")
         self.gridLayout_41 = QGridLayout(self.groupBox_5)
         self.gridLayout_41.setObjectName(u"gridLayout_41")
+        self.gridLayout_41.setContentsMargins(-1, 20, -1, -1)
         self.m_obstacleColour = QPushButton(self.groupBox_5)
         self.m_obstacleColour.setObjectName(u"m_obstacleColour")
 
@@ -388,6 +389,7 @@ class Ui_MainWindow(object):
         self.groupBox_obstacleAvoidance.setObjectName(u"groupBox_obstacleAvoidance")
         self.gridLayout_obstacleAvoidance = QGridLayout(self.groupBox_obstacleAvoidance)
         self.gridLayout_obstacleAvoidance.setObjectName(u"gridLayout_obstacleAvoidance")
+        self.gridLayout_obstacleAvoidance.setContentsMargins(-1, 20, -1, -1)
         self.label_avoidanceRadius = QLabel(self.groupBox_obstacleAvoidance)
         self.label_avoidanceRadius.setObjectName(u"label_avoidanceRadius")
 
@@ -462,6 +464,7 @@ class Ui_MainWindow(object):
         self.groupBox_7.setObjectName(u"groupBox_7")
         self.gridLayout_7 = QGridLayout(self.groupBox_7)
         self.gridLayout_7.setObjectName(u"gridLayout_7")
+        self.gridLayout_7.setContentsMargins(-1, 20, -1, -1)
         self.label_5 = QLabel(self.groupBox_7)
         self.label_5.setObjectName(u"label_5")
 
@@ -580,6 +583,7 @@ class Ui_MainWindow(object):
         self.groupBox_41.setObjectName(u"groupBox_41")
         self.gridLayout_5 = QGridLayout(self.groupBox_41)
         self.gridLayout_5.setObjectName(u"gridLayout_5")
+        self.gridLayout_5.setContentsMargins(-1, 20, -1, -1)
         self.label_41 = QLabel(self.groupBox_41)
         self.label_41.setObjectName(u"label_41")
 
@@ -600,6 +604,7 @@ class Ui_MainWindow(object):
         self.groupBox_6.setObjectName(u"groupBox_6")
         self.gridLayout_6 = QGridLayout(self.groupBox_6)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
+        self.gridLayout_6.setContentsMargins(-1, 20, -1, -1)
         self.m_backColour = QPushButton(self.groupBox_6)
         self.m_backColour.setObjectName(u"m_backColour")
 

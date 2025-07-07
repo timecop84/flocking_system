@@ -21,7 +21,7 @@ Key features:
 
 - Qt 5 or 6 (for GUI and OpenGL integration)
 - OpenGL 3.3 or higher
-- GLEW (OpenGL Extension Wrangler)
+- glad2 (OpenGL Extension Loader)
 - GLM (OpenGL Mathematics)
 - [vcpkg](https://github.com/microsoft/vcpkg) (recommended for C++ dependency management)
 - [Chocolatey](https://chocolatey.org/) (optional, for Windows package management)
@@ -36,8 +36,9 @@ Key features:
 
 2. Install the required libraries:
    ```powershell
-   vcpkg install qt5-base glew glm
+   vcpkg install qt5-base glm
    ```
+   Note: glad2 is included in the project as source files, so no separate installation is needed.
 
 3. For integration with CMake, follow the [vcpkg CMake integration instructions](https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration).
 
@@ -47,8 +48,9 @@ Key features:
 
 2. Install dependencies:
    ```powershell
-   choco install qt5 glew glm
+   choco install qt5 glm
    ```
+   Note: glad2 is included in the project as source files, so no separate installation is needed.
 
 3. Ensure MinGW is installed:
    ```powershell

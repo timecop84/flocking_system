@@ -3,7 +3,9 @@
 #include <vector>
 #include <memory>
 #include <glm/glm.hpp>
-#include "../../../include/glew_compat.h"
+
+// Forward declarations for OpenGL types
+typedef unsigned int GLuint;
 
 namespace FlockingGeometry {
     class SphereGeometry;

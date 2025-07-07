@@ -9,7 +9,7 @@
 
 Obstacle::Obstacle(Vector spherePosition, GLfloat sphereRadius)
 {
-    std::cout << "[Obstacle::ctor] this=" << this << std::endl;
+    // std::cout << "[Obstacle::ctor] this=" << this << std::endl;
     _spherePosition = spherePosition;
     _sphereRadius = sphereRadius;
     m_colour.set(1.0f, 0.8f, 0.4f, 1.0f);  // Very bright orange color for maximum visibility
@@ -39,7 +39,7 @@ void Obstacle::ObsDraw(const std::string &_shaderName, TransformStack &_transfor
     
     // Lazy initialization of sphere geometry
     if (!m_sphereGeometry) {
-        std::cout << "Initializing sphere geometry for obstacle..." << std::endl;
+        // std::cout << "Initializing sphere geometry for obstacle..." << std::endl;
         // Create sphere at origin - position will be applied via model matrix
         m_sphereGeometry = std::make_unique<FlockingGeometry::SphereGeometry>(_sphereRadius, 32, 32);
         m_sphereGeometry->initializeBuffers();

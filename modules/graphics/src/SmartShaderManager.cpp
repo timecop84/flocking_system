@@ -1,8 +1,8 @@
+#include <glad/gl.h>
 #include "../include/SmartShaderManager.h"
 #include "../include/ShaderLib.h"
 #include <iostream>
 #include <algorithm>
-#include "../../../include/glew_compat.h"
 
 SmartShaderManager* SmartShaderManager::s_instance = nullptr;
 

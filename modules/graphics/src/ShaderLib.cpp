@@ -1,3 +1,4 @@
+#include <glad/gl.h>
 #include "ShaderLib.h"
 #include <iostream>
 #include <fstream>
@@ -8,59 +9,8 @@
 #include <QFile>
 #include <QTextStream>
 #include <glm/gtc/type_ptr.hpp>
-#include "../../../include/glew_compat.h" // For OpenGL 3.0+ functions
 
-// Define global function pointers for UBO functions
-PFNGLBINDBUFFERBASEPROC glBindBufferBase = nullptr;
-PFNGLGETUNIFORMBLOCKINDEXPROC glGetUniformBlockIndex = nullptr;
-PFNGLUNIFORMBLOCKBINDINGPROC glUniformBlockBinding = nullptr;
-
-// Define global function pointers for VAO functions
-PFNGLGENVERTEXARRAYSPROC glGenVertexArrays = nullptr;
-PFNGLBINDVERTEXARRAYPROC glBindVertexArray = nullptr;
-PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays = nullptr;
-
-// Define global function pointers for VBO functions
-PFNGLGENBUFFERSPROC glGenBuffers = nullptr;
-PFNGLBINDBUFFERPROC glBindBuffer = nullptr;
-PFNGLBUFFERDATAPROC glBufferData = nullptr;
-PFNGLBUFFERSUBDATAPROC glBufferSubData = nullptr;
-PFNGLDELETEBUFFERSPROC glDeleteBuffers = nullptr;
-
-// Define global function pointers for vertex attribute functions
-PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer = nullptr;
-PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray = nullptr;
-
-// Define global function pointers for instanced rendering functions
-PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced = nullptr;
-PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor = nullptr;
-
-// Define global function pointers for compute shader functions
-PFNGLDISPATCHCOMPUTEPROC glDispatchCompute = nullptr;
-PFNGLMEMORYBARRIERPROC glMemoryBarrier = nullptr;
-PFNGLUSEPROGRAMPROC glUseProgram = nullptr;
-PFNGLGETINTEGERI_VPROC glGetIntegeri_v = nullptr;
-PFNGLMAPBUFFERPROC glMapBuffer = nullptr;
-PFNGLUNMAPBUFFERPROC glUnmapBuffer = nullptr;
-
-// Define global function pointers for shader program functions
-PFNGLCREATESHADERPROC glCreateShader = nullptr;
-PFNGLSHADERSOURCEPROC glShaderSource = nullptr;
-PFNGLCOMPILESHADERPROC glCompileShader = nullptr;
-PFNGLGETSHADERIVPROC glGetShaderiv = nullptr;
-PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog = nullptr;
-PFNGLDELETESHADERPROC glDeleteShader = nullptr;
-PFNGLCREATEPROGRAMPROC glCreateProgram = nullptr;
-PFNGLATTACHSHADERPROC glAttachShader = nullptr;
-PFNGLLINKPROGRAMPROC glLinkProgram = nullptr;
-PFNGLGETPROGRAMIVPROC glGetProgramiv = nullptr;
-PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog = nullptr;
-PFNGLDELETEPROGRAMPROC glDeleteProgram = nullptr;
-
-// Define global function pointers for sync object functions
-PFNGLFENCESYNCPROC glFenceSync = nullptr;
-PFNGLCLIENTWAITSYNCPROC glClientWaitSync = nullptr;
-PFNGLDELETESYNCPROC glDeleteSync = nullptr;
+// Glad provides all OpenGL functions - no manual function pointers needed
 
 ShaderLib* ShaderLib::s_instance = nullptr;
 
@@ -73,29 +23,9 @@ ShaderLib* ShaderLib::instance() {
             s_instance->m_gl = context->functions();
             if (!s_instance->m_gl) {
                 std::cerr << "Failed to get OpenGL functions from Qt context" << std::endl;
-            } else {
-                // Initialize UBO function pointers
-                glBindBufferBase = (PFNGLBINDBUFFERBASEPROC)context->getProcAddress("glBindBufferBase");
-                glGetUniformBlockIndex = (PFNGLGETUNIFORMBLOCKINDEXPROC)context->getProcAddress("glGetUniformBlockIndex");
-                glUniformBlockBinding = (PFNGLUNIFORMBLOCKBINDINGPROC)context->getProcAddress("glUniformBlockBinding");
-                
-                // Initialize VBO function pointers  
-                glBufferSubData = (PFNGLBUFFERSUBDATAPROC)context->getProcAddress("glBufferSubData");
-                
-                // Initialize instanced rendering function pointers
-                glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCEDPROC)context->getProcAddress("glDrawElementsInstanced");
-                glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISORPROC)context->getProcAddress("glVertexAttribDivisor");
-                
-                if (!glBindBufferBase || !glGetUniformBlockIndex || !glUniformBlockBinding) {
-                    std::cerr << "Failed to initialize UBO function pointers" << std::endl;
-                } else if (!glDrawElementsInstanced || !glVertexAttribDivisor) {
-                    std::cerr << "Failed to initialize instanced rendering function pointers" << std::endl;
-                } else if (!glBufferSubData) {
-                    std::cerr << "Failed to initialize VBO function pointers" << std::endl;
-                }
             }
         } else {
-            std::cerr << "No current OpenGL context available" << std::endl;
+            std::cerr << "No current OpenGL context found" << std::endl;
         }
     }
     return s_instance;

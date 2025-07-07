@@ -11,11 +11,8 @@ ObstacleRenderer::~ObstacleRenderer() {}
 
 void ObstacleRenderer::render(const Obstacle* obstacle, TransformStack& transform, Camera* cam) {
     if (!obstacle) {
-        std::cout << "[ObstacleRenderer] render: obstacle is null" << std::endl;
         return;
     }
-
-    std::cout << "[ObstacleRenderer] render: obstacle found, rendering..." << std::endl;
 
     // Push a new transform level for the obstacle
     transform.pushTransform();
@@ -23,7 +20,6 @@ void ObstacleRenderer::render(const Obstacle* obstacle, TransformStack& transfor
         // Use obstacle's own position and radius
         flock::Vec3 obstaclePos = obstacle->getPositionModern();
         float obstacleRadius = obstacle->getSphereRadius();
-        std::cout << "[ObstacleRenderer] render: pos=" << obstaclePos.x << ", " << obstaclePos.y << ", " << obstaclePos.z << ", radius=" << obstacleRadius << std::endl;
         
         Matrix obstacleTransform;
         obstacleTransform.identity();
@@ -33,14 +29,23 @@ void ObstacleRenderer::render(const Obstacle* obstacle, TransformStack& transfor
 
         // Use obstacle's own color
         flock::Color color = obstacle->getColorModern();
-        std::cout << "[ObstacleRenderer] render: color=" << color.r << ", " << color.g << ", " << color.b << std::endl;
         
         Material obstacleMaterial;
         obstacleMaterial.setAmbient(Colour(0.25f, 0.20f, 0.15f, 1.0f));
         obstacleMaterial.setDiffuse(Colour(color.r * 1.8f, color.g * 1.8f, color.b * 1.8f, 1.0f));
         obstacleMaterial.setSpecular(Colour(1.2f, 1.2f, 1.0f, 1.0f));
         obstacleMaterial.setShininess(48.0f);
-        obstacleMaterial.loadToShader();
+
+        // Update the Material UBO for the obstacle
+        FlockingShaders::MaterialBlock block;
+        Colour ambient = obstacleMaterial.getAmbient();
+        Colour diffuse = obstacleMaterial.getDiffuse();
+        Colour specular = obstacleMaterial.getSpecular();
+        block.ambient = glm::vec4(ambient.m_r, ambient.m_g, ambient.m_b, ambient.m_a);
+        block.diffuse = glm::vec4(diffuse.m_r, diffuse.m_g, diffuse.m_b, diffuse.m_a);
+        block.specular = glm::vec4(specular.m_r, specular.m_g, specular.m_b, specular.m_a);
+        block.shininess = obstacleMaterial.getShininess();
+        ShaderLib::instance()->updateUBO("MaterialUBO", &block, sizeof(FlockingShaders::MaterialBlock));
 
         // Use the Phong shader for obstacle rendering
         ShaderLib::instance()->use("Phong");

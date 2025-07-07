@@ -1,7 +1,9 @@
+#include <glad/gl.h>
 #include "obstacle.h"
 #include <GPUFlockingManager.h>
 #include "GLWindow.h"
 #include <QMainWindow>
+#include <QOpenGLContext>
 #include "mainwindow.h"
 #include "flock.h"
 #include "boid.h"
@@ -27,7 +29,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "BehaviorValidator.h"
-#include "glew_compat.h"
 #include "shader_constants.h"
 #include "PerformanceProfiler.h"
 #include <modules/graphics/include/BoidRenderer.h>
@@ -281,10 +282,18 @@ void GLWindow::initializeGL()
     // enable depth testing for drawing
     glEnable(GL_DEPTH_TEST);
     
-    // Initialize OpenGL extensions
-#ifdef WIN32
-    glewInit(); // Initialize GLEW on Windows
-#endif
+    // Initialize glad for OpenGL function loading
+    if (!gladLoadGL([](const char* name) { return QOpenGLContext::currentContext()->getProcAddress(name); })) {
+        std::cerr << "Failed to initialize glad" << std::endl;
+        return;
+    }
+    
+    // Query OpenGL version
+    GLint major, minor;
+    glGetIntegerv(GL_MAJOR_VERSION, &major);
+    glGetIntegerv(GL_MINOR_VERSION, &minor);
+    std::cout << "glad initialized successfully with OpenGL " << major << "." << minor << std::endl;
+    
     // now to load the shader and set the values
     // grab an instance of shader manager
     m_shader = ShaderLib::instance();
@@ -611,7 +620,6 @@ void GLWindow::paintGL()
 
     // Draw the obstacle with modern UBO-based Phong shader
     if (obstacle && m_obstacleEnabled) {
-        std::cout << "[GLWindow] Rendering obstacle" << std::endl;
         m_obstacleRenderer->render(obstacle, m_transformStack, m_cam);
     }
     
@@ -745,7 +753,6 @@ void GLWindow::mousePressEvent (
         glm::vec4 rayClip(x, y, -1.0f, 1.0f);
         glm::mat4 proj = m_cam->getProjectionMatrix();
         glm::mat4 view = m_cam->getViewMatrix();
-        glm::mat4 invVP = glm::inverse(proj * view);
         glm::vec4 rayEye = glm::inverse(proj) * rayClip;
         rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0, 0.0);
         glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
@@ -1401,88 +1408,8 @@ void GLWindow::updateFPS() {
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::renderFPSText() {
     if (!m_showFPS) return;
-    
-    // Save current OpenGL state
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-    
-    // Disable depth testing for 2D overlay
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    
-    // Switch to 2D rendering mode
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glOrtho(0, width(), 0, height(), -1, 1);
-    
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-    
-    // Enable blending for semi-transparent background
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
-    // For now, we'll print to console more frequently for debugging
-    static int printCounter = 0;
-    if (printCounter++ % 30 == 0) { // Print every 30 frames (every 0.5 seconds at 60fps)
-        qDebug() << "FPS:" << m_currentFPS << "| Boids:" << (flock ? flock->getFlockSize() : 0);
-    }
-    
-    // Print profiling report every 5 seconds (300 frames at 60fps)
-    static int profilingCounter = 0;
-    if (profilingCounter++ % 300 == 0) {
-        std::cout << "\n=== AUTOMATIC PROFILING REPORT ===" << std::endl;
-        PerformanceProfiler::getInstance().printReport();
-        std::cout << "===================================\n" << std::endl;
-    }
-    
-    // Draw a large, prominent FPS indicator bar
-    float barWidth = (m_currentFPS / 60.0f) * 150.0f; // Normalize to 60 FPS, make it wider
-    if (barWidth > 150.0f) barWidth = 150.0f;
-    
-    // Large FPS bar background
-    glColor4f(0.0f, 0.0f, 0.0f, 0.9f); // More opaque background
-    glBegin(GL_QUADS);
-        glVertex2f(10, height() - 40);
-        glVertex2f(170, height() - 40);
-        glVertex2f(170, height() - 20);
-        glVertex2f(10, height() - 20);
-    glEnd();
-    
-    // FPS bar foreground (color-coded) - larger and brighter
-    if (m_currentFPS >= 50.0f) {
-        glColor4f(0.0f, 1.0f, 0.0f, 1.0f); // Bright green for good FPS
-    } else if (m_currentFPS >= 30.0f) {
-        glColor4f(1.0f, 1.0f, 0.0f, 1.0f); // Bright yellow for medium FPS
-    } else {
-        glColor4f(1.0f, 0.0f, 0.0f, 1.0f); // Bright red for low FPS
-    }
-    
-    glBegin(GL_QUADS);
-        glVertex2f(12, height() - 38);
-        glVertex2f(12 + barWidth, height() - 38);
-        glVertex2f(12 + barWidth, height() - 22);
-        glVertex2f(12, height() - 22);
-    glEnd();
-    
-    // Add a white border for better visibility
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    glLineWidth(2.0f);
-    glBegin(GL_LINE_LOOP);
-        glVertex2f(10, height() - 40);
-        glVertex2f(170, height() - 40);
-        glVertex2f(170, height() - 20);
-        glVertex2f(10, height() - 20);
-    glEnd();
-    
-    // Restore OpenGL state
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    
-    glPopAttrib();
+    // Terminal FPS/boid count debug output and automatic profiling report removed.
+    // Profiling report is now only printed on demand (e.g., when pressing 'T').
 }
 
 void GLWindow::renderFPSOverlay() {
@@ -1522,34 +1449,36 @@ void GLWindow::paintEvent(QPaintEvent *event) {
         int textWidth = qMax(qMax(fm.horizontalAdvance(fpsText), fm.horizontalAdvance(boidText)), fm.horizontalAdvance(modeText));
         int textHeight = fm.height();
 
-        // Draw semi-transparent background
+        // Draw semi-transparent background (dark theme, more modern look)
         int padding = 8;
         int bgWidth = textWidth + 2 * padding;
         int bgHeight = 3 * textHeight + 4 * padding;
         QRect bgRect(10, 10, bgWidth, bgHeight);
-        painter.fillRect(bgRect, QColor(0, 0, 0, 180));
+        // Use a deep blue-gray for the background
+        painter.fillRect(bgRect, QColor(24, 28, 40, 220));
 
-        // Draw border
-        painter.setPen(QPen(Qt::white, 2));
+        // Draw border with a subtle blue accent
+        painter.setPen(QPen(QColor(80, 160, 255), 2));
         painter.drawRect(bgRect);
 
         // Draw FPS text
         QColor textColor = Qt::white;
         if (m_currentFPS >= 50.0f) {
-            textColor = Qt::green;
+            textColor = QColor(120, 255, 180); // soft green
         } else if (m_currentFPS >= 30.0f) {
-            textColor = Qt::yellow;
+            textColor = QColor(255, 220, 120); // soft yellow
         } else {
-            textColor = Qt::red;
+            textColor = QColor(255, 120, 120); // soft red
         }
         painter.setPen(textColor);
         painter.drawText(10 + padding, 10 + padding + textHeight, fpsText);
 
-        // Draw boid count
-        painter.setPen(Qt::white);
+        // Draw boid count in a cool blue
+        painter.setPen(QColor(120, 180, 255));
         painter.drawText(10 + padding, 10 + 2 * padding + 2 * textHeight, boidText);
 
-        // Draw GPU/CPU mode and GPU name
+        // Draw GPU/CPU mode and GPU name in a subtle gray
+        painter.setPen(QColor(180, 200, 220));
         painter.drawText(10 + padding, 10 + 3 * padding + 3 * textHeight, modeText);
 
         painter.end();

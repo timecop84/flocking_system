@@ -5,7 +5,6 @@
 #include <iostream>
 #include <cstddef>
 #include <glm/glm.hpp>
-#include "../../../include/glew_compat.h"
 
 namespace FlockingGraphics {
 

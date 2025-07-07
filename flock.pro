@@ -1,6 +1,7 @@
 QT += opengl gui core widgets openglwidgets
 
 INCLUDEPATH += include
+INCLUDEPATH += glad/include
 INCLUDEPATH += modules/math/include
 INCLUDEPATH += modules/graphics/include
 INCLUDEPATH += modules/utils/include
@@ -27,6 +28,7 @@ SOURCES += \
     src/Behaviours.cpp \
     src/BehaviorValidator.cpp \
     src/SpatialHashGrid.cpp \
+    glad/src/gl.c \
     modules/math/src/MathUtils.cpp \
     modules/graphics/src/Camera.cpp \
     modules/graphics/src/TransformStack.cpp \

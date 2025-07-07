@@ -1,9 +1,9 @@
+#include <glad/gl.h>
 #include "../include/RenderManager.h"
 #include "../include/ShaderLib.h"
 #include "../include/UBOStructures.h"
 #include <iostream>
 #include <algorithm>
-#include "../../../include/glew_compat.h"
 
 namespace FlockingGraphics {
 

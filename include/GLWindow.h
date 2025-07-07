@@ -37,7 +37,6 @@ namespace FlockingGraphics {
     class GPUFlockingManager;
 }
 
-// must be included after our stuff because GLEW needs to be first
 #include <QTime>
 #include "boid.h"
 #include "flock.h"

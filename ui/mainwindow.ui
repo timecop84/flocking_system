@@ -15,57 +15,19 @@
   </property>
   <property name="styleSheet">
    <string notr="true">
-color: rgb(52, 52, 52);
-selection-background-color: #d3883c;
-
-QToolBox::tab {
-    background: #222;
-    color: #fff;
-    border: 1px solid #444;
-    border-bottom: none;
-    padding: 6px 12px;
+/* --- DARK THEME WITH LAVA COLOR --- */
+QWidget {
+    background-color: #181818;
+    color: #e0e0e0;
 }
-QToolBox::tab:selected {
-    background: #d3883c;
-    color: #fff;
-    border: 1px solid #d3883c;
+QMainWindow, QMenuBar, QStatusBar {
+    background-color: #181818;
+    color: #e0e0e0;
 }
-QToolBox::tab:hover {
-    background: #b86a2c;
-    color: #fff;
-}
-QTabBar::tab {
-    background: #222;
-    color: #fff;
-    border: 1px solid #444;
-    padding: 6px 12px;
-}
-QTabBar::tab:selected {
-    background: #d3883c;
-    color: #fff;
-    border: 1px solid #d3883c;
-}
-QTabBar::tab:hover {
-    background: #b86a2c;
-    color: #fff;
-}
-QAbstractItemView::item:selected, QAbstractItemView::item:focus {
-    background: #d3883c;
-    color: #fff;
-}
-QSlider::handle:focus, QSlider::handle:hover {
-    background: #d3883c;
-}
-QSlider::groove:focus, QSlider::groove:hover {
-    background: #d3883c33;
-}
-QMenu::item:selected {
-    background: #d3883c;
-    color: #fff;
-}
-QTreeView::item:selected, QListView::item:selected {
-    background: #d3883c;
-    color: #fff;
+QGroupBox {
+    background-color: #181818;
+    border: 1px solid #333;
+    color: #e0e0e0;
 }
 QSlider::groove:horizontal {
     border: 1px solid #222;
@@ -75,7 +37,7 @@ QSlider::groove:horizontal {
     border-radius: 3px;
 }
 QSlider::handle:horizontal {
-    background: #d3883c;
+    background: #ff4500; /* Deep orange lava color */
     border: 1px solid #b86a2c;
     width: 18px;
     height: 18px;
@@ -83,18 +45,55 @@ QSlider::handle:horizontal {
     border-radius: 9px;
 }
 QSlider::handle:horizontal:hover, QSlider::handle:horizontal:focus {
-    background: #ffb36b;
+    background: #ff6347; /* Slightly lighter lava color */
     border: 1.5px solid #d3883c;
 }
+QSlider::handle:horizontal:pressed {
+    background: #ff7f50; /* Even lighter lava color */
+    border: 2px solid #e09b5c;
+}
 QSlider::sub-page:horizontal {
-    background: #d3883c;
+    background: #ff4500; /* Deep orange lava color */
     border-radius: 3px;
 }
 QSlider::add-page:horizontal {
     background: #222;
     border-radius: 3px;
 }
-</string>
+QPushButton {
+    background-color: #232323;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+QPushButton:hover, QPushButton:focus {
+    background-color: #ff4500; /* Deep orange lava color */
+    color: #fff;
+    border: 1px solid #d3883c;
+}
+QCheckBox, QRadioButton, QLabel {
+    color: #ff4500; /* Deep orange lava color */
+}
+QSpinBox, QDoubleSpinBox, QComboBox, QLineEdit {
+    background-color: #232323;
+    color: #e0e0e0;
+    border: 1px solid #444;
+}
+QToolBox::tab {
+    background-color: #232323;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    padding: 6px;
+    border-radius: 4px;
+}
+QToolBox::tab:selected {
+    background-color: #ff4500; /* Deep orange lava color */
+    color: #fff;
+    border: 1px solid #d3883c;
+}
+/* --- END DARK THEME WITH LAVA COLOR --- */
+   </string>
   </property>
   <property name="dockNestingEnabled">
    <bool>true</bool>
@@ -135,10 +134,7 @@ QSlider::add-page:horizontal {
        </size>
       </property>
       <property name="styleSheet">
-       <string notr="true">color: rgb(52, 52, 52);
-color: rgb(255, 255, 255);
-selection-background-color: #d3883c;
-</string>
+       <string notr="true"></string>
       </property>
       <property name="frameShape">
        <enum>QFrame::Shape::Box</enum>
@@ -164,13 +160,13 @@ selection-background-color: #d3883c;
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QGroupBox" name="groupBox">
-          <property name="styleSheet">
-           <string notr="true">color: rgb(255, 240, 244);</string>
-          </property>
           <property name="title">
            <string>General</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout">
+          <layout class="QGridLayout" name="gridLayout" >
+           <property name="topMargin">
+            <number>20</number>
+           </property>
            <item row="0" column="1">
             <widget class="QLabel" name="label">
              <property name="text">
@@ -257,13 +253,13 @@ selection-background-color: #d3883c;
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_2">
-          <property name="styleSheet">
-           <string notr="true">color: rgb(255, 255, 255);</string>
-          </property>
           <property name="title">
            <string>Appearence</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_2">
+          <layout class="QGridLayout" name="gridLayout_2" >
+           <property name="topMargin">
+            <number>20</number>
+           </property>
            <item row="0" column="0" colspan="2">
             <widget class="QPushButton" name="m_changeFlockColour">
              <property name="toolTip">
@@ -314,13 +310,13 @@ selection-background-color: #d3883c;
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_4">
-          <property name="styleSheet">
-           <string notr="true">color: rgb(255, 255, 255);</string>
-          </property>
           <property name="title">
            <string>Movement</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_4">
+          <layout class="QGridLayout" name="gridLayout_4" >
+           <property name="topMargin">
+            <number>20</number>
+           </property>
            <item row="0" column="0">
             <widget class="QLabel" name="label_4">
              <property name="text">
@@ -377,9 +373,6 @@ selection-background-color: #d3883c;
           <property name="statusTip">
            <string>Renders the boids in wireframe mode if checked</string>
           </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(255, 255, 255);</string>
-          </property>
           <property name="text">
            <string>Render Wireframe</string>
           </property>
@@ -418,7 +411,10 @@ selection-background-color: #d3883c;
           <property name="title">
            <string>General</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_3">
+          <layout class="QGridLayout" name="gridLayout_3" >
+           <property name="topMargin">
+            <number>20</number>
+           </property>
            <item row="0" column="1" colspan="3">
             <widget class="QCheckBox" name="m_enableObstacle">
              <property name="toolTip">
@@ -445,30 +441,39 @@ selection-background-color: #d3883c;
            <item row="2" column="1">
             <widget class="QDoubleSpinBox" name="m_obstaclePosX">
              <property name="minimum">
-              <double>-99.000000000000000</double>
+              <double>-99.0</double>
+             </property>
+             <property name="maximum">
+              <double>99.0</double>
              </property>
              <property name="value">
-              <double>0.000000000000000</double>
+              <double>0.0</double>
              </property>
             </widget>
            </item>
            <item row="2" column="2">
             <widget class="QDoubleSpinBox" name="m_obstaclePosY">
              <property name="minimum">
-              <double>-99.000000000000000</double>
+              <double>-99.0</double>
+             </property>
+             <property name="maximum">
+              <double>99.0</double>
              </property>
              <property name="value">
-              <double>0.000000000000000</double>
+              <double>0.0</double>
              </property>
             </widget>
            </item>
            <item row="2" column="3">
             <widget class="QDoubleSpinBox" name="m_obstaclePosZ">
              <property name="minimum">
-              <double>-99.000000000000000</double>
+              <double>-99.0</double>
+             </property>
+             <property name="maximum">
+              <double>99.0</double>
              </property>
              <property name="value">
-              <double>0.000000000000000</double>
+              <double>0.0</double>
              </property>
             </widget>
            </item>
@@ -503,7 +508,10 @@ selection-background-color: #d3883c;
           <property name="title">
            <string>Appearence</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_4">
+          <layout class="QGridLayout" name="gridLayout_4" >
+           <property name="topMargin">
+            <number>20</number>
+           </property>
            <item row="0" column="0">
             <widget class="QPushButton" name="m_obstacleColour">
              <property name="text">
@@ -636,7 +644,10 @@ selection-background-color: #d3883c;
           <property name="title">
            <string>Obstacle Avoidance</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_obstacleAvoidance">
+          <layout class="QGridLayout" name="gridLayout_obstacleAvoidance" >
+           <property name="topMargin">
+            <number>20</number>
+           </property>
            <item row="0" column="0">
             <widget class="QLabel" name="label_avoidanceRadius">
              <property name="text">
@@ -763,7 +774,10 @@ selection-background-color: #d3883c;
           <property name="title">
            <string>General</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_7">
+          <layout class="QGridLayout" name="gridLayout_7" >
+           <property name="topMargin">
+            <number>20</number>
+           </property>
            <item row="0" column="0">
             <widget class="QLabel" name="label_5">
              <property name="text">
@@ -967,7 +981,10 @@ selection-background-color: #d3883c;
           <property name="title">
            <string>Bounding Box</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_5">
+          <layout class="QGridLayout" name="gridLayout_5" >
+           <property name="topMargin">
+            <number>20</number>
+           </property>
            <item row="0" column="0">
             <widget class="QLabel" name="label_4">
              <property name="text">
@@ -999,7 +1016,10 @@ selection-background-color: #d3883c;
           <property name="title">
            <string>Appearence</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_6">
+          <layout class="QGridLayout" name="gridLayout_6" >
+           <property name="topMargin">
+            <number>20</number>
+           </property>
            <item row="0" column="0">
             <widget class="QPushButton" name="m_backColour">
              <property name="text">

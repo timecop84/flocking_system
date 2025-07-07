@@ -82,7 +82,6 @@ public:
     
     /// @brief Get obstacle position as modern GLM vector
     flock::Vec3 getPositionModern() const { 
-        std::cout << "[Obstacle] getPositionModern: " << _spherePosition.m_x << ", " << _spherePosition.m_y << ", " << _spherePosition.m_z << std::endl;
         return flock::Vec3(_spherePosition.m_x, _spherePosition.m_y, _spherePosition.m_z); 
     }
     
@@ -94,7 +93,6 @@ public:
     
     /// @brief Get obstacle color as modern GLM vector
     flock::Color getColorModern() const { 
-        std::cout << "[Obstacle] getColorModern: " << m_colour.m_r << ", " << m_colour.m_g << ", " << m_colour.m_b << ", " << m_colour.m_a << std::endl;
         return flock::Color(m_colour.m_r, m_colour.m_g, m_colour.m_b, m_colour.m_a); 
     }
     

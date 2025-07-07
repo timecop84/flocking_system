@@ -2,6 +2,7 @@
 #include <ShaderLib.h>
 #include <Material.h>
 #include <modules/graphics/include/InstancedBoidRenderer.h>
+#include <modules/graphics/include/UBOStructures.h>
 #include <glm/glm.hpp>
 #include <vector>
 #include <iostream>
@@ -43,6 +44,22 @@ void BoidRenderer::render(const std::vector<Boid*>& boids, const TransformStack&
         // Get the actual boid color from the boid object
         flock::Color boidColorModern = boid->getColorModern();
         glm::vec4 boidColor(boidColorModern.r, boidColorModern.g, boidColorModern.b, boidColorModern.a);
+
+        // Set up per-boid material and update the UBO
+        Material boidMaterial;
+        boidMaterial.setAmbient(Colour(boidColorModern.r * 0.3f, boidColorModern.g * 0.3f, boidColorModern.b * 0.3f, 1.0f));
+        boidMaterial.setDiffuse(Colour(boidColorModern.r, boidColorModern.g, boidColorModern.b, 1.0f));
+        boidMaterial.setSpecular(Colour(0.8f, 0.8f, 0.8f, 1.0f));
+        boidMaterial.setShininess(64.0f);
+        FlockingShaders::MaterialBlock block;
+        Colour ambient = boidMaterial.getAmbient();
+        Colour diffuse = boidMaterial.getDiffuse();
+        Colour specular = boidMaterial.getSpecular();
+        block.ambient = glm::vec4(ambient.m_r, ambient.m_g, ambient.m_b, ambient.m_a);
+        block.diffuse = glm::vec4(diffuse.m_r, diffuse.m_g, diffuse.m_b, diffuse.m_a);
+        block.specular = glm::vec4(specular.m_r, specular.m_g, specular.m_b, specular.m_a);
+        block.shininess = boidMaterial.getShininess();
+        ShaderLib::instance()->updateUBO("MaterialUBO", &block, sizeof(FlockingShaders::MaterialBlock));
 
         m_instancedRenderer->addInstance(modelMatrix, boidColor);
     }
