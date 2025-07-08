@@ -58,7 +58,7 @@ public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief GUI related functions.
     int getFlockSize() {return m_numberOfBoids;}
-    void setFlockSize(int size) {m_numberOfBoids = size;}
+    void setFlockSize(int size); // Declaration only, implementation in .cpp
     void setBoidSize(double size);
     void setColour(Colour colour);
     Colour getColour() const { return m_boidColour; }

@@ -22,6 +22,9 @@ void SphereGeometry::generateSphere()
 {
     m_vertices.clear();
     m_indices.clear();
+    // Reserve space to avoid reallocations
+    m_vertices.reserve((m_stacks + 1) * (m_sectors + 1));
+    m_indices.reserve(m_stacks * m_sectors * 6); // 2 triangles per sector per stack, 3 indices each
     
     const float PI = flock::Math::PI;
     

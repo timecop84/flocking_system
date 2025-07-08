@@ -6,6 +6,8 @@
 #include <cstdlib>  // For rand()
 #include <ctime>    // For time-based seeding
 #include "PerformanceProfiler.h"
+#include <omp.h>    // For OpenMP parallelization
+#include <random>   // For std::mt19937 and std::uniform_real_distribution
 
 // Obstacle avoidance tuning parameters
 constexpr float OBSTACLE_AVOIDANCE_RADIUS_SCALE = 3.0f;   // Was 2.5f, increase for earlier avoidance
@@ -146,6 +148,7 @@ void Flock::resetBoids()
 
 void Flock::update()
 {
+    std::cout << "[Flock] update() start, boid count: " << m_boidList.size() << std::endl;
     PROFILE_SCOPE("Flock::update");
     
     // High-performance flocking update using spatial partitioning
@@ -190,17 +193,17 @@ void Flock::update()
         const size_t boidCount = m_boidList.size();
         std::vector<glm::vec3> boidPositions(boidCount);
         std::vector<glm::vec3> boidVelocities(boidCount);
-        
         for(size_t i = 0; i < boidCount; i++) {
             Vector pos = m_boidList[i]->getPosition();
             Vector vel = m_boidList[i]->getVelocity();
             boidPositions[i] = glm::vec3(pos.m_x, pos.m_y, pos.m_z);
             boidVelocities[i] = glm::vec3(vel.m_x, vel.m_y, vel.m_z);
         }
-        
-        int boidIndex = 0;
-        for(Boid *boid : m_boidList)
+        // Parallelize the main per-boid update loop
+        #pragma omp parallel for schedule(static)
+        for(int boidIndex = 0; boidIndex < static_cast<int>(boidCount); ++boidIndex)
         {
+            Boid *boid = m_boidList[boidIndex];
             // Use pre-cached positions (significant performance improvement)
             const glm::vec3& glmCurrentPos = boidPositions[boidIndex];
             
@@ -209,7 +212,6 @@ void Flock::update()
             
             // Early exit if no neighbors (optimization for sparse areas)
             if(nearbyBoids.empty()) {
-                boidIndex++;
                 continue;
             }
             
@@ -290,11 +292,14 @@ void Flock::update()
             glm::vec3 cohesionSet = coherence * cohesionForce;
             glm::vec3 alignmentSet = alignmentSum * alignmentForce;
             
-            // Add random jitter for fly-like chaotic movement
+            // Thread-safe random jitter for fly-like chaotic movement
+            // Use OpenMP thread id to seed a per-thread RNG
+            static thread_local std::mt19937 rng(static_cast<unsigned int>(time(nullptr)) + omp_get_thread_num());
+            std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
             glm::vec3 randomJitter(
-                ((rand() % 1000) / 1000.0f - 0.5f) * 2.0f,  // Random -1 to 1
-                ((rand() % 1000) / 1000.0f - 0.5f) * 2.0f,
-                ((rand() % 1000) / 1000.0f - 0.5f) * 2.0f
+                dist(rng),
+                dist(rng),
+                dist(rng)
             );
             randomJitter *= 1.5f;  // Reduced from 3.0f for more subtle chaos
             
@@ -321,10 +326,9 @@ void Flock::update()
             boid->updateVelocity(nglBehaviourSetup);
             boid->velocityConstraint();
             boid->boidDirection();
-            
-            boidIndex++;
         }
     }
+    std::cout << "[Flock] update() end" << std::endl;
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Flock::setBoidSize(double size)
@@ -398,49 +402,33 @@ void Flock::validateBoundingBoxCollision()
     ext[2]=ext[3]=(m_bbox->width()/2.0f);
     ext[4]=ext[5]=(m_bbox->depth()/2.0f);
     
-    // Dot product needs a Vector so we convert The Point Temp into a Vector so we can
-    // do a dot product on it
     Vector point;
-    // D is the distance of the Agent from the Plane. If it is less than ext[i] then there is
-    // no collision
     GLfloat Distance;
-    
-    // Loop for each sphere in the vector list
-    for(Boid *s : m_boidList)
+    // Revert to single-threaded loop for correct collision behavior
+    for(int boidIdx = 0; boidIdx < static_cast<int>(m_boidList.size()); ++boidIdx)
     {
-        point=s->getPosition();
-        //Now we need to check the Sphere agains all 6 planes of the BBOx
-        //If a collision is found we change the dir of the Sphere then Break
+        Boid *s = m_boidList[boidIdx];
+        point = s->getPosition();
         for(int i=0; i<6; ++i)
         {
-            //to calculate the distance we take the dotporduct of the Plane Normal
-            //with the new point P
             Distance=m_bbox->getNormalArray()[i].dot(point);
-            //Now Add the Radius of the sphere to the offsett
             Distance+=s->getSize();
-            
-            // Define avoidance zone near the boundary
-            GLfloat avoidanceZone = ext[i] * 0.9f;  // Start avoiding at 90% of the extent
-            
-            // If this is greater or equal to the BBox extent /2 then there is a collision
+            GLfloat avoidanceZone = ext[i] * 0.9f;
             if(Distance >= ext[i])
             {
-                // Hard collision - reflect the velocity
                 GLfloat x = 2 * (s->getVelocity().dot((m_bbox->getNormalArray()[i])));
                 Vector d = m_bbox->getNormalArray()[i] * x;
-                // Use a smaller multiplier for more reasonable reflection
                 s->setVelocity(s->getNextPosition() - d * 0.8);
                 s->isHit();
             }
             else if(Distance >= avoidanceZone)
             {
-                // Soft avoidance - add a gentle force away from the boundary
                 GLfloat avoidanceStrength = (Distance - avoidanceZone) / (ext[i] - avoidanceZone);
                 Vector avoidanceForce = m_bbox->getNormalArray()[i] * (avoidanceStrength * 0.2f);
                 s->addVelocity(avoidanceForce);
             }
-        }//end of each face test
-    }//end of for
+        }
+    }
 }
 /// end of Citation
 //----------------------------------------------------------------------------------------------------------------------
@@ -483,30 +471,21 @@ void  Flock::checkSphereCollisions()
     GLfloat obstacleRadius = m_obstacle->getSphereRadius();
     Vector obstaclePos = m_obstacle->getSpherePosition();
 
+    // Revert to single-threaded loop for correct collision behavior
     for(unsigned int Current=0; Current<size; ++Current)
     {
         Vector boidPos = m_boidList.at(Current)->getPosition();
         Vector toObstacle = obstaclePos - boidPos;
         GLfloat distance = toObstacle.length();
-        
-        // Use member variables for avoidance/collision/force
         GLfloat avoidanceRadius = obstacleRadius * m_obstacleAvoidanceRadiusScale;
         GLfloat collisionRadius = obstacleRadius * m_obstacleCollisionRadiusScale;
-        
         if (distance < avoidanceRadius && distance > 0.0001f) {
-            // Calculate smooth repulsion force
             Vector repulsionDir = boidPos - obstaclePos;
             repulsionDir.normalize();
-            
-            // Force strength inversely proportional to distance (stronger when closer)
             GLfloat forceStrength = (avoidanceRadius - distance) / avoidanceRadius;
-            forceStrength = forceStrength * forceStrength; // Quadratic falloff for smoother transition
-            
-            // Apply gentle repulsion force (add to existing velocity, don't replace it)
+            forceStrength = forceStrength * forceStrength;
             Vector repulsionForce = repulsionDir * (forceStrength * m_obstacleRepulsionForce);
             m_boidList.at(Current)->addVelocity(repulsionForce);
-            
-            // Hard collision: push boid away if too close
             if (distance < collisionRadius) {
                 Vector newPos = obstaclePos + (repulsionDir * collisionRadius);
                 m_boidList.at(Current)->setPosition(newPos);
@@ -531,6 +510,43 @@ void Flock::demonstrateModernFlocking()
 {
     // This method demonstrates the modern GLM-based flocking system
     // Debug outputs removed for cleaner console output
+}
+//----------------------------------------------------------------------------------------------------------------------
+void Flock::setFlockSize(int targetSize)
+{
+    std::cout << "[Flock] setFlockSize called: target=" << targetSize << ", current=" << m_boidList.size() << std::endl;
+    if (targetSize < 0) targetSize = 0;
+    int currentSize = static_cast<int>(m_boidList.size());
+    if (targetSize == currentSize) return;
+    if (targetSize > currentSize) {
+        // Add required number of boids in one go
+        int toAdd = targetSize - currentSize;
+        Vector dir;
+        for (int i = 0; i < toAdd; ++i) {
+            glm::vec3 dirVec = math::utils::randomVec3();
+            dir.m_x = dirVec.x;
+            dir.m_y = dirVec.y;
+            dir.m_z = dirVec.z;
+            glm::vec3 pos = math::utils::randomPoint(s_extents, s_extents, s_extents);
+            Boid* boid = new Boid(Vector(pos.x, pos.y, pos.z), dir);
+            float scale = 0.7f + static_cast<float>(rand()) / RAND_MAX * 0.8f;
+            boid->setScale(Vector(scale, scale, scale));
+            m_boidList.push_back(boid);
+            if ((i+1) % 500 == 0) std::cout << "[Flock] Added " << (i+1) << "/" << toAdd << " boids..." << std::endl;
+        }
+        std::cout << "[Flock] Finished adding boids. New size: " << m_boidList.size() << std::endl;
+        m_numberOfBoids = targetSize;
+    } else {
+        // Remove excess boids
+        int toRemove = currentSize - targetSize;
+        for (int i = 0; i < toRemove; ++i) {
+            delete m_boidList.back();
+            m_boidList.pop_back();
+            if ((i+1) % 500 == 0) std::cout << "[Flock] Removed " << (i+1) << "/" << toRemove << " boids..." << std::endl;
+        }
+        std::cout << "[Flock] Finished removing boids. New size: " << m_boidList.size() << std::endl;
+        m_numberOfBoids = targetSize;
+    }
 }
 //----------------------------------------------------------------------------------------------------------------------
 

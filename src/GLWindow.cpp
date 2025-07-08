@@ -1139,18 +1139,17 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
                 int currentSize = flock->getFlockSize();
                 int target = 2000;
                 std::cout << "Setting flock size from " << currentSize << " to " << target << " - TARGET!" << std::endl;
-                
-                if (currentSize < target) {
-                    // Add boids
-                    while (flock->getFlockSize() < target) {
-                        flock->addBoids();
-                    }
-                } else if (currentSize > target) {
-                    // Remove boids
-                    while (flock->getFlockSize() > target) {
-                        flock->removeBoids();
-                    }
-                }
+                flock->setFlockSize(target);
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case Qt::Key_4:
+            // Set to 4000 boids
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 4000;
+                std::cout << "Setting flock size from " << currentSize << " to " << target << " - MASSIVE!" << std::endl;
+                flock->setFlockSize(target);
                 std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
             }
             break;

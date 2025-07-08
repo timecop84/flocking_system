@@ -19,6 +19,7 @@ void SpatialHashGrid::addBoid(Boid* boid, int boidIndex) {
 
 std::vector<std::pair<Boid*, int>> SpatialHashGrid::getNearbyBoids(const glm::vec3& position, float radius) const {
     std::vector<std::pair<Boid*, int>> nearbyBoids;
+    float radiusSq = radius * radius;
     
     // Get the grid coordinates for the query position
     glm::ivec3 centerCell = getGridCoords(position);
@@ -37,9 +38,9 @@ std::vector<std::pair<Boid*, int>> SpatialHashGrid::getNearbyBoids(const glm::ve
                     for (const auto& boidPair : it->second) {
                         Vector boidPos = boidPair.first->getPosition();
                         glm::vec3 boidPosition(boidPos.m_x, boidPos.m_y, boidPos.m_z);
-                        
-                        float distance = glm::length(position - boidPosition);
-                        if (distance <= radius) {
+                        glm::vec3 diff = position - boidPosition;
+                        float distSq = glm::dot(diff, diff);
+                        if (distSq <= radiusSq) {
                             nearbyBoids.push_back(boidPair);
                         }
                     }

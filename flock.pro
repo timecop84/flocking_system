@@ -110,3 +110,6 @@ win32-g++: {
     DEFINES += QT_NO_ENTRYPOINT
 }
 
+QMAKE_LFLAGS += -fopenmp
+QMAKE_CXXFLAGS += -fopenmp
+
