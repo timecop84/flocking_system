@@ -62,26 +62,33 @@ vec3 getRandomJitter(float seed, float index) {
 vec3 applyBoundaryConstraint(vec3 position, vec3 velocity) {
     vec3 force = vec3(0.0);
     float margin = 10.0;
+    float boundaryStrength = 0.02; // Gentler force
     
     // X boundaries
     if (position.x < boundingBoxMin.x + margin) {
-        force.x += (boundingBoxMin.x + margin - position.x) * 0.1;
+        force.x += (boundingBoxMin.x + margin - position.x) * boundaryStrength;
     } else if (position.x > boundingBoxMax.x - margin) {
-        force.x += (boundingBoxMax.x - margin - position.x) * 0.1;
+        force.x += (boundingBoxMax.x - margin - position.x) * boundaryStrength;
     }
     
     // Y boundaries
     if (position.y < boundingBoxMin.y + margin) {
-        force.y += (boundingBoxMin.y + margin - position.y) * 0.1;
+        force.y += (boundingBoxMin.y + margin - position.y) * boundaryStrength;
     } else if (position.y > boundingBoxMax.y - margin) {
-        force.y += (boundingBoxMax.y - margin - position.y) * 0.1;
+        force.y += (boundingBoxMax.y - margin - position.y) * boundaryStrength;
     }
     
     // Z boundaries
     if (position.z < boundingBoxMin.z + margin) {
-        force.z += (boundingBoxMin.z + margin - position.z) * 0.1;
+        force.z += (boundingBoxMin.z + margin - position.z) * boundaryStrength;
     } else if (position.z > boundingBoxMax.z - margin) {
-        force.z += (boundingBoxMax.z - margin - position.z) * 0.1;
+        force.z += (boundingBoxMax.z - margin - position.z) * boundaryStrength;
+    }
+    
+    // Clamp boundary force
+    float maxBoundaryForce = 0.2;
+    if (length(force) > maxBoundaryForce) {
+        force = normalize(force) * maxBoundaryForce;
     }
     
     return force;
@@ -140,13 +147,13 @@ void main() {
         
         // SEPARATION: Check if within flock distance
         if (distanceSq < flockDistanceSq && distanceSq > 0.001) {
-            // Match CPU calculateSeparationModern exactly:
             float distance = sqrt(distanceSq);
             vec3 diff = position - neighborPos;
             if (length(diff) > 0.0001) {
                 diff = normalize(diff);
-                diff /= distance; // CRITICAL: Weight by distance for stability
+                diff /= distance;
                 separation += diff;
+                separationCount++;
             }
         }
     }
@@ -177,18 +184,17 @@ void main() {
     } else {
         alignmentSum = vec3(0.0);
     }
-    
+
     // SEPARATION: Finalize calculation - match CPU exactly
-    int separationCount = 0; // Count separation neighbors
-    if (length(separation) > 0.0001) {
-        // Calculate approximate count based on separation magnitude
-        separationCount = max(1, int(length(separation) * 10.0)); 
+    if (separationCount > 0) {
         separation /= float(separationCount);
         separation *= separationForce;
+    } else {
+        separation = vec3(0.0);
     }
     
     // BEHAVIOR SETUP: Combine forces exactly like CPU
-    vec3 separationSet = separation; // Don't negate - modern CPU doesn't use correction
+    vec3 separationSet = separation;
     vec3 cohesionSet = coherence * cohesionForce;
     vec3 alignmentSet = alignmentSum * alignmentForce;
     
@@ -238,10 +244,17 @@ void main() {
         }
     }
     
-    // Position update - FIXED: match CPU exactly with safe deltaTime
-    // CPU uses simple integration but with proper time scaling
-    float safeDeltaTime = min(deltaTime, 0.016); // Cap at ~60fps for stability
-    position += velocity * safeDeltaTime;
+    // Calculate newDirection as in CPU
+    vec3 newDirection = position - boids[index].lastPosition;
+    if (any(isnan(newDirection)) || any(isinf(newDirection))) {
+        newDirection = vec3(0.0);
+    }
+    // Update position using average of velocity and newDirection
+    vec3 nextMovement = (velocity + newDirection) * 0.5;
+    if (any(isnan(nextMovement)) || any(isinf(nextMovement))) {
+        nextMovement = vec3(0.1, 0.1, 0.0);
+    }
+    position += nextMovement;
     
     // Final safety checks before writing results
     if (any(isnan(position)) || any(isinf(position))) {
@@ -255,10 +268,18 @@ void main() {
         behaviourSetup = vec3(0.0, 0.0, 0.0);
     }
     
+    // Clamp velocity to maxSpeed after all updates
+    float vlen = length(velocity);
+    if (vlen > maxSpeed) {
+        velocity = normalize(velocity) * maxSpeed;
+    }
+    // Apply slight damping to velocity each frame
+    velocity *= 0.98;
+    
     // Write results to output buffer
     boidsOut[index].position = position;
     boidsOut[index].velocity = velocity;
     boidsOut[index].acceleration = behaviourSetup; // Store the applied force
     boidsOut[index].color = boids[index].color; // Preserve color
-    boidsOut[index].lastPosition = boids[index].position; // Store previous position
+    boidsOut[index].lastPosition = boids[index].position; // Store previous position for next frame
 }
