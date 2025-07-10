@@ -908,7 +908,7 @@ void GLWindow::timerEvent(
                     params.separationForce = static_cast<float>(flock->getBehaviours()->getSeparationForce());
                     params.alignmentForce = static_cast<float>(flock->getBehaviours()->getAlignment());
                     params.cohesionForce = static_cast<float>(flock->getBehaviours()->getCohesionForce());
-                    params.maxSpeed = 10.0f;  // Match velocity constraints
+                    params.maxSpeed = 2.0f;  // Reduced GPU boid speed for less clustering
                     params.maxForce = 0.5f;   // FIXED: Match shader force limit
                     params.numBoids = static_cast<int>(boidList.size());
                     params.deltaTime = 0.016f; // 60 FPS time step for smooth movement
@@ -1479,6 +1479,13 @@ void GLWindow::paintEvent(QPaintEvent *event) {
         // Draw GPU/CPU mode and GPU name in a subtle gray
         painter.setPen(QColor(180, 200, 220));
         painter.drawText(10 + padding, 10 + 3 * padding + 3 * textHeight, modeText);
+
+        // Draw CPU thread count if in CPU mode
+        if (!m_gpuFlockingManager || !m_gpuFlockingManager->isEnabled()) {
+            QString threadText = QString("CPU Threads: %1").arg(m_boidRenderer ? m_boidRenderer->getNumThreads() : 1);
+            painter.setPen(QColor(180, 200, 220));
+            painter.drawText(10 + padding, 10 + 4 * padding + 4 * textHeight, threadText);
+        }
 
         painter.end();
     }

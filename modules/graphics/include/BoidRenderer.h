@@ -35,6 +35,12 @@ public:
      */
     void setInstancedBoidRenderer(FlockingGraphics::InstancedBoidRenderer* renderer);
 
+    /**
+     * @brief Get the number of threads used in the rendering process.
+     * @return The number of threads.
+     */
+    int getNumThreads() const;
+
 private:
     FlockingGraphics::InstancedBoidRenderer* m_instancedRenderer = nullptr;
 };

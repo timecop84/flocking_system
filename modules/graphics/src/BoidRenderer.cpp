@@ -58,7 +58,7 @@ void BoidRenderer::render(const std::vector<Boid*>& boids, const TransformStack&
     int numThreads = 1;
     #ifdef _OPENMP
     numThreads = omp_get_max_threads();
-    std::cout << "[BoidRenderer] OpenMP parallel for using " << numThreads << " threads." << std::endl;
+    // std::cout << "[BoidRenderer] OpenMP parallel for using " << numThreads << " threads." << std::endl;
     #else
     std::cout << "[BoidRenderer] OpenMP not enabled, running single-threaded." << std::endl;
     #endif
@@ -84,4 +84,12 @@ void BoidRenderer::render(const std::vector<Boid*>& boids, const TransformStack&
 
     // Render all boids in a single instanced draw call
     m_instancedRenderer->renderInstances("PhongInstanced");
+}
+
+int BoidRenderer::getNumThreads() const {
+#ifdef _OPENMP
+    return omp_get_max_threads();
+#else
+    return 1;
+#endif
 }
