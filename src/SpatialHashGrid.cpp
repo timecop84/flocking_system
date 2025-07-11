@@ -1,3 +1,14 @@
+// SpatialHashGrid.cpp - Modernized and documented for maintainability
+/**
+ * @file SpatialHashGrid.cpp
+ * @brief Implementation of the SpatialHashGrid class for efficient neighbor queries.
+ *
+ * Reduces neighbor search complexity for flocking simulation. Uses FlockTypes.h for clarity and maintainability.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
+
 #include "SpatialHashGrid.h"
 #include <cmath>
 

@@ -1,30 +1,26 @@
-#ifndef BOID_H
-#define BOID_H
-
+// boid.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
 #include <string>
+#include <memory>
+#include <iostream>
 #include <GL/gl.h>
+#include "FlockTypes.h"
 #include "Vector.h"
 #include "Colour.h"
 #include "Camera.h"
 #include "TransformStack.h"
-// Modern includes for gradual migration
-#include "FlockTypes.h"
 #include "SphereGeometry.h"
-#include <memory>
-#include <iostream> // Include iostream for debug output
 
-/*! \brief the boids class */
-/// @file boids.h
-/// @brief the boid class. Creates the initial boid.
-/// @author Dionysios Toufexis
-/// @version 1.0
-/// @date 18/6/2012
-/// Revision History :8/7/2012
-/// @class Boid
-/// @brief stores information about the boid and its linked to the flock class.
-
-class Boid
-{
+/**
+ * @file boid.h
+ * @brief The Boid class represents an individual agent in the flock.
+ *
+ * Modernized for clarity, maintainability, and efficiency. All type aliases and math helpers are now in FlockTypes.h.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
+class Boid {
 public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our ctor
@@ -36,39 +32,39 @@ public:
     /// @param [in] position the position of the boid
     /// @param [in] direction the direction of the boid
     //----------------------------------------------------------------------------------------------------------------------
-    Boid(Vector position,Vector direction);
+    Boid(Vector position, Vector direction);
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief returns the current position of the boid
     /// @param [in] m_position passed and gets the value of the current position.
-    inline Vector getPosition()const {return m_position;}
+    inline Vector getPosition() const { return m_position; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief returns the last position of the boid
     /// @param [in] m_lastPosition passed and gets the value of the last position.
-    inline Vector getLastPosition()const {return m_lastPosition;}
+    inline Vector getLastPosition() const { return m_lastPosition; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief takes the current position of the boid
     /// @param [in] m_position sets the value of the current position. Used in Collision method.
-    inline void setPosition(Vector Position) {m_position = Position;}
+    inline void setPosition(Vector position) { m_position = position; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief stores the next position of the boid.
     /// @param [in] m_nextPosition returns the value for the nextPosition. Used for Direction.
-    inline Vector getNextPosition()const {return m_nextPosition;}
+    inline Vector getNextPosition() const { return m_nextPosition; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief stores the velocity of the boid.
     /// @param [in] m_velocity sets the velocity of the boid. Used by Direction in Boid class.
-    inline void setVelocity(Vector _d){m_velocity=_d;}
+    inline void setVelocity(Vector v) { m_velocity = v; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to get the velocity value of the boid.
     /// @param [in] m_velocity gets and gets the value of the current velocity. Used for the BBox collision.
-    inline Vector getVelocity () {return m_velocity;}
+    inline Vector getVelocity() { return m_velocity; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief stores the maximum velocity.
     /// @param [in] m_velocity maxValue sets the maximum velocity of the boid
-    inline void setMaxVelocity(GLfloat maxVelocity){m_maxVelocity = maxVelocity;}
+    inline void setMaxVelocity(GLfloat maxVelocity) { m_maxVelocity = maxVelocity; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief stores the minimum velocity.
     /// @param [in] m_velocity minValue sets the minimum velocity of the boid
-    inline void setMinVelocity(GLfloat minVelocity){m_minVelocity = minVelocity;}
+    inline void setMinVelocity(GLfloat minVelocity) { m_minVelocity = minVelocity; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief updates the velocity.
     /// @param [in] direction gets the value of direction of the boid
@@ -83,7 +79,7 @@ public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief gets the velocity.
     /// @param [in] m_size gets the size of the boid. Used in BBox and Sphere Collision.
-    float getSize()const{ return  m_size; }
+    float getSize() const { return m_size; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable for boid Scale
     /// @param [in] m_scale sets the scale of the boid.
@@ -100,25 +96,25 @@ public:
     /// @param [in] _shaderName value
     /// @param [in] _transformStack  values
     /// @param [in] _cam camera values
-    void draw(const std::string &_shaderName,TransformStack &_transformStack,Camera *_cam)const;
+    void draw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief drawing the boid using modern VBO/VAO rendering with UBO shaders
     /// @param [in] _shaderName value
     /// @param [in] _transformStack  values
     /// @param [in] _cam camera values
-    void drawModern(const std::string &_shaderName,TransformStack &_transformStack,Camera *_cam)const;
+    void drawModern(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief reverse function
     /// @param [in] m_velocity sets the velocity to have a new direction plus the next position. Called during boid to obstacle collision.
-    inline void reverse(){m_velocity= (m_newDirection + getNextPosition()) * -1.2;}
+    inline void reverse() { m_velocity = (m_newDirection + getNextPosition()) * -1.2; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the hit function of the boid
     /// @param [in] m_hit called from boids to check if there is collision.
-    inline void setHit(){m_hit=true;}
+    inline void setHit() { m_hit = true; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the hit function of the boid
     /// @param [in] m_hit passed from boids for the value of collisions
-    inline bool isHit()const {return m_hit;}
+    inline bool isHit() const { return m_hit; }
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the colour of the boid
     /// @param [in] colour the new colour for the boid
@@ -128,7 +124,7 @@ public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief sets the wireframe mode of the boid
     /// @param [in] value true for wireframe, false for solid
-    inline void setWireframe(bool value) {m_wireframe = value;}
+    inline void setWireframe(bool value) { m_wireframe = value; }
 
     //----------------------------------------------------------------------------------------------------------------------
     // Modern GLM-based accessors for gradual migration
@@ -233,5 +229,3 @@ protected:
     // Legacy matrix loading function removed - UBO-based rendering handles matrix updates automatically
 
 };
-
-#endif // BOID_H

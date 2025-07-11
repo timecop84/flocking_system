@@ -1,13 +1,19 @@
-#ifndef COLOUR_H
-#define COLOUR_H
+// Colour.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
 
 #include <glm/glm.hpp>
 #include <iostream>
+#include "FlockTypes.h"
 
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief Modern Colour class using GLM as backend instead of ngl_compat
-/// @details Interface-compatible replacement for ngl::Colour using glm::vec4
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * @file Colour.h
+ * @brief Modern Colour class using GLM as backend instead of ngl_compat.
+ *
+ * Interface-compatible replacement for ngl::Colour using glm::vec4. Uses FlockTypes.h for type aliases and helpers.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
 class Colour {
 public:
     float m_r, m_g, m_b, m_a;
@@ -65,5 +71,3 @@ public:
 
 // Global operators for scalar multiplication
 Colour operator*(float scalar, const Colour& c);
-
-#endif // COLOUR_H

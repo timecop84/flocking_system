@@ -1,14 +1,20 @@
+/**
+ * @file main.cpp
+ * @brief Entry point for the Flocking System application (Qt-based GUI).
+ *
+ * Initializes the Qt application and main window, with robust exception handling.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
 #include <QApplication>
 #include <QMessageBox>
 #include "mainwindow.h"
 
-// Force NVIDIA GPU usage on laptops with hybrid graphics
+// Force NVIDIA/AMD GPU usage on laptops with hybrid graphics
 #ifdef _WIN32
 extern "C" {
-    // NVIDIA GPU preference
     __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
-    
-    // AMD GPU preference
     __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 #endif

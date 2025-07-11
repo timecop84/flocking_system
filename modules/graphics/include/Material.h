@@ -1,24 +1,23 @@
-#ifndef MATERIAL_H
-#define MATERIAL_H
+// Material.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
 
 #include <glm/glm.hpp>
 #include <string>
 
-/// @brief Modern Material class for compatibility
-/// @details Simple material representation
+#include "FlockTypes.h"
 
+/**
+ * @file Material.h
+ * @brief Modern Material class for compatibility and simple material representation.
+ *
+ * Modernized for clarity and maintainability. Uses FlockTypes.h for type aliases and helpers.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
 // Material presets
 enum MaterialType {
-    GOLD,
-    SILVER,
-    BRONZE,
-    RUBY,
-    EMERALD,
-    PEARL,
-    PLASTIC,
-    CHROME,
-    BRASS,
-    COPPER
+    GOLD, SILVER, BRONZE, RUBY, EMERALD, PEARL, PLASTIC, CHROME, BRASS, COPPER
 };
 
 class Material {
@@ -48,11 +47,9 @@ public:
     
 private:
     glm::vec3 m_ambient;
-    glm::vec3 m_diffuse; 
+    glm::vec3 m_diffuse;
     glm::vec3 m_specular;
     float m_shininess;
     
     void setMaterialType(MaterialType type);
 };
-
-#endif // MATERIAL_H

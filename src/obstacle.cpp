@@ -1,3 +1,14 @@
+// obstacle.cpp - Modernized and documented for maintainability
+/**
+ * @file obstacle.cpp
+ * @brief Implementation of the Obstacle class for the flocking simulation.
+ *
+ * Handles obstacle logic, rendering, and collision. Uses FlockTypes.h for clarity and maintainability.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
+
 #include "obstacle.h"
 #include "Material.h"
 #include "ShaderLib.h"

@@ -1,5 +1,5 @@
-#ifndef __GL_WINDOW_H__
-#define __GL_WINDOW_H__
+// GLWindow.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
 
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
@@ -9,14 +9,13 @@
 #include <QKeyEvent>
 #include <QPainter>
 #include <QPaintEvent>
+#include <QTime>
+#include <QString>
 #include <glm/glm.hpp>
 #include <memory>
 #include <chrono>
-#include <QString>
 
-// Forward declaration for modular include
-class ShaderLib;
-
+#include "FlockTypes.h"
 #include "Camera.h"
 #include "Light.h"
 #include "Material.h"
@@ -25,40 +24,31 @@ class ShaderLib;
 #include "TransformStack.h"
 #include "modules/graphics/include/BBox.h"
 #include "BehaviorValidator.h"
-// UBO support
 #include "../modules/graphics/include/UBOStructures.h"
-// High-performance instanced rendering
 #include "modules/graphics/include/InstancedBoidRenderer.h"
 #include "modules/graphics/include/BoidRenderer.h"
 #include "modules/graphics/include/ObstacleRenderer.h"
+#include "ShaderLib.h"
+
+#include "boid.h"
+#include "flock.h"
+#include "obstacle.h"
+#include "PerformanceMonitor.h"
 
 // Forward declarations for GPU flocking
 namespace FlockingGraphics {
     class GPUFlockingManager;
 }
 
-#include <QTime>
-#include "boid.h"
-#include "flock.h"
-#include "obstacle.h"
-#include "PerformanceMonitor.h"
-
-/// @file GLWindow.h
-/// @brief a GLWindow to visualize our flock.
-/// @author Dionysios Toufexis
-/// @brief modified from Jon Maceys BBox Collision. NGL Demos.
-/// @date 13/06/12
-/// @revision 8/07/12
 /**
- * @class GLWindow
+ * @file GLWindow.h
  * @brief Main OpenGL widget for visualizing and interacting with the flocking simulation.
  *
  * Provides rendering, user interaction, and simulation control for the flocking system.
  * Integrates modern OpenGL, GPU compute, and advanced UI/UX features.
  *
  * @author Dionysios Toufexis
- * @date 13/06/12 (modified 2025)
- * @details Modernized and extended for advanced GPU/CPU flocking, dynamic UI, and performance profiling.
+ * @date 2025
  */
 class GLWindow : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -523,5 +513,3 @@ public slots:
     void setObstacleEnabled(bool _enabled);
 
 };
-
-#endif

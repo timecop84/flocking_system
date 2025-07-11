@@ -1,11 +1,32 @@
+
+/**
+ * @file SmartShaderManager.cpp
+ * @brief Implementation of a smart shader management system for the renderer.
+ *
+ * Handles efficient shader switching, uniform caching, and render command batching to minimize GPU state changes.
+ * This system is designed to optimize rendering performance by reducing redundant shader switches and uniform uploads.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
+
 #include <glad/gl.h>
 #include "../include/SmartShaderManager.h"
 #include "../include/ShaderLib.h"
 #include <iostream>
 #include <algorithm>
 
+
+// Static singleton instance pointer
 SmartShaderManager* SmartShaderManager::s_instance = nullptr;
 
+
+/**
+ * @brief Get the singleton instance of the SmartShaderManager.
+ *
+ * Ensures only one manager exists for the lifetime of the application.
+ * @return Pointer to the SmartShaderManager instance.
+ */
 SmartShaderManager* SmartShaderManager::instance() {
     if (!s_instance) {
         s_instance = new SmartShaderManager();
@@ -13,12 +34,18 @@ SmartShaderManager* SmartShaderManager::instance() {
     return s_instance;
 }
 
+
+/**
+ * @brief Switch to the specified shader program if not already active.
+ *
+ * Tracks redundant switches and updates internal statistics.
+ * @param shaderName The name of the shader program to use.
+ */
 void SmartShaderManager::useShader(const std::string& shaderName) {
     if (m_currentShader == shaderName) {
         m_stats.redundantSwitches++;
         return;
     }
-    
     ShaderLib* shaderLib = ShaderLib::instance();
     ShaderLib::ProgramWrapper* program = (*shaderLib)[shaderName];
     if (program) {
@@ -28,16 +55,27 @@ void SmartShaderManager::useShader(const std::string& shaderName) {
     }
 }
 
+
+/**
+ * @brief Add a render command to the batch.
+ *
+ * Render commands are sorted and executed to minimize shader switches.
+ * @param command The render command to add.
+ */
 void SmartShaderManager::addRenderCommand(const RenderCommand& command) {
     m_renderCommands.push_back(command);
 }
 
+
+/**
+ * @brief Execute all batched render commands, optimizing shader usage.
+ *
+ * Sorts commands by shader and executes them, minimizing GPU state changes.
+ */
 void SmartShaderManager::executeRenderCommands() {
     if (m_renderCommands.empty()) return;
-    
     // Sort by shader to minimize switches
     sortRenderCommandsByShader();
-    
     // Execute commands
     for (const auto& command : m_renderCommands) {
         useShader(command.shaderName);
@@ -45,6 +83,12 @@ void SmartShaderManager::executeRenderCommands() {
     }
 }
 
+
+/**
+ * @brief Clear all batched render commands.
+ *
+ * Prepares the manager for the next frame.
+ */
 void SmartShaderManager::clearRenderCommands() {
     m_renderCommands.clear();
 }

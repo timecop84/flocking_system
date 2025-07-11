@@ -1,3 +1,4 @@
+// SmartShaderManager.h - Modernized, documented, and cleaned up for maintainability
 #pragma once
 
 #include <string>
@@ -5,11 +6,17 @@
 #include <vector>
 #include <functional>
 #include "ShaderLib.h"
+#include "FlockTypes.h"
 
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief Optimized shader manager with state caching and batching
-/// @details Minimizes shader switches and redundant state changes
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * @file SmartShaderManager.h
+ * @brief Optimized shader manager with state caching and batching.
+ *
+ * Minimizes shader switches and redundant state changes. Uses FlockTypes.h for type aliases and helpers.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
 class SmartShaderManager {
 public:
     static SmartShaderManager* instance();

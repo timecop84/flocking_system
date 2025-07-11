@@ -1,3 +1,14 @@
+// GLWindow.cpp - Modernized and documented for maintainability
+/**
+ * @file GLWindow.cpp
+ * @brief Main OpenGL widget implementation for the flocking simulation UI.
+ *
+ * Handles rendering, user interaction, and simulation control. Integrates modern OpenGL, GPU compute, and advanced UI/UX features.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
+
 #include <glad/gl.h>
 #include "obstacle.h"
 #include <GPUFlockingManager.h>

@@ -1,24 +1,26 @@
-#ifndef SHADER_CONSTANTS_H
-#define SHADER_CONSTANTS_H
+// shader_constants.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
 
-// Shader type constants for compatibility
+/**
+ * @file shader_constants.h
+ * @brief Shader, camera, and light type constants for compatibility.
+ *
+ * Modernized for clarity and maintainability.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
 enum ShaderType {
     VERTEX = 0,
     FRAGMENT = 1,
     GEOMETRY = 2
 };
-
-// Camera projection type constants
 enum ProjectionType {
     PERSPECTIVE = 0,
     ORTHOGRAPHIC = 1
 };
-
-// Light type constants
 enum LightType {
     POINTLIGHT = 0,
     DIRECTIONAL = 1,
     SPOTLIGHT = 2
 };
-
-#endif // SHADER_CONSTANTS_H

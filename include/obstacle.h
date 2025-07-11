@@ -1,80 +1,93 @@
-#ifndef OBSTACLE_H
-#define OBSTACLE_H
-
+// obstacle.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
+#include <string>
+#include <memory>
+#include <iostream>
+#include <GL/gl.h>
+#include "FlockTypes.h"
 #include "Camera.h"
 #include "Vector.h"
 #include "Colour.h"
 #include "TransformStack.h"
-// Modern includes for gradual migration
-#include "FlockTypes.h"
 #include "SphereGeometry.h"
-#include <string>
-#include <memory>
-#include <GL/gl.h>
-#include <iostream> // Include for debug output
 
-/*! \brief The obstacle class */
-/// @file obstacle.h
-/// @brief the obstacle class. Creates the obstacle
-/// @author Dionysios Toufexis
-/// @version 1.0
-/// @date 01/7/2012
-/// @class Obstacle
-/// @brief create the obstacle and its properties to be used by the flock collision.
-
-
-class Obstacle
-
-{
+/**
+ * @file obstacle.h
+ * @brief The Obstacle class represents a spherical obstacle in the flocking simulation.
+ *
+ * Modernized for clarity, maintainability, and efficiency. All type aliases and math helpers are now in FlockTypes.h.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
+class Obstacle {
 public:
-    /// @ ctor
-    /// @param [in] spherePosition the initilized value of the obstacle position
-    /// @param [in] sphereRadius the initilized value of the obstacle radius
-    Obstacle(Vector spherePosition,
-             float sphereRadius
-             );
+    /**
+     * @brief Construct a new Obstacle object
+     * 
+     * @param spherePosition Initial position of the obstacle
+     * @param sphereRadius Initial radius of the obstacle
+     */
+    Obstacle(Vector spherePosition, float sphereRadius);
     
-    /// @ destructor
+    /**
+     * @brief Destroy the Obstacle object
+     */
     ~Obstacle();
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief drawing the modern VBO-based obstacle using UBO shaders
-    /// @param [in] _shaderName value
-    /// @param [in] _transformStack  values
-    /// @param [in] _cam camera values
-    void ObsDraw(const std::string &_shaderName,
-                 TransformStack &_transformStack,
-                 Camera *_cam
-                 )const ;
     
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief Legacy matrix loading function removed - UBO-based rendering handles matrix updates automatically
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief variable to store the obstacle position
-    /// @param [in] _spherePosition the obstacle Position within the space.
-    inline Vector getSpherePosition()const{return _spherePosition;}
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief sets the obstacle position
-    /// @param [in] _spherePosition returns the obstacle position.
-    void setSpherePosition(Vector position) {_spherePosition = position;}
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief gets the obstacle size
-    /// @param [in] _spherePosition returns the obstacle size.
-    inline float getSphereRadius()const{return _sphereRadius;}
-    //----------------------------------------------------------------------------------------------------------------------   
-    /// @brief sets the obstacle radius
-    /// @param [in] _spherePosition sets the obstacle size value.
-    void setSphereRadius(float radius) {
-        _sphereRadius = radius;
+    /**
+     * @brief Draw the obstacle using the specified shader and transform stack
+     * 
+     * @param shaderName Name of the shader to use for drawing
+     * @param transformStack Transform stack to apply to the obstacle
+     * @param cam Camera object for view and projection matrices
+     */
+    void ObsDraw(const std::string& shaderName, TransformStack& transformStack, Camera* cam) const;
+    
+    /**
+     * @brief Get the position of the obstacle
+     * 
+     * @return Vector The position of the obstacle
+     */
+    Vector getSpherePosition() const { return _spherePosition; }
+    
+    /**
+     * @brief Set the position of the obstacle
+     * 
+     * @param position New position for the obstacle
+     */
+    void setSpherePosition(Vector position) { _spherePosition = position; }
+    
+    /**
+     * @brief Get the radius of the obstacle
+     * 
+     * @return float The radius of the obstacle
+     */
+    float getSphereRadius() const { return _sphereRadius; }
+    
+    /**
+     * @brief Set the radius of the obstacle
+     * 
+     * @param radius New radius for the obstacle
+     */
+    void setSphereRadius(float radius) { 
+        _sphereRadius = radius; 
         m_sphereGeometry = nullptr; // Force geometry to be recreated with new size
     }
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief sets the color of the obstacle
-    /// @param [in] m_color sets color value for the obstacle
-    void setColour(Colour colour) {m_colour = colour;}
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief sets the wireframe for the obstacle
-    /// @param [in] m_wireframe sets the wireframe value on/off.
-    void setWireframe(bool value) {m_wireframe = value;}
+    
+    /**
+     * @brief Set the color of the obstacle
+     * 
+     * @param colour New color for the obstacle
+     */
+    void setColour(Colour colour) { m_colour = colour; }
+    
+    /**
+     * @brief Enable or disable wireframe mode for the obstacle
+     * 
+     * @param value True to enable wireframe mode, false to disable
+     */
+    void setWireframe(bool value) { m_wireframe = value; }
     
     //----------------------------------------------------------------------------------------------------------------------
     // Modern GLM-based accessors for gradual migration
@@ -136,6 +149,3 @@ private:
     //----------------------------------------------------------------------------------------------------------------------
 
 };
-
-
-#endif // COLLISION_H

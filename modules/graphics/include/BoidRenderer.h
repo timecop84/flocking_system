@@ -1,15 +1,21 @@
-#ifndef BOIDRENDERER_H
-#define BOIDRENDERER_H
+// BoidRenderer.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
 
 #include <vector>
+#include "FlockTypes.h"
 #include "boid.h"
 #include "TransformStack.h"
 #include "Camera.h"
 #include "modules/graphics/include/InstancedBoidRenderer.h"
 
 /**
- * @class BoidRenderer
+ * @file BoidRenderer.h
  * @brief Handles all OpenGL logic for drawing boids, including instanced rendering.
+ *
+ * Modernized for clarity, maintainability, and efficiency. Uses FlockTypes.h for type aliases and helpers.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
  */
 class BoidRenderer {
 public:
@@ -44,5 +50,3 @@ public:
 private:
     FlockingGraphics::InstancedBoidRenderer* m_instancedRenderer = nullptr;
 };
-
-#endif // BOIDRENDERER_H

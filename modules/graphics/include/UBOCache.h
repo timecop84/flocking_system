@@ -1,14 +1,21 @@
+// UBOCache.h - Modernized, documented, and cleaned up for maintainability
 #pragma once
 
 #include <glm/glm.hpp>
 #include <unordered_map>
 #include <string>
 #include "UBOStructures.h"
+#include "FlockTypes.h"
 
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief Smart UBO cache manager for optimal performance
-/// @details Only updates UBOs when data actually changes, reducing GPU bandwidth usage
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * @file UBOCache.h
+ * @brief Smart UBO cache manager for optimal performance.
+ *
+ * Only updates UBOs when data actually changes, reducing GPU bandwidth usage.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
 class UBOCache {
 public:
     static UBOCache* instance();

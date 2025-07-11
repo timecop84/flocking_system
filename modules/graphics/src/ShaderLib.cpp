@@ -1,3 +1,15 @@
+
+/**
+ * @file ShaderLib.cpp
+ * @brief Implementation of a centralized shader management library for the renderer.
+ *
+ * Handles creation, compilation, linking, and management of OpenGL shader programs using Qt and GLAD.
+ * Provides a singleton interface for easy access throughout the application, and manages OpenGL function pointers.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
+
 #include <glad/gl.h>
 #include "ShaderLib.h"
 #include <iostream>
@@ -12,8 +24,18 @@
 
 // Glad provides all OpenGL functions - no manual function pointers needed
 
+
+// Static singleton instance pointer
 ShaderLib* ShaderLib::s_instance = nullptr;
 
+
+/**
+ * @brief Get the singleton instance of the ShaderLib.
+ *
+ * Ensures only one shader library exists for the lifetime of the application.
+ * Initializes OpenGL function pointers from the current Qt context.
+ * @return Pointer to the ShaderLib instance.
+ */
 ShaderLib* ShaderLib::instance() {
     if (!s_instance) {
         s_instance = new ShaderLib();

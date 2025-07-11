@@ -1,3 +1,14 @@
+// SphereGeometry.cpp - Modernized and documented for maintainability
+/**
+ * @file SphereGeometry.cpp
+ * @brief Implementation of the SphereGeometry class for rendering spheres in the simulation.
+ *
+ * Handles geometry generation, OpenGL buffer management, and rendering. Uses FlockTypes.h for clarity and maintainability.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
+
 #include <glad/gl.h>
 #include "SphereGeometry.h"
 #include <iostream>

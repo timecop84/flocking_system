@@ -1,3 +1,14 @@
+// flock.cpp - Modernized and documented for maintainability
+/**
+ * @file flock.cpp
+ * @brief Implementation of the Flock class for the flocking simulation.
+ *
+ * Handles flock logic, boid management, and collision detection. Uses modern C++ and FlockTypes.h for clarity and maintainability.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
+
 #include "flock.h"
 #include "Matrix.h"
 #include "ShaderLib.h"
@@ -148,7 +159,7 @@ void Flock::resetBoids()
 
 void Flock::update()
 {
-    std::cout << "[Flock] update() start, boid count: " << m_boidList.size() << std::endl;
+    // Debug output removed: update() start
     PROFILE_SCOPE("Flock::update");
     
     // High-performance flocking update using spatial partitioning
@@ -328,7 +339,7 @@ void Flock::update()
             boid->boidDirection();
         }
     }
-    std::cout << "[Flock] update() end" << std::endl;
+    // Debug output removed: update() end
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Flock::setBoidSize(double size)

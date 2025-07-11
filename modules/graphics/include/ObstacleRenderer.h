@@ -1,14 +1,20 @@
-#ifndef OBSTACLERENDERER_H
-#define OBSTACLERENDERER_H
+// ObstacleRenderer.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
 
 #include "obstacle.h"
 #include "TransformStack.h"
 #include "Camera.h"
-#include <Material.h>
+#include "Material.h"
+#include "FlockTypes.h"
 
 /**
- * @class ObstacleRenderer
+ * @file ObstacleRenderer.h
  * @brief Handles all OpenGL logic for drawing the obstacle (sphere) in the simulation.
+ *
+ * Modernized for clarity and maintainability. Uses FlockTypes.h for type aliases and helpers.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
  */
 class ObstacleRenderer {
 public:
@@ -23,5 +29,3 @@ public:
      */
     void render(const Obstacle* obstacle, TransformStack& transform, Camera* cam);
 };
-
-#endif // OBSTACLERENDERER_H

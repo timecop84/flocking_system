@@ -1,3 +1,14 @@
+// BehaviorValidator.cpp - Modernized and documented for maintainability
+/**
+ * @file BehaviorValidator.cpp
+ * @brief Implementation of the BehaviorValidator class for flocking validation and debugging.
+ *
+ * Provides tools to compare legacy and modern flocking behaviors. Uses FlockTypes.h for clarity and maintainability.
+ *
+ * @author Dionysios Toufexis
+ * @date 2025
+ */
+
 #include "BehaviorValidator.h"
 #include "Behaviours.h"
 #include <cmath>
@@ -17,7 +28,7 @@ bool BehaviorValidator::validateBoidCalculation(int boidIndex,
     FlockingForces legacyForces = extractLegacyForces(legacyBehaviours);
     
     // Calculate modern forces
-    FlockingForces modernForces = calculateModernForces(boidIndex, boidList,
+    FlockingForces modernForces = calculateModernFlockingForces(boidIndex, boidList,
                                                        legacyBehaviours->getBehaviourDistance(),
                                                        legacyBehaviours->getFlockDistance(),
                                                        legacyBehaviours);
@@ -53,7 +64,7 @@ void BehaviorValidator::logDetailedComparison(int boidIndex,
     FlockingForces legacyForces = extractLegacyForces(legacyBehaviours);
     
     // Calculate modern forces
-    FlockingForces modernForces = calculateModernForces(boidIndex, boidList,
+    FlockingForces modernForces = calculateModernFlockingForces(boidIndex, boidList,
                                                        legacyBehaviours->getBehaviourDistance(),
                                                        legacyBehaviours->getFlockDistance(),
                                                        legacyBehaviours);
@@ -65,7 +76,7 @@ void BehaviorValidator::logDetailedComparison(int boidIndex,
     std::cout << "================================\n" << std::endl;
 }
 
-BehaviorValidator::FlockingForces BehaviorValidator::calculateModernForces(int boidIndex,
+BehaviorValidator::FlockingForces BehaviorValidator::calculateModernFlockingForces(int boidIndex,
                                                                          const std::vector<Boid*>& boidList,
                                                                          float behaviourDistance,
                                                                          float flockDistance,
