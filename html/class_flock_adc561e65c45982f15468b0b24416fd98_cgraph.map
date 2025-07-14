@@ -1,5 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_obstacle.html#a678ec944c605f2f5e61b27821e600c62" title="variable to store the obstacle position" alt="" coords="260,5,452,35"/>
-<area shape="rect" id="node5" href="$class_obstacle.html#ae0215c0137c73af2ddb5766e996d5b35" title="gets the obstacle size" alt="" coords="263,58,449,89"/>
-<area shape="rect" id="node7" href="$class_flock.html#a16498dcd51b512fa1c6473997a1912d6" title="do the actual sphereSphere collisions" alt="" coords="257,111,455,142"/>
-</map>

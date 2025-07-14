@@ -1,6 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_flock.html#ab20c9a416c1a7519c73c482c058fa8fe" title="our function to do the bounding box collision between the boids and the box." alt="" coords="180,5,423,35"/>
-<area shape="rect" id="node5" href="$class_flock.html#af877447abb9cdf62c7aff00f94af7520" title="a function to caclulate if the collision is true." alt="" coords="473,5,631,35"/>
-<area shape="rect" id="node7" href="$class_flock.html#ab1c74f7c0e571903e0de9ea6eb85d8d7" title="the update method to do all the updates. Then the update is called in the GLWindow in the time event..." alt="" coords="680,5,784,35"/>
-<area shape="rect" id="node9" href="$class_g_l_window.html#a8901509418ab117e8613d624df9b5666" title="timer to change the sphere position by calling update()" alt="" coords="832,5,989,35"/>
-</map>

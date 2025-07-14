@@ -1,4 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_obstacle.html#a060ebf5e7d2bdeb3f89400b0b586269c" title="drawing the VBO obstacle" alt="" coords="277,5,416,35"/>
-<area shape="rect" id="node5" href="$class_g_l_window.html#a9bd2503dd5f812c10a9481f22ecd3403" title="this is the main gl drawing routine which is called whenever the window needs to be re&#45;drawn..." alt="" coords="465,5,607,35"/>
-</map>

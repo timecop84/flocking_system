@@ -1,9 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_flock.html#ad01cbc9c0f87f245345668f346bb5409" title="our flock draw function" alt="" coords="268,31,361,62"/>
-<area shape="rect" id="node11" href="$class_g_l_window.html#ab78209ce50dd6820686aa05fc242eb7a" title="GLWindow::loadMatricesToShader" alt="" coords="197,85,432,115"/>
-<area shape="rect" id="node13" href="$class_obstacle.html#a060ebf5e7d2bdeb3f89400b0b586269c" title="drawing the VBO obstacle" alt="" coords="245,138,384,169"/>
-<area shape="rect" id="node5" href="$class_boid.html#a6a11fd7ea79b768330bd8f2f73981c27" title="drawing the VBO sphere" alt="" coords="548,5,636,35"/>
-<area shape="rect" id="node9" href="$class_flock.html#a67be3938ec885b837c18216c512d94f4" title="shader method" alt="" coords="491,58,693,89"/>
-<area shape="rect" id="node7" href="$class_boid.html#aa385844611134b967c38e60a870e5109" title="Boid::loadMatricesToShader" alt="" coords="752,5,949,35"/>
-<area shape="rect" id="node15" href="$class_obstacle.html#adf5066f98d89454c6868ed73c78ca90d" title="load our matrices to shader" alt="" coords="481,138,703,169"/>
-</map>

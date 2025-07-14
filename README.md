@@ -1,103 +1,73 @@
 # Flocking System
 
-A C++/Qt/OpenGL project simulating flocking behavior using the Boids algorithm. The system visualizes groups of autonomous agents ("boids") that exhibit realistic flocking, avoidance, and obstacle navigation in a 3D environment.
+## Overview
 
-## Features
+This project is a real-time, interactive 3D flocking simulation, modernized to use current OpenGL standards and practices. The codebase is a significant update of an original project developed at Bournemouth University (MSc Computer Animation and Visual Effects, NCCA). The system models the collective behavior of autonomous agents ("boids") using classic flocking algorithms, with a focus on modularity, extensibility, and real-time performance.
 
-- **Boid Simulation:** Implements classic flocking rules (separation, alignment, cohesion).
-- **Obstacle Avoidance:** Boids can detect and avoid obstacles in the environment.
-- **Interactive Visualization:** Real-time rendering using OpenGL within a Qt application.
-- **Modular Design:** Core logic separated into classes such as `Boid`, `Flock`, `Behaviours`, and `Obstacle`.
-- **Customizable Parameters:** Easily adjust flock size, behavior weights, and simulation parameters.
-- **Doxygen Documentation:** Auto-generated HTML documentation in the `html/` folder.
+Key features:
 
-## Project Structure
+- Real-time rendering of boids and obstacles using OpenGL shaders and uniform buffer objects (UBOs)
+- GPU-accelerated simulation. (Nvidia CUDA only)
+- Multithreaded simulation for improved performance
+- Support for instanced rendering to efficiently display large numbers of boids
+- Modular architecture with separate components for simulation, rendering, and user interface
+- Interactive Qt-based user interface for adjusting simulation and rendering parameters
+- Performance monitoring and validation tools
 
-DeferredRenderer/ ├── DeferredRendering.pro # Qt project file ├── Doxyfile # Doxygen configuration for documentation 
-├── Makefile # Makefile for building the project ├── include/ # Header files │ ├── camera.h │ ├── FrameBufferObjects.h │ 
-├── GeometryPass.h │ ├── GLWindow.h │ ├── GroupedObj.h │ ├── LightPass.h │ ├── LightSetup.h │ ├── MainWindow.h │ ├── Maths.h │ ├── Mtl.h │ ├── Quad.h │ ├── ReadFile.h 
-│ └── ShaderManager.h ├── moc/ # Qt meta-object compiler output ├── models/ # 3D models and materials ├── obj/ # Build output ├── shaders/ # GLSL shader programs
-├── src/ # Source files ├── textures/ # Texture images └── SponzaMesh.bin, sponzaMtl.bin # Preprocessed Sponza scene data
+## Contributors and Acknowledgements
+
+- The boid concept and flocking algorithm are based on the seminal work of Craig Reynolds.
+- Original project and modernization: Dennis Toufexis (Bournemouth University, NCCA, 2011)
+- Additional contributions and dependencies are listed in the codebase and documentation.
+
+## Dependencies
+
+- Qt 5 or 6 (for GUI and OpenGL integration)
+- OpenGL 3.3+
+- glad2 (OpenGL Extension Loader)
+- GLM (OpenGL Mathematics)
+- [vcpkg](https://github.com/microsoft/vcpkg)
+- [Chocolatey](https://chocolatey.org/)
+- MinGW (for Windows builds)
 
 
-## Prerequisites
+## Installation
 
-- Qt (for windowing and build system)
-- OpenGL 3.3+ compatible GPU
-- C++ compiler (supporting C++11 or newer)
-- CMake or qmake (depending on your build preference)
+### Using vcpkg (Recommended)
 
-## Building
+1. Follow the [official vcpkg installation guide](https://github.com/microsoft/vcpkg#quick-start) to set up vcpkg on your system.
 
-### Using qmake (Qt)
+2. Install the required libraries:
+   ```powershell
+   vcpkg install qt5-base glm
+   ```
+   Note: glad2 is included in the project as source files, so no separate installation is needed.
 
-1. Open a terminal and navigate to the project directory.
+3. For integration with CMake, follow the [vcpkg CMake integration instructions](https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration).
+
+## Build Instructions
+
+### Using MinGW and `mingw32-make`
+
+1. Open a terminal in the project root directory.
 2. Run:
-3. qmake DeferredRendering.pro make
 
-4. Or use Qt Creator to open `DeferredRendering.pro` and build the project.
+   ```bash
+   mingw32-make
+   ```
 
-### Using Makefile
+   or use the provided batch file:
 
-1. In the project directory, run:
-2. make
+   ```bash
+   build.bat (-help for more details)
 
-3. 
-## Running
-
-After building, run the generated executable (e.g., `DeferredRendering` or `DeferredRenderer.exe`). The application will open a window and render the loaded scene using deferred shading.
 
 ## Usage
 
-- Use the mouse and keyboard to navigate the scene (see in-app instructions or code for controls).
-- Load different models or adjust lighting parameters as needed.
-
-## Documentation
-
-- Doxygen documentation can be generated using the provided `Doxyfile`:
-- doxygen Doxyfile
-
-On Windows, use `nmake` or `jom` instead of `make`.
-
-#### Using Qt Creator
-
-1. Open `flock.pro` in Qt Creator.
-2. Configure the project and click **Build**.
-
-## Running
-
-After building, run the executable found in `bin/` (e.g., `bin/flock`). The application window will open and display the flocking simulation.
-
-## Usage
-
-- **Camera Controls:** Use mouse and keyboard to navigate the 3D scene (see code for details).
-- **Simulation Controls:** Adjust parameters via the UI (if available) or by editing source/constants.
-- **Documentation:** Open `html/index.html` in your browser for full API documentation.
-
-## Main Classes
-
-- **Boid:** Represents an individual agent with position, velocity, and update logic.
-- **Flock:** Manages a collection of boids and applies flocking rules.
-- **Behaviours:** Encapsulates the logic for separation, alignment, and cohesion.
-- **Obstacle:** Defines obstacles for boids to avoid.
-- **GLWindow:** OpenGL widget for rendering the simulation.
-- **MainWindow:** Main Qt window integrating UI and rendering.
-
-## Documentation
-
-- Run `doxygen Doxyfile` to regenerate documentation.
-- Open `html/index.html` for the latest docs.
-
-## Credits
-
-- Based on the Boids algorithm by Craig Reynolds.
-- Uses [NGL](https://github.com/NCCA/NGL) for math and OpenGL utilities.
-- Developed for educational and research purposes.
+- Launch the application. The main window provides controls for simulation parameters, rendering options, and obstacle properties.
+- Use the UI to adjust flock size, boid and obstacle appearance, and simulation dynamics in real time.
+- Keyboard shortcuts and additional controls are documented in the application and code comments.
 
 ## License
 
-See source files for license information.
-
----
-
-*For more details, see the source code and Doxygen documentation in the `html/` directory.*
+This project is provided for educational and research purposes. See the LICENSE file for details.

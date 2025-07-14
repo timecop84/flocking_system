@@ -1,81 +1,33 @@
-#version 150
-/// @brief flag to indicate if model has unit normals if not normalize
-uniform bool Normalize;
-// the eye position of the camera
-uniform vec3 viewerPos;
-/// @brief the current fragment normal for the vert being processed
-out vec3 fragmentNormal;
-/// @brief the vertex passed in
-in vec3 inVert;
-/// @brief the normal passed in
-in vec3 inNormal;
-/// @brief the in uv
-in vec2 inUV;
+#version 450 core
 
-struct Materials
-{
-  vec4 ambient;
-  vec4 diffuse;
-  vec4 specular;
-  float shininess;
+// Input attributes
+layout(location = 0) in vec3 inVert;    // Position
+layout(location = 1) in vec2 inUV;     // Texture coordinates (unused)
+layout(location = 2) in vec3 inNormal;  // Normal
+
+// Output to fragment shader
+out vec3 FragPos;    // Position in world space
+out vec3 Normal;     // Normal in world space
+
+// Uniform Buffer Object for matrices
+layout(std140, binding = 0) uniform MatrixBlock {
+    mat4 MVP;        // Model-View-Projection matrix
+    mat4 MV;         // Model-View matrix
+    mat4 M;          // Model matrix (object → world)
+    mat3 normalMatrix; // Normal matrix
+    vec3 viewerPos;  // Camera position in world space
+    float shouldNormalize;
 };
-
-
-struct Lights
-{
-  vec4 position;
-  vec4 ambient;
-  vec4 diffuse;
-  vec4 specular;
-  float constantAttenuation;
-  float linearAttenuation;
-  float quadraticAttenuation;
-  float spotCosCutoff;
-};
-// our material
-uniform Materials material;
-// array of lights
-uniform Lights light;
-// direction of the lights used for shading
-out vec3 lightDir;
-// out the blinn half vector
-out vec3 halfVector;
-out vec3 eyeDirection;
-out vec3 vPosition;
-
-uniform mat4 MV;
-uniform mat4 MVP;
-uniform mat3 normalMatrix;
-uniform mat4 M;
-
 
 void main()
 {
-// calculate the fragments surface normal
-fragmentNormal = (normalMatrix*inNormal);
-
-
-if (Normalize == true)
-{
- fragmentNormal = normalize(fragmentNormal);
-}
-// calculate the vertex position
-gl_Position = MVP*vec4(inVert,1.0);
-
-vec4 worldPosition = M * vec4(inVert, 1.0);
-eyeDirection = normalize(viewerPos - worldPosition.xyz);
-// Get vertex position in eye coordinates
-// Transform the vertex to eye co-ordinates for frag shader
-/// @brief the vertex in eye co-ordinates  homogeneous
-vec4 eyeCord=MV*vec4(inVert,1);
-
-vPosition = eyeCord.xyz / eyeCord.w;;
-
-float dist;
-
-lightDir=vec3(light.position.xyz-eyeCord.xyz);
-dist = length(lightDir);
-lightDir/= dist;
-halfVector = normalize(eyeDirection + lightDir);
-
+    // Transform vertex to view space (like fixed function pipeline)
+    vec4 viewPos = MV * vec4(inVert, 1.0);
+    FragPos = viewPos.xyz;
+    
+    // Transform normal to view space (like fixed function)
+    Normal = normalize(mat3(MV) * inNormal);
+    
+    // Output position in clip space
+    gl_Position = MVP * vec4(inVert, 1.0);
 }

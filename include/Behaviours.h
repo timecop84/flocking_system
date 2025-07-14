@@ -1,62 +1,79 @@
-#ifndef BEHAVIOURS_H
-#define BEHAVIOURS_H
-#include "boid.h"
-#include "ngl/Vector.h"
+// ...existing code...
+#pragma once
+#include <vector>
+#include "FlockTypes.h"
+#include "Boid.h"
+#include "Vector.h"
 
-/*! \brief the behaviour class */
-/// @file behaviours.h
-/// @brief the behaviour class. Creates the behaviour for our flock.
-/// @brief Pseudo code for the behaviours provided by Conrad Parker
-/// Availabe from: http://www.kfish.org/boids/pseudocode.html
-/// @author Dionysios Toufexis
-/// @version 1.0
-/// @date 24/6/2012
-/// Revision History :5/7/2012
-/// @class Behaviours
-/// @brief stores the information of the behaviours and sets the final velocity for the flock taking into account the behaviours.
-
-
-class Behaviours
-{
+/**
+ * @file Behaviours.h
+ * @brief The Behaviours class encapsulates flocking behavior logic (cohesion, alignment, separation, etc).
+ *
+ * Modernized for clarity, maintainability, and efficiency. All type aliases and math helpers are now in FlockTypes.h.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
+class Behaviours {
 public:
-
-    /// @brief out ctor
     Behaviours();
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief Calculates the cohesion behaviour of the flock
-    /// @param [in] _boidNumber the current boid.
-    /// @param [in] _boidList a dynamic array of all the boids.
-    void Cohesion(int &_boidNumber, std::vector <Boid*> & _boidList);
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief Calculates the alignmenth behaviour of the flock
-    /// @param [in] _boidNumber the current boid.
-    /// @param [in] _boidList a dynamic array of all the boids.
-    void Alignment(int & _boidNumber, std::vector <Boid*> & _boidList);
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief Calculates the seperation behaviour of the flock
-    /// @param [in] _boidNumber the current boid.
-    /// @param [in] _boidList a dynamic array of all the boids.
-    void Seperation(int & _boidNumber, std::vector <Boid*> & _boidList);
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief our behaviour set method. Sets the final velocity with all the behaviours
-    ngl::Vector m_behaviourSet();
-    //----------------------------------------------------------------------------------------------------------------------
-    /// @brief Calculates the destination behaviour of the flock
-    /// @param [in] _boidNumber the current boid.
-    /// @param [in] _boidList a dynamic array of all the boids.
-    void Destination(int & _boidNumber, std::vector <Boid*> & _boidList);
-    //----------------------------------------------------------------------------------------------------------------------
-    ngl::Vector BehaviourSetup();
-    /// @brief GUI related sets for the simulation
-    //----------------------------------------------------------------------------------------------------------------------
-    void setBehaviourDistance(double distance) {m_BehaviourDistance = distance;}
-    void setFlockDistance(double distance) {m_flockDistance = distance;}
-    void setCohesionForce(double cohesion) {m_cohesionForce = cohesion;}
-    void setSeparationForce(double separation) {m_seperationForce = separation;}
-    void setAlignment(double alignment) {m_alignment = alignment;}
+    void Cohesion(int& boidNumber, std::vector<Boid*>& boidList);
+    void Alignment(int& boidNumber, std::vector<Boid*>& boidList);
+    void Seperation(int& boidNumber, std::vector<Boid*>& boidList);
+    Vector m_behaviourSet();
+    void Destination(int& boidNumber, std::vector<Boid*>& boidList);
+    void applyModernFlockingForce(int& boidNumber, std::vector<Boid*>& boidList);
+    Vector BehaviourSetup();
+    void setBehaviourDistance(double distance) { m_BehaviourDistance = distance; }
+    void setFlockDistance(double distance) { m_flockDistance = distance; }
+    void setCohesionForce(double cohesion) { m_cohesionForce = cohesion; }
+    void setSeparationForce(double separation) { m_seperationForce = separation; }
+    void setAlignment(double alignment) { m_alignment = alignment; }
+    
+    // Getters for modern system
+    double getFlockDistance() const {return m_flockDistance;}
+    double getBehaviourDistance() const {return m_BehaviourDistance;}
+    double getCohesionForce() const {return m_cohesionForce;}
+    double getSeparationForce() const {return m_seperationForce;}
+    double getAlignment() const {return m_alignment;}
+    
+    // Getters for validation - access calculated forces
+    Vector getCoherence() const {return m_coherence;}
+    Vector getAlignmentForce() const {return m_alignmentForce;}
+    Vector getSeparation() const {return m_separation;}
+    Vector getBehaviourSetup() const {return m_behaviourSetup;}
+    Vector getCohesionSet() const {return m_cohesionSet;}
+    Vector getSeparationSet() const {return m_seperationSet;}
+    Vector getAlignmentSet() const {return m_alighmentSet;}
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief our ctor
     ~Behaviours();
+    
+    //----------------------------------------------------------------------------------------------------------------------
+    // Modern GLM-based methods for gradual migration
+    //----------------------------------------------------------------------------------------------------------------------
+    
+    /// @brief Calculate cohesion force using modern GLM types
+    /// @param [in] boidPos current boid position
+    /// @param [in] neighborPositions positions of neighboring boids
+    /// @return cohesion force as GLM vector
+    flock::Vec3 calculateCohesionModern(const flock::Vec3& boidPos, 
+                                       const std::vector<flock::Vec3>& neighborPositions) const;
+    
+    /// @brief Calculate separation force using modern GLM types
+    /// @param [in] boidPos current boid position
+    /// @param [in] neighborPositions positions of neighboring boids
+    /// @return separation force as GLM vector
+    flock::Vec3 calculateSeparationModern(const flock::Vec3& boidPos, 
+                                         const std::vector<flock::Vec3>& neighborPositions) const;
+    
+    /// @brief Calculate alignment force using modern GLM types
+    /// @param [in] boidVel current boid velocity
+    /// @param [in] neighborVelocities velocities of neighboring boids
+    /// @return alignment force as GLM vector
+    flock::Vec3 calculateAlignmentModern(const flock::Vec3& boidVel, 
+                                        const std::vector<flock::Vec3>& neighborVelocities) const;
+    
     //----------------------------------------------------------------------------------------------------------------------
 
 private:
@@ -69,7 +86,7 @@ private:
     std::vector <Boid*> *_boidList;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the value of cohesion the check.
-    ngl::Vector m_coherence;
+    Vector m_coherence;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to check the distance between the behaviours.
     double m_BehaviourDistance;
@@ -84,29 +101,27 @@ private:
     double m_alignment;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the amount of Separation generated.
-    ngl::Vector m_separation;
+    Vector m_separation;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to contribute additional alignment force to the flock.
-    ngl::Vector m_alignmentForce;
+    Vector m_alignmentForce;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the diffence in positions between the current boid to the local boids.
-    ngl::Vector m_boidDistance;
+    Vector m_boidDistance;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the positions between the current boid to the local boids.
     double m_flockDistance;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the behaviour movement.
-    ngl::Vector m_behaviourSetup;
+    Vector m_behaviourSetup;
     /// @brief variable to store the final seperation velocity.
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Vector m_seperationSet;
+    Vector m_seperationSet;
     /// @brief variable to store the final cohesion velocity.
     //----------------------------------------------------------------------------------------------------------------------
-    ngl::Vector m_cohesionSet;
+    Vector m_cohesionSet;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief variable to store the final alignment velocity.
-    ngl::Vector m_alighmentSet;
+    Vector m_alighmentSet;
     //----------------------------------------------------------------------------------------------------------------------
 };
-
-#endif // BEHAVIOURS_H
