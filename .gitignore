@@ -38,6 +38,9 @@ latex/
 *.exe
 *.dll
 *.lib
+
+# GitHub workflow/instructions
+.github/instructions
 *.a
 *.so
 *.dylib
