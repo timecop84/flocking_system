@@ -4,7 +4,7 @@
  *
  * Initializes the Qt application and main window, with robust exception handling.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 #include <QApplication>

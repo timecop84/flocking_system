@@ -40,7 +40,7 @@ SOURCES += \
     modules/graphics/src/RenderManager.cpp \
     modules/graphics/src/UBOCache.cpp \
     modules/graphics/src/GeometryFactory.cpp \
-    modules/graphics/src/SmartShaderManager.cpp \
+    modules/graphics/src/ShaderManager.cpp \
     modules/graphics/src/TransformBatcher.cpp \
     modules/graphics/src/FrameCoordinator.cpp \
     modules/graphics/src/InstancedBoidRenderer.cpp \
@@ -75,7 +75,7 @@ HEADERS += \
     modules/graphics/include/RenderManager.h \
     modules/graphics/include/UBOCache.h \
     modules/graphics/include/GeometryFactory.h \
-    modules/graphics/include/SmartShaderManager.h \
+    modules/graphics/include/ShaderManager.h \
     modules/graphics/include/TransformBatcher.h \
     modules/graphics/include/FrameCoordinator.h \
     modules/graphics/include/InstancedBoidRenderer.h \

@@ -11,7 +11,7 @@
  *
  * Modernized for clarity, maintainability, and efficiency. All type aliases and math helpers are now in FlockTypes.h.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class Behaviours {

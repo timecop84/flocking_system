@@ -47,7 +47,7 @@ namespace FlockingGraphics {
  * Provides rendering, user interaction, and simulation control for the flocking system.
  * Integrates modern OpenGL, GPU compute, and advanced UI/UX features.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class GLWindow : public QOpenGLWidget, protected QOpenGLFunctions

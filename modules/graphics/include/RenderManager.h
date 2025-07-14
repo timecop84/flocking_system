@@ -25,7 +25,7 @@ namespace FlockingGraphics {
  * Eliminates code duplication, provides batching, UBO caching, and performance tracking.
  * Uses FlockTypes.h for type aliases and helpers.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class RenderManager {

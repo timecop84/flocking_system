@@ -14,7 +14,7 @@
  *
  * Uses RAII timing with automatic reporting and statistics.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class PerformanceProfiler {

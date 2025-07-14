@@ -13,7 +13,7 @@ namespace flock {
  *
  * Reduces neighbor search complexity from O(N^2) to ~O(N) by dividing space into a grid.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class SpatialHashGrid {

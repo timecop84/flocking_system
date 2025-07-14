@@ -6,7 +6,7 @@
  * Handles initialization, frame management, render queueing, and performance statistics for all rendering operations.
  * Provides a singleton interface for global access and coordinates OpenGL state and UBO updates.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 

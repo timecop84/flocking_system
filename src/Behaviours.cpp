@@ -5,7 +5,7 @@
  *
  * Encapsulates cohesion, alignment, separation, and modern flocking force calculations. Uses FlockTypes.h for clarity and maintainability.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 

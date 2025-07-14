@@ -15,7 +15,7 @@ class MainWindow;
  *
  * Provides the main Qt window, connects UI controls to simulation logic, and manages the OpenGL widget.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class MainWindow : public QMainWindow {

@@ -17,7 +17,7 @@
  *
  * This class helps debug differences between legacy and modern flocking implementations by providing side-by-side comparison tools.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class BehaviorValidator {

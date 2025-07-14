@@ -10,7 +10,7 @@
  *
  * Usage: Include this header wherever you need flocking math types, color constants, or math helpers.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025-07-11
  */
 

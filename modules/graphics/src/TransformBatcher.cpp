@@ -6,7 +6,7 @@
  * Collects and manages batches of transformation matrices and colors for efficient instanced rendering.
  * This system is designed to minimize draw calls and improve performance when rendering many similar objects.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 

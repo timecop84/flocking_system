@@ -4,7 +4,7 @@
  *
  * Handles rendering, user interaction, and simulation control. Integrates modern OpenGL, GPU compute, and advanced UI/UX features.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 
@@ -30,7 +30,7 @@
 #include <UBOStructures.h>
 #include <FrameCoordinator.h>
 #include <GeometryFactory.h>
-#include <SmartShaderManager.h>
+#include <ShaderManager.h>
 #include <RenderManager.h>
 #include <UBOCache.h>
 #include <TransformBatcher.h>
@@ -58,17 +58,15 @@ GLWindow::GLWindow(
     format.setProfile(QSurfaceFormat::CompatibilityProfile);
     format.setDepthBufferSize(24);
     format.setStencilBufferSize(8);
-    format.setSamples(4); // 4x MSAA
+    format.setSamples(4);
     setFormat(format);
     
     obstacle = new Obstacle(Vector(0,0,0), 4.0);
     std::cout << "[GLWindow] Created obstacle at address: " << obstacle << std::endl;
 
-    // Set initial keyboard focus
     setFocus();
     setFocusPolicy(Qt::StrongFocus);
     this->resize(_parent->size());
-    // Set initial GLWindow attributes
     m_rotate=false;
     m_translate=false;
     m_pan=false;
@@ -114,7 +112,6 @@ GLWindow::GLWindow(
 GLWindow::~GLWindow()
 {
     delete m_light;
-    // Qt handles OpenGL cleanup
 }
 
 int GLWindow::getCurrentBoidSize()
@@ -175,7 +172,6 @@ void GLWindow::setFlockSpeedMultiplier(float multiplier)
 void GLWindow::setObstaclePosition(glm::vec3 position)
 {
     std::cout << "[GLWindow] setObstaclePosition: this->obstacle=" << obstacle << std::endl;
-    // Only use modern representation
     if (obstacle) {
         obstacle->setPositionModern(flock::Vec3(position.x, position.y, position.z));
     }
@@ -244,19 +240,16 @@ void GLWindow::setBackgroundColour(Colour colour)
 {
     m_backgroundColour = colour;
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
-    update(); // Force a repaint to show the new background color
+    update();
 }
 
 void GLWindow::setBBoxSize(glm::vec3 size)
 {
     delete bbox;
     bbox = new BBox(Vector(0,0,0), size.x, size.y, size.z);
-    bbox->setDrawMode(GL_LINE); // Ensure wireframe mode is set
+    bbox->setDrawMode(GL_LINE);
 }
 //----------------------------------------------------------------------------------------------------------------------
-// This virtual function is called once before the first call to paintGL() or resizeGL(),
-//and then once whenever the widget has been assigned a new QGLContext.
-// This function should set up any required OpenGL context rendering flags, defining VBOs etc.
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::initializeGL()
 {

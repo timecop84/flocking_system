@@ -1,11 +1,10 @@
-// flock.cpp - Modernized and documented for maintainability
 /**
  * @file flock.cpp
  * @brief Implementation of the Flock class for the flocking simulation.
  *
  * Handles flock logic, boid management, and collision detection. Uses modern C++ and FlockTypes.h for clarity and maintainability.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 
@@ -20,13 +19,12 @@
 #include <omp.h>    // For OpenMP parallelization
 #include <random>   // For std::mt19937 and std::uniform_real_distribution
 
-// Obstacle avoidance tuning parameters
-constexpr float OBSTACLE_AVOIDANCE_RADIUS_SCALE = 3.0f;   // Was 2.5f, increase for earlier avoidance
-constexpr float OBSTACLE_COLLISION_RADIUS_SCALE = 1.3f;   // Was 1.2f, increase for more buffer
-constexpr float OBSTACLE_REPULSION_FORCE = 0.45f;         // Was 0.3f, increase for stronger avoidance
+constexpr float OBSTACLE_AVOIDANCE_RADIUS_SCALE = 3.0f;
+constexpr float OBSTACLE_COLLISION_RADIUS_SCALE = 1.3f;
+constexpr float OBSTACLE_REPULSION_FORCE = 0.45f;
 
 //----------------------------------------------------------------------------------------------------------------------
-const static int s_extents=5;  // Original legacy value - spawn in small central area
+const static int s_extents=5;
 //----------------------------------------------------------------------------------------------------------------------
 Flock::Flock(BBox *bbox, Obstacle *obstacle) : m_spatialGrid(15.0f) // Cell size optimized for typical flock behavior distances
 {
@@ -35,7 +33,7 @@ Flock::Flock(BBox *bbox, Obstacle *obstacle) : m_spatialGrid(15.0f) // Cell size
     m_numberOfBoids = 200;
     m_checkSphereSphere=true;
     m_obstacle = obstacle;
-    m_speedMultiplier = 1.0f;  // Default speed multiplier
+    m_speedMultiplier = 1.0f;
 
     // Seed random number generator for swarm randomness
     srand(static_cast<unsigned int>(time(nullptr)));
@@ -53,7 +51,6 @@ void Flock::draw(const std::string &_shaderName, TransformStack &_transformStack
 {
     PROFILE_SCOPE("Flock::draw");
     
-    // For debugging only - can be removed in production
     if (_shaderName != "Phong") {
         std::cerr << "Warning: Flock only supports Phong shader in modern mode, got: " << _shaderName << std::endl;
     }
@@ -99,7 +96,6 @@ void Flock::draw(const std::string &_shaderName, TransformStack &_transformStack
     glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 }
 //----------------------------------------------------------------------------------------------------------------------
-// Legacy function removed - UBO-based rendering handles matrix updates automatically
 //----------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------
 void Flock::addBoids()
@@ -159,7 +155,6 @@ void Flock::resetBoids()
 
 void Flock::update()
 {
-    // Debug output removed: update() start
     PROFILE_SCOPE("Flock::update");
     
     // High-performance flocking update using spatial partitioning
@@ -339,7 +334,6 @@ void Flock::update()
             boid->boidDirection();
         }
     }
-    // Debug output removed: update() end
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Flock::setBoidSize(double size)
@@ -402,9 +396,6 @@ void Flock::setObstacleCollisionEnabled(bool enabled)
 }
 //----------------------------------------------------------------------------------------------------------------------
 
-/// The following section is modified from :-
-/// John Macey(2011).Collisions Example, BoundingBox. [Accessed 2012]
-/// Available from: bzr branch http://nccastaff.bournemouth.ac.uk/jmacey/Code/Collisions
 void Flock::validateBoundingBoxCollision()
 {
     //create an array of the extents of the bounding box
@@ -441,11 +432,7 @@ void Flock::validateBoundingBoxCollision()
         }
     }
 }
-/// end of Citation
 //----------------------------------------------------------------------------------------------------------------------
-/// The following section is modified from :-
-/// John Macey(2011).Collisions Example, BoundingBox. [Accessed 2012]
-/// Available from: bzr branch http://nccastaff.bournemouth.ac.uk/jmacey/Code/Collisions
 bool Flock::sphereSphereCollision(
         Vector _pos,
         GLfloat _rad,
@@ -474,7 +461,6 @@ bool Flock::sphereSphereCollision(
         return false;
     }
 }
-/// end of citation
 //----------------------------------------------------------------------------------------------------------------------
 void  Flock::checkSphereCollisions()
 {

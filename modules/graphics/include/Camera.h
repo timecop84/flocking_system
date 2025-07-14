@@ -10,7 +10,7 @@
  *
  * Pure C++ camera implementation with modern GLM math.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class Camera {

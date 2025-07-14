@@ -4,7 +4,7 @@
  *
  * Handles obstacle logic, rendering, and collision. Uses FlockTypes.h for clarity and maintainability.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 

@@ -12,7 +12,7 @@
  *
  * Pure C++ transform stack implementation with modern GLM math.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class TransformStack {

@@ -7,7 +7,7 @@
  *
  * Modernized for clarity and maintainability.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 enum ShaderType {

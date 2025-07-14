@@ -13,7 +13,7 @@
  *
  * Only updates UBOs when data actually changes, reducing GPU bandwidth usage.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class UBOCache {

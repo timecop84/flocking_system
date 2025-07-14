@@ -4,7 +4,7 @@
  *
  * Handles geometry generation, OpenGL buffer management, and rendering. Uses FlockTypes.h for clarity and maintainability.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 

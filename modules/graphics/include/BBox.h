@@ -12,7 +12,7 @@
  *
  * Simple axis-aligned bounding box for collision and visualization.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class BBox {

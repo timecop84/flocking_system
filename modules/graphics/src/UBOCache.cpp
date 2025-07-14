@@ -6,7 +6,7 @@
  * This file provides logic to efficiently update OpenGL UBOs for matrices, materials, and lights, minimizing redundant GPU uploads.
  * The cache tracks changes and only updates the GPU when data has actually changed, improving rendering performance.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 

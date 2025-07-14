@@ -5,7 +5,7 @@
  *
  * Handles individual boid logic, rendering, and state management. Uses modern C++ and FlockTypes.h for clarity and maintainability.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 

@@ -5,7 +5,7 @@
  *
  * Provides methods to manipulate position and scale using a stack-based approach, useful for scene graph traversal and rendering.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 

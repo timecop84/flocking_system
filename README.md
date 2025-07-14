@@ -5,28 +5,31 @@
 This project is a real-time, interactive 3D flocking simulation, modernized to use current OpenGL standards and practices. The codebase is a significant update of an original project developed at Bournemouth University (MSc Computer Animation and Visual Effects, NCCA). The system models the collective behavior of autonomous agents ("boids") using classic flocking algorithms, with a focus on modularity, extensibility, and real-time performance.
 
 Key features:
+
 - Real-time rendering of boids and obstacles using OpenGL shaders and uniform buffer objects (UBOs)
+- GPU-accelerated simulation. (Nvidia CUDA only)
+- Multithreaded simulation for improved performance
+- Support for instanced rendering to efficiently display large numbers of boids
+- Modular architecture with separate components for simulation, rendering, and user interface
 - Interactive Qt-based user interface for adjusting simulation and rendering parameters
-- Support for wireframe and solid rendering modes
-- Modular architecture separating simulation, rendering, and UI logic
 - Performance monitoring and validation tools
 
 ## Contributors and Acknowledgements
 
 - The boid concept and flocking algorithm are based on the seminal work of Craig Reynolds.
-- Original project and modernization: [Your Name] (Bournemouth University, NCCA)
+- Original project and modernization: Dennis Toufexis (Bournemouth University, NCCA, 2011)
 - Additional contributions and dependencies are listed in the codebase and documentation.
 
 ## Dependencies
 
 - Qt 5 or 6 (for GUI and OpenGL integration)
-- OpenGL 3.3 or higher
+- OpenGL 3.3+
 - glad2 (OpenGL Extension Loader)
 - GLM (OpenGL Mathematics)
-- [vcpkg](https://github.com/microsoft/vcpkg) (recommended for C++ dependency management)
-- [Chocolatey](https://chocolatey.org/) (optional, for Windows package management)
+- [vcpkg](https://github.com/microsoft/vcpkg)
+- [Chocolatey](https://chocolatey.org/)
 - MinGW (for Windows builds)
-- CMake (if using CMake-based build)
+
 
 ## Installation
 
@@ -42,55 +45,22 @@ Key features:
 
 3. For integration with CMake, follow the [vcpkg CMake integration instructions](https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration).
 
-### Using Chocolatey (Windows)
-
-1. Install [Chocolatey](https://chocolatey.org/install) if not already present.
-
-2. Install dependencies:
-   ```powershell
-   choco install qt5 glm
-   ```
-   Note: glad2 is included in the project as source files, so no separate installation is needed.
-
-3. Ensure MinGW is installed:
-   ```powershell
-   choco install mingw
-   ```
-
-4. (Optional) Install CMake:
-   ```powershell
-   choco install cmake
-   ```
-
 ## Build Instructions
 
 ### Using MinGW and `mingw32-make`
 
 1. Open a terminal in the project root directory.
 2. Run:
+
    ```bash
    mingw32-make
    ```
+
    or use the provided batch file:
-   ```bash
-   build.bat
-   ```
 
-### Using CMake (if CMakeLists.txt is provided)
+   ```bash
+   build.bat (-help for more details)
 
-1. Create a build directory:
-   ```bash
-   mkdir build
-   cd build
-   ```
-2. Configure the project:
-   ```bash
-   cmake .. -DCMAKE_TOOLCHAIN_FILE=[vcpkg-root]/scripts/buildsystems/vcpkg.cmake
-   ```
-3. Build:
-   ```bash
-   cmake --build .
-   ```
 
 ## Usage
 

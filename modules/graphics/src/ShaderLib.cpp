@@ -6,7 +6,7 @@
  * Handles creation, compilation, linking, and management of OpenGL shader programs using Qt and GLAD.
  * Provides a singleton interface for easy access throughout the application, and manages OpenGL function pointers.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 

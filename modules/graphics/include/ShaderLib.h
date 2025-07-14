@@ -16,7 +16,7 @@ class QOpenGLFunctions;
  * Replaces Qt's wrapper with direct OpenGL shader management for better compatibility and control.
  * Uses FlockTypes.h for type aliases and helpers.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class ShaderLib {

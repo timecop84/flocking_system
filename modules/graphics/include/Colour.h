@@ -11,7 +11,7 @@
  *
  * Interface-compatible replacement for ngl::Colour using glm::vec4. Uses FlockTypes.h for type aliases and helpers.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 class Colour {

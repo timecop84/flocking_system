@@ -10,7 +10,7 @@ namespace FlockingShaders {
  *
  * Modernized for clarity and maintainability. Uses FlockTypes.h for type aliases and helpers.
  *
- * @author Dionysios Toufexis
+ * @author Dennis Toufexis
  * @date 2025
  */
 struct MatrixBlock {
