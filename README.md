@@ -7,7 +7,7 @@ This project is a real-time, interactive 3D flocking simulation, modernized to u
 Key features:
 
 - Real-time rendering of boids and obstacles using OpenGL shaders and uniform buffer objects (UBOs)
-- GPU-accelerated simulation. (Nvidia CUDA only)
+- GPU-accelerated simulation. (Compute Shader)
 - Multithreaded simulation for improved performance
 - Support for instanced rendering to efficiently display large numbers of boids
 - Modular architecture with separate components for simulation, rendering, and user interface
