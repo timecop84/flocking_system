@@ -1,3 +1,4 @@
+#include <glad/gl.h>
 #include "../include/InstancedBoidRenderer.h"
 #include "../include/ShaderLib.h"
 #include "../../../include/SphereGeometry.h"

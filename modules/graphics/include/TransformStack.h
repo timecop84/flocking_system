@@ -1,15 +1,20 @@
-#ifndef TRANSFORMSTACK_H
-#define TRANSFORMSTACK_H
-
+// TransformStack.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <stack>
 #include "Matrix.h"
+#include "FlockTypes.h"
 
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief Modern TransformStack using GLM instead of ngl_compat
-/// @details Pure C++ transform stack implementation with modern GLM math
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * @file TransformStack.h
+ * @brief Modern TransformStack using GLM for math and FlockTypes.h for type aliases.
+ *
+ * Pure C++ transform stack implementation with modern GLM math.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
 class TransformStack {
 public:
     TransformStack() {
@@ -69,9 +74,7 @@ public:
     
 private:
     std::stack<glm::mat4> m_stack;
-    glm::mat4 m_globalTransform;
     glm::mat4 m_projection;
     glm::mat4 m_view;
+    glm::mat4 m_globalTransform;
 };
-
-#endif // TRANSFORMSTACK_H

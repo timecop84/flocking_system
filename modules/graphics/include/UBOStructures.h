@@ -1,73 +1,63 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include "FlockTypes.h"
 
 namespace FlockingShaders {
-
-// UBO data structures for modern shader pipeline
-// Note: std140 layout requires specific alignment rules
-
-// Matrix and view data UBO (Binding point 0)
+/**
+ * @file UBOStructures.h
+ * @brief UBO data structures for modern shader pipeline (std140 layout).
+ *
+ * Modernized for clarity and maintainability. Uses FlockTypes.h for type aliases and helpers.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
 struct MatrixBlock {
-    glm::mat4 MVP;          // 64 bytes
-    glm::mat4 MV;           // 64 bytes  
-    glm::mat4 M;            // 64 bytes
-    glm::mat3 normalMatrix; // 48 bytes (3x4 in std140)
-    glm::vec3 viewerPos;    // 12 bytes
-    float shouldNormalize;  // 4 bytes (bool as float)
-    // Total: 256 bytes (aligned to 16-byte boundary)
+    glm::mat4 MVP;
+    glm::mat4 MV;
+    glm::mat4 M;
+    glm::mat3 normalMatrix;
+    glm::vec3 viewerPos;
+    float shouldNormalize;
 };
-
-// Material properties UBO (Binding point 1)
 struct MaterialBlock {
-    glm::vec4 ambient;      // 16 bytes
-    glm::vec4 diffuse;      // 16 bytes
-    glm::vec4 specular;     // 16 bytes
-    float shininess;        // 4 bytes
-    float padding[3];       // 12 bytes padding for alignment
-    // Total: 64 bytes (aligned to 16-byte boundary)
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
+    float shininess;
+    float padding[3];
 };
-
-// Light properties UBO (Binding point 2)
 struct LightBlock {
-    glm::vec4 position;             // 16 bytes
-    glm::vec4 ambient;              // 16 bytes
-    glm::vec4 diffuse;              // 16 bytes
-    glm::vec4 specular;             // 16 bytes
-    float constantAttenuation;      // 4 bytes
-    float linearAttenuation;        // 4 bytes
-    float quadraticAttenuation;     // 4 bytes
-    float spotCosCutoff;            // 4 bytes
-    // Total: 80 bytes (aligned to 16-byte boundary)
+    glm::vec4 position;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
+    float constantAttenuation;
+    float linearAttenuation;
+    float quadraticAttenuation;
+    float spotCosCutoff;
 };
-
-// Lighting block for fragment shader (Binding point 3)
 struct LightingBlock {
-    glm::vec3 lightPos;    // 12 bytes
-    float pad1;            // 4 bytes padding
-    glm::vec3 viewPos;     // 12 bytes
-    float pad2;            // 4 bytes padding
-    glm::vec3 lightColor;  // 12 bytes
-    float shininess;       // 4 bytes
-    // Total: 48 bytes (aligned to 16-byte boundary)
+    glm::vec3 lightPos;
+    float pad1;
+    glm::vec3 viewPos;
+    float pad2;
+    glm::vec3 lightColor;
+    float shininess;
 };
-
-// Camera properties UBO (Binding point 4)
 struct CameraBlock {
     glm::vec3 position;     // 12 bytes
     float nearPlane;        // 4 bytes
-    glm::vec3 direction;    // 12 bytes  
+    glm::vec3 direction;    // 12 bytes
     float farPlane;         // 4 bytes
     glm::mat4 viewMatrix;   // 64 bytes
     glm::mat4 projMatrix;   // 64 bytes
-    // Total: 160 bytes (aligned to 16-byte boundary)
 };
 
-// Binding points for UBOs
-const unsigned int MATRIX_BINDING_POINT = 0;
-const unsigned int MATERIAL_BINDING_POINT = 1;
-const unsigned int LIGHT_BINDING_POINT = 2;
-const unsigned int LIGHTING_BINDING_POINT = 3;
-const unsigned int CAMERA_BINDING_POINT = 4;
-
+// UBO binding points for shader uniform blocks
+constexpr int MATRIX_BINDING_POINT   = 0;
+constexpr int MATERIAL_BINDING_POINT = 1;
+constexpr int LIGHT_BINDING_POINT    = 2;
+constexpr int LIGHTING_BINDING_POINT = 3;
 } // namespace FlockingShaders

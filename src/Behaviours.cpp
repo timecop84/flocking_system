@@ -1,3 +1,14 @@
+// Behaviours.cpp - Modernized and documented for maintainability
+/**
+ * @file Behaviours.cpp
+ * @brief Implementation of the Behaviours class for flocking logic.
+ *
+ * Encapsulates cohesion, alignment, separation, and modern flocking force calculations. Uses FlockTypes.h for clarity and maintainability.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
+
 #include "Behaviours.h"
 #include "FlockTypes.h"  // Add modern types
 

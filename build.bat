@@ -19,12 +19,12 @@ REM ============================================================================
 
 setlocal enabledelayedexpansion
 
-REM Color codes for output
-set "GREEN=[32m"
-set "RED=[31m"
-set "YELLOW=[33m"
-set "BLUE=[34m"
-set "NC=[0m"
+REM Color codes for output (feature branch: set to empty for cross-platform compatibility)
+set "GREEN="
+set "RED="
+set "YELLOW="
+set "BLUE="
+set "NC="
 
 REM Project configuration
 set "PROJECT_NAME=flock"
@@ -57,6 +57,7 @@ if /i "%COMMAND%"=="build" goto :build_only
 if /i "%COMMAND%"=="rebuild" goto :rebuild_only
 if /i "%COMMAND%"=="run" goto :run_only
 if /i "%COMMAND%"=="all" goto :build_all
+if /i "%COMMAND%"=="release" goto :build_release
 
 echo %RED%Error: Unknown command '%COMMAND%'%NC%
 echo %YELLOW%Use 'build.bat help' to see available commands%NC%
@@ -71,6 +72,7 @@ echo %YELLOW%  build.bat build%NC%    - Build project only
 echo %YELLOW%  build.bat rebuild%NC%  - Clean and build (no run)
 echo %YELLOW%  build.bat run%NC%      - Run existing executable
 echo %YELLOW%  build.bat help%NC%     - Show this help message
+echo %YELLOW%  build.bat release%NC%  - Build project in release mode
 echo.
 echo %GREEN%Requirements:%NC%
 echo   - Qt6 with MinGW64 toolchain
@@ -112,6 +114,26 @@ if !ERRORLEVEL! neq 0 goto :build_failed
 call :run_application
 goto :end
 
+:build_release
+echo %YELLOW%[RELEASE] Building project in release mode...%NC%
+qmake "%PROJECT_FILE%" CONFIG+=release "DESTDIR=release/bin" >build.log 2>&1
+if !ERRORLEVEL! neq 0 (
+    echo %RED%  qmake (release) failed%NC%
+    type build.log
+    exit /b 1
+)
+echo %GREEN%  Makefiles (release) generated%NC%
+mingw32-make >>build.log 2>&1
+if !ERRORLEVEL! neq 0 (
+    echo %RED%  Compilation (release) failed%NC%
+    type build.log
+    exit /b 1
+)
+echo %GREEN%  Compilation (release) successful%NC%
+REM Clean up log file
+if exist build.log del build.log >nul 2>&1
+goto :eof
+
 REM ============================================================================
 REM Helper Functions
 REM ============================================================================
@@ -148,67 +170,62 @@ for %%f in (Makefile Makefile.Debug Makefile.Release *.o *.obj ui_*.h moc_*.cpp 
         del /q "%%f" >nul 2>&1
     )
 )
-
-echo %GREEN%  ✓ Clean completed%NC%
+echo Clean completed - [OK]%NC%
 goto :eof
 
 :build_project
-echo %BLUE%  - Checking Qt6 installation...%NC%
+echo Checking Qt6 installation...%NC%
 qmake --version >nul 2>&1
 if !ERRORLEVEL! neq 0 (
-    echo %RED%  ✗ Qt6 qmake not found in PATH%NC%
-    echo %YELLOW%    Please ensure Qt6 MinGW64 is installed and in PATH%NC%
+    echo Qt6 qmake not found in PATH - [FAIL]%NC%
+    echo Please ensure Qt6 MinGW64 is installed and in PATH%NC%
     exit /b 1
 )
-echo %GREEN%  ✓ Qt6 found%NC%
-
-echo %BLUE%  - Generating Makefiles...%NC%
+echo Qt6 found - [OK]%NC%
+echo Generating Makefiles...%NC%
 qmake "%PROJECT_FILE%" >build.log 2>&1
 if !ERRORLEVEL! neq 0 (
-    echo %RED%  ✗ qmake failed%NC%
+    echo qmake failed - [FAIL]%NC%
     type build.log
     exit /b 1
 )
-echo %GREEN%  ✓ Makefiles generated%NC%
-
-echo %BLUE%  - Compiling project...%NC%
+echo Makefiles generated - [OK]%NC%
+echo Compiling project...%NC%
 mingw32-make >>build.log 2>&1
 if !ERRORLEVEL! neq 0 (
-    echo %RED%  ✗ Compilation failed%NC%
+    echo Compilation failed - [FAIL]%NC%
     type build.log
     exit /b 1
 )
-echo %GREEN%  ✓ Compilation successful%NC%
-
+echo Compilation successful - [OK]%NC%
 REM Clean up log file
 if exist build.log del build.log >nul 2>&1
-
 goto :eof
 
 :run_application
-echo %BLUE%  - Locating executable...%NC%
+echo Locating executable...%NC%
 
 REM Try multiple possible locations for the executable
 set "FOUND_EXE="
-for %%d in (%BIN_DIR% %RELEASE_DIR% debug .) do (
+for %%d in (%BIN_DIR% %RELEASE_DIR% release/bin debug .) do (
     if exist "%%d\%EXECUTABLE_NAME%" (
         set "FOUND_EXE=%%d\%EXECUTABLE_NAME%"
         goto :found_exe
     )
 )
 
-echo %RED%  ✗ Executable not found%NC%
-echo %YELLOW%    Tried locations: %BIN_DIR%\, %RELEASE_DIR%\, debug\, .\%NC%
-echo %YELLOW%    Please build the project first using 'build.bat build'%NC%
+echo Executable not found - [FAIL]%NC%
+echo Tried locations: %BIN_DIR%\, %RELEASE_DIR%\, release/bin\, debug\, .\%NC%
+echo Please build the project first using 'build.bat build'%NC%
 exit /b 1
 
 :found_exe
-echo %GREEN%  ✓ Found executable: !FOUND_EXE!%NC%
-echo %BLUE%  - Starting application...%NC%
+echo Found executable: !FOUND_EXE! - [OK]%NC%
+echo Starting application...%NC%
 echo.
-echo %GREEN%======================================%NC%
-echo %GREEN%  Starting Flocking Simulation...%NC%
-echo %GREEN%======================================%NC%
+echo ======================================%NC%
+echo   Starting Flocking Simulation...%NC%
+echo ======================================%NC%
 echo.
 
 REM Start the application
@@ -217,7 +234,7 @@ start "" "!FOUND_EXE!"
 REM Wait a moment to see if it starts successfully
 timeout /t 2 >nul 2>&1
 
-echo %GREEN%  ✓ Application launched (if no error appeared)%NC%
+echo Application launched (if no error appeared) - [OK]%NC%
 goto :eof
 
 :build_failed

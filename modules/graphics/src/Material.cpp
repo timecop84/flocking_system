@@ -1,5 +1,8 @@
 #include "Material.h"
-#include <iostream>
+#include <UBOStructures.h>
+#include <ShaderLib.h>
+#include <Colour.h>
+#include <iostream> // Include iostream for debug output
 
 Material::Material() 
     : m_ambient(0.2f, 0.2f, 0.2f)
@@ -39,11 +42,25 @@ void Material::setMaterialType(MaterialType type) {
 }
 
 void Material::loadToShader() const {
-    // Stub implementation
-    std::cout << "Material: Loading material to default shader" << std::endl;
+    // Fill MaterialBlock struct with current material values
+    FlockingShaders::MaterialBlock block;
+    Colour ambient = getAmbient();
+    Colour diffuse = getDiffuse();
+    Colour specular = getSpecular();
+    block.ambient = glm::vec4(ambient.m_r, ambient.m_g, ambient.m_b, ambient.m_a);
+    block.diffuse = glm::vec4(diffuse.m_r, diffuse.m_g, diffuse.m_b, diffuse.m_a);
+    block.specular = glm::vec4(specular.m_r, specular.m_g, specular.m_b, specular.m_a);
+    block.shininess = getShininess();
+    block.padding[0] = block.padding[1] = block.padding[2] = 0.0f;
+    
+    // Debug output
+    std::cout << "[Material] loadToShader: diffuse=" << diffuse.m_r << ", " << diffuse.m_g << ", " << diffuse.m_b << std::endl;
+    
+    // Update the UBO (binding point 1, name is always "MaterialUBO")
+    ShaderLib::instance()->updateUBO("MaterialUBO", &block, sizeof(FlockingShaders::MaterialBlock));
 }
 
-void Material::loadToShader(const std::string& uniformName) const {
-    // Stub implementation
-    std::cout << "Material: Loading material to shader uniform '" << uniformName << "'" << std::endl;
+void Material::loadToShader(const std::string& /*uniformName*/) const {
+    // Overload for API compatibility; same as above
+    loadToShader();
 }

@@ -1,17 +1,20 @@
+// SpatialHashGrid.h - Modernized, documented, and cleaned up for maintainability
 #pragma once
 #include <vector>
 #include <unordered_map>
 #include <glm/glm.hpp>
-#include "boid.h"
+#include "FlockTypes.h"
+#include "Boid.h"
 
 namespace flock {
-
 /**
- * @brief Spatial hash grid for efficient neighbor queries in flocking simulation
- * 
- * This class implements a spatial partitioning system that reduces the complexity
- * of neighbor searches from O(N²) to approximately O(N) by dividing space into
- * a grid and only checking boids in nearby grid cells.
+ * @file SpatialHashGrid.h
+ * @brief Spatial hash grid for efficient neighbor queries in flocking simulation.
+ *
+ * Reduces neighbor search complexity from O(N^2) to ~O(N) by dividing space into a grid.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
  */
 class SpatialHashGrid {
 public:

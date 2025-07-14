@@ -3,7 +3,9 @@
 #include <vector>
 #include <memory>
 #include <glm/glm.hpp>
-#include "../../../include/glew_compat.h"
+
+// Forward declarations for OpenGL types
+typedef unsigned int GLuint;
 
 namespace FlockingGeometry {
     class SphereGeometry;
@@ -18,7 +20,7 @@ struct BoidInstanceData {
 
 //----------------------------------------------------------------------------------------------------------------------
 /// @brief High-performance instanced renderer for boids using a single sphere geometry and instanced rendering
-/// @details Renders thousands of boids efficiently using OpenGL instancing to achieve 60+ FPS with 2000+ boids
+/// @details Renders 4000 of boids efficiently using OpenGL instancing to achieve 60+ FPS.
 //----------------------------------------------------------------------------------------------------------------------
 class InstancedBoidRenderer {
 public:

@@ -1,21 +1,50 @@
+
+/**
+ * @file RenderManager.cpp
+ * @brief Implementation of the main rendering manager for the flocking simulation.
+ *
+ * Handles initialization, frame management, render queueing, and performance statistics for all rendering operations.
+ * Provides a singleton interface for global access and coordinates OpenGL state and UBO updates.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
+
+#include <glad/gl.h>
 #include "../include/RenderManager.h"
 #include "../include/ShaderLib.h"
 #include "../include/UBOStructures.h"
 #include <iostream>
 #include <algorithm>
-#include "../../../include/glew_compat.h"
 
 namespace FlockingGraphics {
 
+
+/**
+ * @brief Destructor. Cleans up all rendering resources.
+ */
 RenderManager::~RenderManager() {
     cleanup();
 }
 
+
+/**
+ * @brief Get the singleton instance of the RenderManager.
+ *
+ * Ensures only one render manager exists for the lifetime of the application.
+ * @return Reference to the RenderManager instance.
+ */
 RenderManager& RenderManager::getInstance() {
     static RenderManager instance;
     return instance;
 }
 
+
+/**
+ * @brief Initialize the rendering manager and OpenGL state.
+ *
+ * Enables depth testing and resets internal state.
+ */
 void RenderManager::initialize() {
     // Initialize rendering systems
     glEnable(GL_DEPTH_TEST);

@@ -2,12 +2,14 @@
 #include "ui_mainwindow.h"
 #include <QColorDialog>
 #include <glm/glm.hpp>
+#include <iostream> // Include for debug output
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     m_ui(new Ui::MainWindow)
 {
     m_ui->setupUi(this);
+
     m_gl = new GLWindow(this);
     m_ui->s_mainWindowGridLayout->addWidget(m_gl, 0, 0 ,2, 1);
     this->setWindowTitle(QString("Swarm Flock"));
@@ -120,6 +122,7 @@ void MainWindow::on_m_flockSpeedSlider_valueChanged(int value)
 
 void MainWindow::on_m_obstaclePosX_valueChanged(double arg1)
 {
+    std::cout << "[MainWindow] on_m_obstaclePosX_valueChanged: " << arg1 << std::endl;
     glm::vec3 pos(arg1, m_ui->m_obstaclePosY->value(), m_ui->m_obstaclePosZ->value());
     m_gl->setObstaclePosition(pos);
 }
@@ -144,6 +147,7 @@ void MainWindow::on_m_obstacleSize_valueChanged(double arg1)
 void MainWindow::on_m_obstacleColour_clicked()
 {
     QColor colour = QColorDialog::getColor();
+    std::cout << "[MainWindow] on_m_obstacleColour_clicked: " << colour.redF() << ", " << colour.greenF() << ", " << colour.blueF() << std::endl;
     m_gl->setObstacleColour(colour);
 }
 
@@ -152,29 +156,39 @@ void MainWindow::on_m_obstacleWireframe_toggled(bool checked)
     m_gl->setObstacleWireframe(checked);
 }
 
-void MainWindow::on_m_simDistance_valueChanged(double arg1)
+void MainWindow::on_m_simDistanceSlider_valueChanged(int value)
 {
-    m_gl->setSimDistance(arg1);
+    double simDistance = static_cast<double>(value);
+    m_ui->m_simDistanceValue->setText(QString::number(simDistance, 'f', 1));
+    m_gl->setSimDistance(simDistance);
 }
 
-void MainWindow::on_m_simFlockDistance_valueChanged(double arg1)
+void MainWindow::on_m_simFlockDistanceSlider_valueChanged(int value)
 {
-    m_gl->setSimFlockDistance(arg1);
+    double flockDistance = static_cast<double>(value);
+    m_ui->m_simFlockDistanceValue->setText(QString::number(flockDistance, 'f', 1));
+    m_gl->setSimFlockDistance(flockDistance);
 }
 
-void MainWindow::on_m_simCohesion_valueChanged(double arg1)
+void MainWindow::on_m_simCohesionSlider_valueChanged(int value)
 {
-    m_gl->setSimCohesion(arg1);
+    double cohesion = static_cast<double>(value);
+    m_ui->m_simCohesionValue->setText(QString::number(cohesion, 'f', 1));
+    m_gl->setSimCohesion(cohesion);
 }
 
-void MainWindow::on_m_simSeparation_valueChanged(double arg1)
+void MainWindow::on_m_simSeparationSlider_valueChanged(int value)
 {
-    m_gl->setSimSeparation(arg1);
+    double separation = static_cast<double>(value);
+    m_ui->m_simSeparationValue->setText(QString::number(separation, 'f', 1));
+    m_gl->setSimSeparation(separation);
 }
 
-void MainWindow::on_m_simAlignment_valueChanged(double arg1)
+void MainWindow::on_m_simAlignmentSlider_valueChanged(int value)
 {
-    m_gl->setSimAlignment(arg1);
+    double alignment = static_cast<double>(value);
+    m_ui->m_simAlignmentValue->setText(QString::number(alignment, 'f', 1));
+    m_gl->setSimAlignment(alignment);
 }
 
 void MainWindow::on_m_backColour_clicked()

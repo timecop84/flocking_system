@@ -1,4 +1,15 @@
-#include "boid.h"
+// boid.cpp - Modernized and documented for maintainability
+/**
+ * @file boid.cpp
+ * @brief Implementation of the Boid class for the flocking simulation.
+ *
+ * Handles individual boid logic, rendering, and state management. Uses modern C++ and FlockTypes.h for clarity and maintainability.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
+
+#include "Boid.h"
 #include "Material.h"
 #include "ShaderLib.h"
 #include "Matrix.h"

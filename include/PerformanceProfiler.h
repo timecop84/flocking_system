@@ -1,6 +1,5 @@
-#ifndef PERFORMANCEPROFILER_H
-#define PERFORMANCEPROFILER_H
-
+// PerformanceProfiler.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
 #include <chrono>
 #include <unordered_map>
 #include <string>
@@ -9,10 +8,15 @@
 #include <iomanip>
 #include <limits>
 
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief High-resolution performance profiler for identifying bottlenecks
-/// @details Uses RAII timing with automatic reporting and statistics
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * @file PerformanceProfiler.h
+ * @brief High-resolution performance profiler for identifying bottlenecks.
+ *
+ * Uses RAII timing with automatic reporting and statistics.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
 class PerformanceProfiler {
 public:
     struct ProfileData {
@@ -130,5 +134,3 @@ private:
 // Convenient macro for automatic profiling
 #define PROFILE_SCOPE(name) ScopedProfiler _prof(name)
 #define PROFILE_FUNCTION() ScopedProfiler _prof(__FUNCTION__)
-
-#endif // PERFORMANCEPROFILER_H

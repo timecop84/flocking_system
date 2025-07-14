@@ -1,3 +1,4 @@
+// ShaderLib.h - Modernized, documented, and cleaned up for maintainability
 #pragma once
 
 #include <glm/glm.hpp>
@@ -5,21 +6,26 @@
 #include <unordered_map>
 #include <memory>
 #include <set>
+#include "FlockTypes.h"
 
 class QOpenGLFunctions;
-
 /**
- * @brief Modern OpenGL Shader Library using raw OpenGL calls
- * @details Replaces Qt's wrapper with direct OpenGL shader management
- * for better compatibility and control over shader compilation/linking.
+ * @file ShaderLib.h
+ * @brief Modern OpenGL Shader Library using raw OpenGL calls.
+ *
+ * Replaces Qt's wrapper with direct OpenGL shader management for better compatibility and control.
+ * Uses FlockTypes.h for type aliases and helpers.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
  */
 class ShaderLib {
 public:
     enum ShaderType {
-        VERTEX = 0x8B31,    // GL_VERTEX_SHADER
-        FRAGMENT = 0x8B30,  // GL_FRAGMENT_SHADER
-        GEOMETRY = 0x8DD9,  // GL_GEOMETRY_SHADER
-        COMPUTE = 0x91B9    // GL_COMPUTE_SHADER
+        VERTEX = 0x8B31,
+        FRAGMENT = 0x8B30,
+        GEOMETRY = 0x8DD9,
+        COMPUTE = 0x91B9
     };
     
     /**

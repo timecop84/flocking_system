@@ -1,4 +1,14 @@
-#include "obstacle.h"
+/**
+ * @file obstacle.cpp
+ * @brief Implementation of the Obstacle class for the flocking simulation.
+ *
+ * Handles obstacle logic, rendering, and collision. Uses FlockTypes.h for clarity and maintainability.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
+
+#include "Obstacle.h"
 #include "Material.h"
 #include "ShaderLib.h"
 #include "Matrix.h"
@@ -11,23 +21,18 @@ Obstacle::Obstacle(Vector spherePosition, GLfloat sphereRadius)
 {
     _spherePosition = spherePosition;
     _sphereRadius = sphereRadius;
-    m_colour.set(1.0f, 0.8f, 0.4f, 1.0f);  // Very bright orange color for maximum visibility
+    m_colour.set(1.0f, 0.8f, 0.4f, 1.0f);
     m_wireframe = false;
 
     _hit = false;
     
-    // Initialize the sphere geometry (lazy initialization will happen in first draw)
     m_sphereGeometry = nullptr;
 }
 
 Obstacle::~Obstacle()
 {
-    // Cleanup will be handled automatically by the unique_ptr
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-// Legacy function removed - UBO-based rendering handles matrix updates automatically
-//----------------------------------------------------------------------------------------------------------------------
 
 void Obstacle::ObsDraw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const
 {
@@ -38,7 +43,7 @@ void Obstacle::ObsDraw(const std::string &_shaderName, TransformStack &_transfor
     
     // Lazy initialization of sphere geometry
     if (!m_sphereGeometry) {
-        std::cout << "Initializing sphere geometry for obstacle..." << std::endl;
+        // std::cout << "Initializing sphere geometry for obstacle..." << std::endl;
         // Create sphere at origin - position will be applied via model matrix
         m_sphereGeometry = std::make_unique<FlockingGeometry::SphereGeometry>(_sphereRadius, 32, 32);
         m_sphereGeometry->initializeBuffers();

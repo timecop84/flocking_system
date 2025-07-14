@@ -1,10 +1,12 @@
 QT += opengl gui core widgets openglwidgets
 
 INCLUDEPATH += include
+INCLUDEPATH += glad/include
 INCLUDEPATH += modules/math/include
 INCLUDEPATH += modules/graphics/include
 INCLUDEPATH += modules/utils/include
 INCLUDEPATH += C:/Users/detou/vcpkg/installed/x64-windows/include
+INCLUDEPATH += C:/Users/detou/vcpkg/packages/glm_x64-windows/include
 
 OBJECTS_DIR = obj/
 MOC_DIR = moc/
@@ -26,6 +28,7 @@ SOURCES += \
     src/Behaviours.cpp \
     src/BehaviorValidator.cpp \
     src/SpatialHashGrid.cpp \
+    glad/src/gl.c \
     modules/math/src/MathUtils.cpp \
     modules/graphics/src/Camera.cpp \
     modules/graphics/src/TransformStack.cpp \
@@ -37,10 +40,12 @@ SOURCES += \
     modules/graphics/src/RenderManager.cpp \
     modules/graphics/src/UBOCache.cpp \
     modules/graphics/src/GeometryFactory.cpp \
-    modules/graphics/src/SmartShaderManager.cpp \
+    modules/graphics/src/ShaderManager.cpp \
     modules/graphics/src/TransformBatcher.cpp \
     modules/graphics/src/FrameCoordinator.cpp \
     modules/graphics/src/InstancedBoidRenderer.cpp \
+    modules/graphics/src/BoidRenderer.cpp \
+    modules/graphics/src/ObstacleRenderer.cpp \
     modules/graphics/src/GPUFlockingManager.cpp
 
 HEADERS += \
@@ -70,7 +75,7 @@ HEADERS += \
     modules/graphics/include/RenderManager.h \
     modules/graphics/include/UBOCache.h \
     modules/graphics/include/GeometryFactory.h \
-    modules/graphics/include/SmartShaderManager.h \
+    modules/graphics/include/ShaderManager.h \
     modules/graphics/include/TransformBatcher.h \
     modules/graphics/include/FrameCoordinator.h \
     modules/graphics/include/InstancedBoidRenderer.h \
@@ -98,9 +103,13 @@ macx:DEFINES += DARWIN
 win32-g++: {
     INCLUDEPATH += $$[QT_INSTALL_HEADERS]/QtWidgets
     INCLUDEPATH += $$[QT_INSTALL_HEADERS]/QtOpenGLWidgets
+    INCLUDEPATH += C:\Users\detou\vcpkg\packages\glm_x64-windows\include
     LIBS += -lopengl32 -lglu32
     # Exclude Qt6 Entry Point and define our own
     LIBS -= -lQt6EntryPoint
     DEFINES += QT_NO_ENTRYPOINT
 }
+
+QMAKE_LFLAGS += -fopenmp
+QMAKE_CXXFLAGS += -fopenmp
 

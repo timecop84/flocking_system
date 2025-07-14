@@ -1,3 +1,13 @@
+/**
+ * @file SpatialHashGrid.cpp
+ * @brief Implementation of the SpatialHashGrid class for efficient neighbor queries.
+ *
+ * Reduces neighbor search complexity for flocking simulation. Uses FlockTypes.h for clarity and maintainability.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
+
 #include "SpatialHashGrid.h"
 #include <cmath>
 
@@ -19,14 +29,12 @@ void SpatialHashGrid::addBoid(Boid* boid, int boidIndex) {
 
 std::vector<std::pair<Boid*, int>> SpatialHashGrid::getNearbyBoids(const glm::vec3& position, float radius) const {
     std::vector<std::pair<Boid*, int>> nearbyBoids;
+    float radiusSq = radius * radius;
     
-    // Get the grid coordinates for the query position
     glm::ivec3 centerCell = getGridCoords(position);
     
-    // Calculate how many cells we need to check based on radius
     int cellRadius = static_cast<int>(std::ceil(radius / m_cellSize)) + 1;
     
-    // Check all cells within the radius
     for (int x = -cellRadius; x <= cellRadius; x++) {
         for (int y = -cellRadius; y <= cellRadius; y++) {
             for (int z = -cellRadius; z <= cellRadius; z++) {
@@ -37,9 +45,9 @@ std::vector<std::pair<Boid*, int>> SpatialHashGrid::getNearbyBoids(const glm::ve
                     for (const auto& boidPair : it->second) {
                         Vector boidPos = boidPair.first->getPosition();
                         glm::vec3 boidPosition(boidPos.m_x, boidPos.m_y, boidPos.m_z);
-                        
-                        float distance = glm::length(position - boidPosition);
-                        if (distance <= radius) {
+                        glm::vec3 diff = position - boidPosition;
+                        float distSq = glm::dot(diff, diff);
+                        if (distSq <= radiusSq) {
                             nearbyBoids.push_back(boidPair);
                         }
                     }
@@ -79,7 +87,7 @@ glm::ivec3 SpatialHashGrid::getGridCoords(const glm::vec3& position) const {
 
 std::vector<glm::ivec3> SpatialHashGrid::getNeighboringCells(const glm::ivec3& cellCoords) const {
     std::vector<glm::ivec3> neighbors;
-    neighbors.reserve(27); // 3x3x3 = 27 cells
+    neighbors.reserve(27);
     
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {

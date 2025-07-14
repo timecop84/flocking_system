@@ -5,7 +5,6 @@
 #include <iostream>
 #include <cstddef>
 #include <glm/glm.hpp>
-#include "../../../include/glew_compat.h"
 
 namespace FlockingGraphics {
 
@@ -37,20 +36,20 @@ static_assert(offsetof(GPUBoidData, color) == 48, "color offset must be 48");
 static_assert(offsetof(GPUBoidData, lastPosition) == 64, "lastPosition offset must be 64");
 
 struct FlockingParameters {
-    float separationDistance = 2.0f;      // 0
-    float alignmentDistance = 4.0f;       // 4
-    float cohesionDistance = 4.0f;        // 8
-    float separationForce = 1.5f;         // 12
-    float alignmentForce = 1.0f;          // 16
-    float cohesionForce = 1.0f;           // 20
+    float separationDistance = 8.0f;      // 0
+    float alignmentDistance = 15.0f;       // 4
+    float cohesionDistance = 15.0f;        // 8
+    float separationForce = 12.0f;         // 12
+    float alignmentForce = 3.0f;          // 16
+    float cohesionForce = 8.0f;           // 20
     float maxSpeed = 2.0f;                // 24
     float maxForce = 0.5f;                // 28
     float deltaTime = 0.016f;             // 32
     float speedMultiplier = 1.0f;         // 36
     int numBoids = 200;                   // 40
     float randomSeed = 0.0f;              // 44
-    glm::vec3 boundingBoxMin = glm::vec3(-20.0f, -20.0f, -20.0f);  // 48
-    glm::vec3 boundingBoxMax = glm::vec3(20.0f, 20.0f, 20.0f);     // 60
+    glm::vec3 boundingBoxMin = glm::vec3(-100.0f, -100.0f, -100.0f);  // 48
+    glm::vec3 boundingBoxMax = glm::vec3(100.0f, 100.0f, 100.0f);     // 60
     // Total: 72 bytes (expected: 64 bytes due to std140 padding)
 };
 

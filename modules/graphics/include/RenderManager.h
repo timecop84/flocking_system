@@ -1,3 +1,4 @@
+// RenderManager.h - Modernized, documented, and cleaned up for maintainability
 #pragma once
 
 #include <string>
@@ -8,6 +9,7 @@
 #include <algorithm>
 #include <chrono>
 #include <glm/glm.hpp>
+#include "FlockTypes.h"
 #include "TransformStack.h"
 #include "Camera.h"
 #include "Material.h"
@@ -16,19 +18,20 @@
 #include "ShaderLib.h"
 
 namespace FlockingGraphics {
-
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief Advanced unified rendering manager for efficient, reusable rendering pipeline
-/// @details Eliminates code duplication, provides batching, UBO caching, and performance tracking
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * @file RenderManager.h
+ * @brief Advanced unified rendering manager for efficient, reusable rendering pipeline.
+ *
+ * Eliminates code duplication, provides batching, UBO caching, and performance tracking.
+ * Uses FlockTypes.h for type aliases and helpers.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
 class RenderManager {
 public:
     // Rendering geometry types for efficient batching
-    enum class GeometryType {
-        SPHERE,
-        BBOX,
-        CUSTOM
-    };
+    enum class GeometryType { SPHERE, BBOX, CUSTOM };
     
     // Rendering object interface
     struct RenderableObject {

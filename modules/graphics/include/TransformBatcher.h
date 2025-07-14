@@ -1,13 +1,21 @@
+// TransformBatcher.h - Modernized, documented, and cleaned up for maintainability
 #pragma once
 
 #include <glm/glm.hpp>
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include "FlockTypes.h"
 
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief Simplified transform batching system
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * @file TransformBatcher.h
+ * @brief Simplified transform batching system for efficient rendering.
+ *
+ * Modernized for clarity and maintainability. Uses FlockTypes.h for type aliases and helpers.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
 class TransformBatcher {
 public:
     static TransformBatcher* instance();

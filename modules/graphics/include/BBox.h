@@ -1,14 +1,20 @@
-#ifndef BBOX_H
-#define BBOX_H
+// BBox.h - Modernized, documented, and cleaned up for maintainability
+#pragma once
 
 #include <glm/glm.hpp>
-#include "Vector.h"
 #include <vector>
+#include "FlockTypes.h"
+#include "Vector.h"
 
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief Modern BBox class using GLM instead of ngl_compat
-/// @details Simple axis-aligned bounding box
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * @file BBox.h
+ * @brief Modern BBox class using GLM for math and FlockTypes.h for type aliases.
+ *
+ * Simple axis-aligned bounding box for collision and visualization.
+ *
+ * @author Dennis Toufexis
+ * @date 2025
+ */
 class BBox {
 public:
     BBox();
@@ -56,5 +62,3 @@ private:
     float m_height;
     float m_depth;
 };
-
-#endif // BBOX_H
