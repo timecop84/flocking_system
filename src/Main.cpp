@@ -9,9 +9,8 @@
  */
 #include <QApplication>
 #include <QMessageBox>
-#include "mainwindow.h"
+#include "MainWindow.h"
 
-// Force NVIDIA/AMD GPU usage on laptops with hybrid graphics
 #ifdef _WIN32
 extern "C" {
     __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -21,14 +20,12 @@ extern "C" {
 
 int main(int argc, char *argv[])
 {
-    // make an instance to the application
     QApplication a(argc, argv);
 
     try {
         MainWindow w;
         w.show();
 
-        // start the Qt application
         return a.exec();
     }
     catch (const std::exception& e) {

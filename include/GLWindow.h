@@ -1,4 +1,4 @@
-// GLWindow.h - Modernized, documented, and cleaned up for maintainability
+// ...existing code...
 #pragma once
 
 #include <QOpenGLWidget>
@@ -30,9 +30,9 @@
 #include "modules/graphics/include/ObstacleRenderer.h"
 #include "ShaderLib.h"
 
-#include "boid.h"
-#include "flock.h"
-#include "obstacle.h"
+#include "Boid.h"
+#include "Flock.h"
+#include "Obstacle.h"
 #include "PerformanceMonitor.h"
 
 // Forward declarations for GPU flocking

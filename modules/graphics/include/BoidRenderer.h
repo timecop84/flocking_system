@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "FlockTypes.h"
-#include "boid.h"
+#include "Boid.h"
 #include "TransformStack.h"
 #include "Camera.h"
 #include "modules/graphics/include/InstancedBoidRenderer.h"

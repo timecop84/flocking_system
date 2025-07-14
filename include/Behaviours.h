@@ -1,8 +1,8 @@
-// Behaviours.h - Modernized, documented, and cleaned up for maintainability
+// ...existing code...
 #pragma once
 #include <vector>
 #include "FlockTypes.h"
-#include "boid.h"
+#include "Boid.h"
 #include "Vector.h"
 
 /**

@@ -1,4 +1,3 @@
-// SphereGeometry.cpp - Modernized and documented for maintainability
 /**
  * @file SphereGeometry.cpp
  * @brief Implementation of the SphereGeometry class for rendering spheres in the simulation.
@@ -33,34 +32,30 @@ void SphereGeometry::generateSphere()
 {
     m_vertices.clear();
     m_indices.clear();
-    // Reserve space to avoid reallocations
     m_vertices.reserve((m_stacks + 1) * (m_sectors + 1));
-    m_indices.reserve(m_stacks * m_sectors * 6); // 2 triangles per sector per stack, 3 indices each
+    m_indices.reserve(m_stacks * m_sectors * 6);
     
     const float PI = flock::Math::PI;
     
     // Generate vertices
     for (int stack = 0; stack <= m_stacks; ++stack) {
-        float stackAngle = PI / 2 - stack * PI / m_stacks;  // from π/2 to -π/2
-        float xy = m_radius * cosf(stackAngle);              // r * cos(θ)
-        float z = m_radius * sinf(stackAngle);               // r * sin(θ)
+        float stackAngle = PI / 2 - stack * PI / m_stacks;
+        float xy = m_radius * cosf(stackAngle);
+        float z = m_radius * sinf(stackAngle);
         
         for (int sector = 0; sector <= m_sectors; ++sector) {
-            float sectorAngle = sector * 2 * PI / m_sectors; // from 0 to 2π
+            float sectorAngle = sector * 2 * PI / m_sectors;
             
             Vertex vertex;
             
-            // Position
-            vertex.position.x = xy * cosf(sectorAngle);      // r * cos(θ) * cos(φ)
-            vertex.position.y = xy * sinf(sectorAngle);      // r * cos(θ) * sin(φ)
-            vertex.position.z = z;                           // r * sin(θ)
+            vertex.position.x = xy * cosf(sectorAngle);
+            vertex.position.y = xy * sinf(sectorAngle);
+            vertex.position.z = z;
             
             // Normal (for sphere, normal = normalized position vector from center)
-            // Since the sphere is centered at origin, normal is just the normalized position
             flock::Vec3 normalVec(vertex.position.x, vertex.position.y, vertex.position.z);
             vertex.normal = flock::Utils::normalize(normalVec);
             
-            // Texture coordinates
             vertex.texCoord.x = (float)sector / m_sectors;
             vertex.texCoord.y = (float)stack / m_stacks;
             
@@ -68,22 +63,18 @@ void SphereGeometry::generateSphere()
         }
     }
     
-    // Generate indices
     for (int stack = 0; stack < m_stacks; ++stack) {
-        int k1 = stack * (m_sectors + 1);     // beginning of current stack
-        int k2 = k1 + m_sectors + 1;          // beginning of next stack
+        int k1 = stack * (m_sectors + 1);
+        int k2 = k1 + m_sectors + 1;
         
         for (int sector = 0; sector < m_sectors; ++sector) {
-            // Two triangles per sector
             if (stack != 0) {
-                // First triangle (k1, k2, k1+1)
                 m_indices.push_back(k1);
                 m_indices.push_back(k2);
                 m_indices.push_back(k1 + 1);
             }
             
             if (stack != (m_stacks - 1)) {
-                // Second triangle (k1+1, k2, k2+1)
                 m_indices.push_back(k1 + 1);
                 m_indices.push_back(k2);
                 m_indices.push_back(k2 + 1);
@@ -98,64 +89,52 @@ void SphereGeometry::generateSphere()
 void SphereGeometry::initializeBuffers()
 {
     if (m_buffersInitialized) {
-        cleanup(); // Clean up existing buffers
+        cleanup();
     }
     
-    // Check if VAO functions are available
     if (!glGenVertexArrays || !glBindVertexArray || !glDeleteVertexArrays) {
         std::cerr << "ERROR: VAO functions not available!" << std::endl;
         return;
     }
     
-    // Generate OpenGL objects
     glGenVertexArrays(1, &m_VAO);
     glGenBuffers(1, &m_VBO);
     glGenBuffers(1, &m_EBO);
     
-    // Check for OpenGL errors
     GLenum error = glGetError();
     if (error != GL_NO_ERROR) {
         std::cerr << "OpenGL error after buffer generation: " << error << std::endl;
         return;
     }
     
-    // Bind VAO first
     glBindVertexArray(m_VAO);
     
-    // Upload vertex data
     glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
     glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), 
                  m_vertices.data(), GL_STATIC_DRAW);
     
-    // Upload index data
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), 
                  m_indices.data(), GL_STATIC_DRAW);
     
-    // Set up vertex attributes
-    // Position attribute (location = 0)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
                          (void*)offsetof(Vertex, position));
     glEnableVertexAttribArray(0);
     
-    // Texture coordinate attribute (location = 1) 
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
                          (void*)offsetof(Vertex, texCoord));
     glEnableVertexAttribArray(1);
     
-    // Normal attribute (location = 2)
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
                          (void*)offsetof(Vertex, normal));
     glEnableVertexAttribArray(2);
     
-    // Check for OpenGL errors
     error = glGetError();
     if (error != GL_NO_ERROR) {
         std::cerr << "OpenGL error during vertex setup: " << error << std::endl;
         return;
     }
     
-    // Unbind VAO (good practice)
     glBindVertexArray(0);
     
     m_buffersInitialized = true;
@@ -168,19 +147,11 @@ void SphereGeometry::render() const
         return;
     }
     
-    // Debug output disabled for performance
-    // static int renderCount = 0;
-    // if (renderCount++ % 60 == 0) {
-    //     std::cout << "Rendering sphere using VAO " << m_VAO << std::endl;
-    // }
     
-    // Bind our VAO which contains the sphere geometry
     glBindVertexArray(m_VAO);
     
-    // Draw the sphere using indices
     glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, 0);
     
-    // Unbind VAO when done
     glBindVertexArray(0);
 }
 

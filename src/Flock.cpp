@@ -9,7 +9,7 @@
  * @date 2025
  */
 
-#include "flock.h"
+#include "Flock.h"
 #include "Matrix.h"
 #include "ShaderLib.h"
 #include "MathUtils.h"

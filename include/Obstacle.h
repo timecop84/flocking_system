@@ -1,4 +1,4 @@
-// obstacle.h - Modernized, documented, and cleaned up for maintainability
+// ...existing code...
 #pragma once
 #include <string>
 #include <memory>

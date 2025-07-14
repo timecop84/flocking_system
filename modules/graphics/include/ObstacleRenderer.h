@@ -1,7 +1,7 @@
 // ObstacleRenderer.h - Modernized, documented, and cleaned up for maintainability
 #pragma once
 
-#include "obstacle.h"
+#include "Obstacle.h"
 #include "TransformStack.h"
 #include "Camera.h"
 #include "Material.h"

@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include "FlockTypes.h"
 #include "Vector.h"
-#include "boid.h"
+#include "Boid.h"
 
 /**
  * @file BehaviorValidator.h

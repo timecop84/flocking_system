@@ -1,4 +1,3 @@
-// SpatialHashGrid.cpp - Modernized and documented for maintainability
 /**
  * @file SpatialHashGrid.cpp
  * @brief Implementation of the SpatialHashGrid class for efficient neighbor queries.
@@ -32,13 +31,10 @@ std::vector<std::pair<Boid*, int>> SpatialHashGrid::getNearbyBoids(const glm::ve
     std::vector<std::pair<Boid*, int>> nearbyBoids;
     float radiusSq = radius * radius;
     
-    // Get the grid coordinates for the query position
     glm::ivec3 centerCell = getGridCoords(position);
     
-    // Calculate how many cells we need to check based on radius
     int cellRadius = static_cast<int>(std::ceil(radius / m_cellSize)) + 1;
     
-    // Check all cells within the radius
     for (int x = -cellRadius; x <= cellRadius; x++) {
         for (int y = -cellRadius; y <= cellRadius; y++) {
             for (int z = -cellRadius; z <= cellRadius; z++) {
@@ -91,7 +87,7 @@ glm::ivec3 SpatialHashGrid::getGridCoords(const glm::vec3& position) const {
 
 std::vector<glm::ivec3> SpatialHashGrid::getNeighboringCells(const glm::ivec3& cellCoords) const {
     std::vector<glm::ivec3> neighbors;
-    neighbors.reserve(27); // 3x3x3 = 27 cells
+    neighbors.reserve(27);
     
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {

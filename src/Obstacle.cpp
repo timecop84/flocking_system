@@ -1,4 +1,3 @@
-// obstacle.cpp - Modernized and documented for maintainability
 /**
  * @file obstacle.cpp
  * @brief Implementation of the Obstacle class for the flocking simulation.
@@ -9,7 +8,7 @@
  * @date 2025
  */
 
-#include "obstacle.h"
+#include "Obstacle.h"
 #include "Material.h"
 #include "ShaderLib.h"
 #include "Matrix.h"
@@ -20,26 +19,20 @@
 
 Obstacle::Obstacle(Vector spherePosition, GLfloat sphereRadius)
 {
-    // std::cout << "[Obstacle::ctor] this=" << this << std::endl;
     _spherePosition = spherePosition;
     _sphereRadius = sphereRadius;
-    m_colour.set(1.0f, 0.8f, 0.4f, 1.0f);  // Very bright orange color for maximum visibility
+    m_colour.set(1.0f, 0.8f, 0.4f, 1.0f);
     m_wireframe = false;
 
     _hit = false;
     
-    // Initialize the sphere geometry (lazy initialization will happen in first draw)
     m_sphereGeometry = nullptr;
 }
 
 Obstacle::~Obstacle()
 {
-    // Cleanup will be handled automatically by the unique_ptr
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-// Legacy function removed - UBO-based rendering handles matrix updates automatically
-//----------------------------------------------------------------------------------------------------------------------
 
 void Obstacle::ObsDraw(const std::string &_shaderName, TransformStack &_transformStack, Camera *_cam) const
 {

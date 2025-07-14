@@ -1,4 +1,3 @@
-// GLWindow.cpp - Modernized and documented for maintainability
 /**
  * @file GLWindow.cpp
  * @brief Main OpenGL widget implementation for the flocking simulation UI.
@@ -10,14 +9,14 @@
  */
 
 #include <glad/gl.h>
-#include "obstacle.h"
+#include "Obstacle.h"
 #include <GPUFlockingManager.h>
 #include "GLWindow.h"
 #include <QMainWindow>
 #include <QOpenGLContext>
-#include "mainwindow.h"
-#include "flock.h"
-#include "boid.h"
+#include "MainWindow.h"
+#include "Flock.h"
+#include "Boid.h"
 #include <iostream>
 #include <cmath>
 #include <QSurfaceFormat>
@@ -40,30 +39,20 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "BehaviorValidator.h"
-#include "shader_constants.h"
+#include "ShaderConstants.h"
 #include "PerformanceProfiler.h"
 #include <modules/graphics/include/BoidRenderer.h>
 
 
 
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief the increment for x/y translation with mouse movement
-//----------------------------------------------------------------------------------------------------------------------
 const static float INCREMENT = 1;
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief the increment for the wheel zoom
-//----------------------------------------------------------------------------------------------------------------------
 const static float ZOOM = 10.0;
-//----------------------------------------------------------------------------------------------------------------------
-// in this ctor we need to call the CreateCoreGLContext class, this is mainly for the MacOS Lion version as
-// we need to init the OpenGL 3.2 sub-system which is different than other platforms
-//----------------------------------------------------------------------------------------------------------------------
 GLWindow::GLWindow(
         QWidget *_parent
         )
     : QOpenGLWidget(_parent)
 {
-    // Configure OpenGL format to use compatibility profile
+    // Configure OpenGL format
     QSurfaceFormat format;
     format.setVersion(3, 3);
     format.setProfile(QSurfaceFormat::CompatibilityProfile);
@@ -72,43 +61,35 @@ GLWindow::GLWindow(
     format.setSamples(4); // 4x MSAA
     setFormat(format);
     
-    obstacle = new Obstacle(Vector(0,0,0), 4.0);  // Initialize at origin with size 4.0 to match UI controls
+    obstacle = new Obstacle(Vector(0,0,0), 4.0);
     std::cout << "[GLWindow] Created obstacle at address: " << obstacle << std::endl;
 
-    // set this widget to have the initial keyboard focus
+    // Set initial keyboard focus
     setFocus();
-    // Make sure this widget can accept keyboard focus
     setFocusPolicy(Qt::StrongFocus);
-    // re-size the widget to that of the parent (in this case the GLFrame passed in on construction)
     this->resize(_parent->size());
-    // Now set the initial GLWindow attributes to default values
-    // Roate is false
+    // Set initial GLWindow attributes
     m_rotate=false;
     m_translate=false;
     m_pan=false;
-    // mouse rotation values set to 0
     m_spinXFace = 0;
     m_spinYFace = 0;
     
-    // Initialize orbital camera controls
-    m_cameraDistance = 200.0f;  // Increased from 120.0f for better view of larger simulation space
-    m_cameraAzimuth = 45.0f;    // degrees
-    m_cameraElevation = 30.0f;  // degrees  
-    m_cameraTarget.set(0, 0, 0); // look at origin
+    m_cameraDistance = 200.0f;
+    m_cameraAzimuth = 45.0f;
+    m_cameraElevation = 30.0f;
+    m_cameraTarget.set(0, 0, 0);
     
-    // Initialize FPS tracking
     m_lastTime = std::chrono::high_resolution_clock::now();
     m_frameCount = 0;
     m_currentFPS = 0.0f;
-    m_showFPS = true; // Show FPS by default
+    m_showFPS = true;
     
-    // Initialize pending size values
     m_pendingBoidSize = 1.0;
     m_pendingObstacleSize = 4.0;
     m_hasPendingBoidSize = false;
     m_hasPendingObstacleSize = false;
     
-    // Print profiling instructions
     std::cout << "\n=== PERFORMANCE PROFILER CONTROLS ===" << std::endl;
     std::cout << "Press 'R' - Print detailed performance report" << std::endl;
     std::cout << "Press 'T' - Reset profiler statistics" << std::endl;
@@ -121,7 +102,7 @@ GLWindow::GLWindow(
     std::cout << "Press '3' - Set 2000 boids (TARGET)" << std::endl;
     std::cout << "====================================\n" << std::endl;
     
-    m_sphereUpdateTimer = startTimer(1000 / 60); //run at 60FPS
+    m_sphereUpdateTimer = startTimer(1000 / 60);
     m_animate = true;
     m_backgroundColour.set(0.6f, 0.6f, 0.6f, 1.0f);
     
@@ -129,11 +110,11 @@ GLWindow::GLWindow(
     m_obstacleRenderer = std::make_unique<ObstacleRenderer>();
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+// ...existing code...
 GLWindow::~GLWindow()
 {
     delete m_light;
-    // Qt handles OpenGL cleanup automatically
+    // Qt handles OpenGL cleanup
 }
 
 int GLWindow::getCurrentBoidSize()
@@ -299,19 +280,15 @@ void GLWindow::initializeGL()
         return;
     }
     
-    // Query OpenGL version
     GLint major, minor;
     glGetIntegerv(GL_MAJOR_VERSION, &major);
     glGetIntegerv(GL_MINOR_VERSION, &minor);
     std::cout << "glad initialized successfully with OpenGL " << major << "." << minor << std::endl;
     
-    // now to load the shader and set the values
-    // grab an instance of shader manager
+    // Load shaders and set values
     m_shader = ShaderLib::instance();
     
-    // Create shaders for optimized rendering
     
-    // Main Phong shader for boids and obstacles
     m_shader->createShaderProgram("Phong");
     m_shader->attachShader("PhongVertex",VERTEX);
     m_shader->attachShader("PhongFragment",FRAGMENT);
@@ -322,26 +299,20 @@ void GLWindow::initializeGL()
     m_shader->attachShaderToProgram("Phong","PhongVertex");
     m_shader->attachShaderToProgram("Phong","PhongFragment");
     
-    // Bind vertex attributes
     m_shader->bindAttribute("Phong",0,"inVert");
     m_shader->bindAttribute("Phong",1,"inUV");
     m_shader->bindAttribute("Phong",2,"inNormal");
     
-    // Link and activate
     m_shader->linkProgramObject("Phong");
     (*m_shader)["Phong"]->use();
     
-    // Bind uniform blocks to binding points for UBO compatibility
     m_shader->bindUniformBlockToBindingPoint("Phong", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
     m_shader->bindUniformBlockToBindingPoint("Phong", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
     m_shader->bindUniformBlockToBindingPoint("Phong", "LightBlock", FlockingShaders::LIGHT_BINDING_POINT);
     
-    // Create additional shaders for optimization
-    // Instanced boid shader
     m_shader->createShaderProgram("boid_shader");
     m_shader->attachShader("BoidVertex",VERTEX);
     m_shader->attachShader("BoidFragment",FRAGMENT);
-    // For now, use the same Phong shaders - can be optimized later with instancing
     m_shader->loadShaderSource("BoidVertex","shaders/Phong.vs");
     m_shader->loadShaderSource("BoidFragment","shaders/Phong.fs");
     m_shader->compileShader("BoidVertex");
@@ -356,7 +327,6 @@ void GLWindow::initializeGL()
     m_shader->bindUniformBlockToBindingPoint("boid_shader", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
     m_shader->bindUniformBlockToBindingPoint("boid_shader", "LightBlock", FlockingShaders::LIGHT_BINDING_POINT);
     
-    // Obstacle shader  
     m_shader->createShaderProgram("obstacle_shader");
     m_shader->attachShader("ObstacleVertex",VERTEX);
     m_shader->attachShader("ObstacleFragment",FRAGMENT);
@@ -374,7 +344,6 @@ void GLWindow::initializeGL()
     m_shader->bindUniformBlockToBindingPoint("obstacle_shader", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
     m_shader->bindUniformBlockToBindingPoint("obstacle_shader", "LightBlock", FlockingShaders::LIGHT_BINDING_POINT);
     
-    // Instanced Phong shader for high-performance boid rendering
     m_shader->createShaderProgram("PhongInstanced");
     m_shader->attachShader("PhongInstancedVertex",VERTEX);
     m_shader->attachShader("PhongInstancedFragment",FRAGMENT);
@@ -387,60 +356,42 @@ void GLWindow::initializeGL()
     m_shader->bindAttribute("PhongInstanced",0,"inVert");
     m_shader->bindAttribute("PhongInstanced",1,"inUV");
     m_shader->bindAttribute("PhongInstanced",2,"inNormal");
-    // Instance attributes bound by InstancedBoidRenderer
     m_shader->linkProgramObject("PhongInstanced");
     m_shader->bindUniformBlockToBindingPoint("PhongInstanced", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
     m_shader->bindUniformBlockToBindingPoint("PhongInstanced", "MaterialBlock", FlockingShaders::MATERIAL_BINDING_POINT);
     m_shader->bindUniformBlockToBindingPoint("PhongInstanced", "LightingBlock", FlockingShaders::LIGHTING_BINDING_POINT);
     
-    // the shader will use the currently active material and light0 so set them
     Material m(GOLD);
     
-    // Now we will create a basic Camera from the graphics library
     // Create camera using orbital controls
-    Vector From(200,120,120);  // Initial position (will be updated by orbital controls)
+    Vector From(200,120,120);
     Vector To(0,0,0);
     Vector Up(0,1,0);
-    // now load to our new camera
     m_cam= new Camera(From,To,Up,PERSPECTIVE);
-    // set the shape using FOV 45 Aspect Ratio based on Width and Height
-    // The final two are near and far clipping planes of 0.05 and 2000 (increased for large simulations)
     m_cam->setShape(45,(float)720.0/576.0,0.05,2000,PERSPECTIVE);
     
-    // Initialize camera position using orbital controls
     updateCameraPosition();
     
-    // Create natural directional lighting with moderate intensity
     Matrix iv=m_cam->getViewMatrix();
     iv.transpose();
-    m_light = new Light(Vector(150,200,120,1),Colour(0.8,0.8,0.75,1),Colour(1.0,1.0,0.9,1),POINTLIGHT);  // Further reduced intensity for natural lighting
+    m_light = new Light(Vector(150,200,120,1),Colour(0.8,0.8,0.75,1),Colour(1.0,1.0,0.9,1),POINTLIGHT);
     m_light->setTransform(iv);
     
-    // Initialize UBOs for modern shader pipeline
     initializeUBOs();
     
-    // Load initial material and light data to UBOs
     updateMaterialUBO(m);
     updateLightUBO();
     
-    // Initialize optimization systems and standard geometries
     
-    // Initialize optimization systems
     FlockingGraphics::RenderManager::getInstance().initialize();
     
-    // Create standard geometries for optimized rendering
     FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 16); // Standard boid geometry
     FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 12); // Lower-quality sphere for obstacles
     FlockingGraphics::GeometryFactory::instance().createBoundingBox();    // Wireframe bounding box
     FlockingGraphics::GeometryFactory::instance().createCube(1.0f);       // Standard cube
     
-    // Create named geometries for the rendering system
     auto boidGeometry = FlockingGraphics::GeometryFactory::instance().createSphere(1.0f, 12);
-    // The geometry factory automatically names spheres with the pattern: "sphere_<radius>_<segments>"
-    // So our boid geometry will be named "sphere_1.0_12"
-    // We can create an alias for easier access
     
-    // Print geometry factory stats to verify it's working
     std::cout << "=== FLOCKING GRAPHICS OPTIMIZATION SYSTEM ENABLED ===" << std::endl;
     FlockingGraphics::GeometryFactory::instance().printStats();
     std::cout << "======================================================" << std::endl;
@@ -461,10 +412,8 @@ void GLWindow::initializeGL()
 
     m_shader->linkProgramObject("Colour");
     
-    // Bind UBO blocks to the Colour shader (same as Phong shader)
     m_shader->bindUniformBlockToBindingPoint("Colour", "MatrixBlock", FlockingShaders::MATRIX_BINDING_POINT);
     
-    // Create wireframe shader for optimized bounding box rendering
     m_shader->createShaderProgram("wireframe_shader");
     m_shader->attachShader("WireframeVertex",VERTEX);
     m_shader->attachShader("WireframeFragment",FRAGMENT);
@@ -480,26 +429,24 @@ void GLWindow::initializeGL()
     
     (*m_shader)["Colour"]->use();
     m_shader->setShaderParam4f("Colour",1,1,1,1);
-    glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
+    glEnable(GL_DEPTH_TEST);
     
     // Initialize sphere primitive for boid rendering
-    bbox = new BBox(Vector(0,0,0),200,200,200);  // Increased from 120x120x120 for larger simulation space
+    bbox = new BBox(Vector(0,0,0),200,200,200);
     bbox->setDrawMode(GL_LINE);
     flock = new Flock(bbox, obstacle);
     
     // Initialize high-performance instanced boid renderer
     m_instancedBoidRenderer = std::make_unique<FlockingGraphics::InstancedBoidRenderer>();
-    m_instancedBoidRenderer->initialize(0.5f, 16); // 0.5f radius, 16 segments
+    m_instancedBoidRenderer->initialize(0.5f, 16);
     m_boidRenderer->setInstancedBoidRenderer(m_instancedBoidRenderer.get());
     
-    // Initialize GPU-accelerated flocking manager
     m_gpuFlockingManager = std::make_unique<FlockingGraphics::GPUFlockingManager>();
     if (!m_gpuFlockingManager->initialize()) {
         std::cerr << "Warning: GPU flocking acceleration failed to initialize, falling back to CPU" << std::endl;
         m_gpuFlockingManager->setEnabled(false);
     }
     
-    // Apply any pending size values that were set before OpenGL initialization
     if (m_hasPendingBoidSize) {
         flock->setBoidSize(m_pendingBoidSize);
         m_hasPendingBoidSize = false;
@@ -509,8 +456,6 @@ void GLWindow::initializeGL()
         m_hasPendingObstacleSize = false;
     }
     
-    // Initialize UI values now that OpenGL is ready
-    // Get the parent MainWindow and initialize UI values
     if (auto* mainWindow = qobject_cast<MainWindow*>(parent()->parent())) {
         mainWindow->initializeUIValues();
     }
@@ -553,9 +498,7 @@ void GLWindow::loadMatricesToColourShader(
     (*shader)["Colour"]->use();
 }
 //----------------------------------------------------------------------------------------------------------------------
-//This virtual function is called whenever the widget needs to be painted.
-// this is our main drawing routine
-//----------------------------------------------------------------------------------------------------------------------
+// ...existing code...
 void GLWindow::paintGL()
 {
     PROFILE_SCOPE("Total Frame Render");
@@ -563,82 +506,64 @@ void GLWindow::paintGL()
     static int frame_count = 0;
     frame_count++;
     
-    // Begin frame coordination for all optimization systems
     FlockingGraphics::FrameCoordinator::getInstance().beginFrame();
     
-    // Use the background color set by the user
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
     
-    // clear the screen and depth buffer
     {
         PROFILE_SCOPE("Clear Buffers");
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
     
-    // Enable depth testing and face culling for proper 3D rendering
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
-    // Use the NGL-style camera and transform stack for consistent rendering
-    // Set up the view matrix for the camera
     glm::mat4 view = m_cam->getViewMatrix();
     glm::mat4 project = m_cam->getProjectionMatrix();
     
-    // Load the matrices into the transform stack (for NGL compatibility)
     Matrix nglProject(project);
     Matrix nglView(view);
     m_transformStack.setProjection(nglProject);
     m_transformStack.setView(nglView);
     
-    // Set up basic model matrix (no rotation - camera handles all movement now)
     Matrix model;
     model.identity();
     model.translate(m_modelPos.m_x, m_modelPos.m_y, m_modelPos.m_z);
     m_transformStack.setModel(model);
     
-    // Update lighting UBO every frame (light position needs to be in view space)
     updateLightingUBO();
 
-    // Draw the bounding box (wireframe) with white color
     if (bbox) {
         PROFILE_SCOPE("Draw Bounding Box");
-        // Push a clean transform for the bounding box to ensure it's drawn at origin
         m_transformStack.pushTransform();
         {
-            // Reset to identity transform for bounding box (no translation)
             Matrix bboxTransform;
             bboxTransform.identity();
             m_transformStack.setModel(bboxTransform.getGLMMat4());
             
-            // Update UBO with clean transform
             updateMatrixUBO(m_transformStack);
             
-            // Use modern color shader for wireframe rendering
             ShaderLib *shader = ShaderLib::instance();
             shader->use("Colour");
-            shader->setShaderParam4f("Colour", 1.0f, 1.0f, 1.0f, 1.0f); // White color
+            shader->setShaderParam4f("Colour", 1.0f, 1.0f, 1.0f, 1.0f);
             bbox->draw();
         }
         m_transformStack.popTransform();
     }
 
-    // Draw the flock using high-performance instanced rendering
     if (flock && m_instancedBoidRenderer) {
         m_boidRenderer->render(flock->getBoidList(), m_transformStack, m_cam);
     }
 
-    // Draw the obstacle with modern UBO-based Phong shader
     if (obstacle && m_obstacleEnabled) {
         m_obstacleRenderer->render(obstacle, m_transformStack, m_cam);
     }
     
-    // Update and render FPS counter
     updateFPS();
     renderFPSText();
     
-    // End frame coordination to finalize rendering
     FlockingGraphics::FrameCoordinator::getInstance().endFrame();
 }
 
@@ -647,21 +572,17 @@ void GLWindow::mouseMoveEvent (
         QMouseEvent * _event
         )
 {
-    // Left mouse button - orbital rotation
     if(m_rotate && _event->buttons() == Qt::LeftButton)
     {
         int diffx=_event->position().x()-m_origX;
         int diffy=_event->position().y()-m_origY;
         
-        // Update azimuth and elevation for orbital camera
         m_cameraAzimuth += diffx * 0.5f;
         m_cameraElevation += diffy * 0.5f;
         
-        // Clamp elevation to prevent flipping
         if (m_cameraElevation > 85.0f) m_cameraElevation = 85.0f;
         if (m_cameraElevation < -85.0f) m_cameraElevation = -85.0f;
         
-        // Wrap azimuth
         if (m_cameraAzimuth > 360.0f) m_cameraAzimuth -= 360.0f;
         if (m_cameraAzimuth < 0.0f) m_cameraAzimuth += 360.0f;
         
@@ -677,10 +598,9 @@ void GLWindow::mouseMoveEvent (
         int diffX = (int)(_event->position().x() - m_origXPos);
         int diffY = (int)(_event->position().y() - m_origYPos);
         
-        // Pan the camera target
         float panSpeed = 0.1f;
         m_cameraTarget.m_x += panSpeed * diffX;
-        m_cameraTarget.m_y -= panSpeed * diffY; // Invert Y for natural panning
+        m_cameraTarget.m_y -= panSpeed * diffY;
         
         updateCameraPosition();
         
@@ -707,7 +627,6 @@ void GLWindow::mouseMoveEvent (
     }
     // Obstacle dragging
     if (m_obstacleSelected && _event->buttons() == Qt::LeftButton) {
-        // Update drag plane if modifier keys change during drag
         if (_event->modifiers() & Qt::ShiftModifier) {
             m_obstacleDragPlane = ObstacleDragPlane::XZ;
         } else if (_event->modifiers() & Qt::ControlModifier) {
@@ -776,7 +695,6 @@ void GLWindow::mousePressEvent (
             m_lastMousePos = _event->pos();
             glm::vec3 hitPoint = camPos + tHit * rayWorld;
             m_obstacleDragStartWorld = Vector(hitPoint.x, hitPoint.y, hitPoint.z);
-            // Determine drag plane based on modifier keys
             if (_event->modifiers() & Qt::ShiftModifier) {
                 m_obstacleDragPlane = ObstacleDragPlane::XZ;
                 m_obstacleDragPlaneZ = hitPoint.y; // Y fixed
@@ -794,14 +712,12 @@ void GLWindow::mousePressEvent (
         m_origY = _event->position().y();
         m_rotate = true;
     }
-    // Right mouse button - translate mode
     else if(_event->button() == Qt::RightButton)
     {
         m_origXPos = _event->position().x();
         m_origYPos = _event->position().y();
         m_translate = true;
     }
-    // Middle mouse button - pan mode
     else if(_event->button() == Qt::MiddleButton)
     {
         m_origXPos = _event->position().x();
@@ -830,7 +746,6 @@ void GLWindow::mouseReleaseEvent (
         m_pan = false;
     }
 
-    // If obstacle was selected, release it
     if (_event->button() == Qt::LeftButton && m_obstacleSelected) {
         m_obstacleSelected = false;
         return;
@@ -839,20 +754,17 @@ void GLWindow::mouseReleaseEvent (
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::wheelEvent(QWheelEvent *_event)
 {
-    // Zoom by adjusting camera distance
     float zoomFactor = 10.0f;
     
     if(_event->angleDelta().y() > 0)
     {
-        // Zoom in - decrease camera distance
         m_cameraDistance -= zoomFactor;
-        if (m_cameraDistance < 5.0f) m_cameraDistance = 5.0f; // Minimum distance
+        if (m_cameraDistance < 5.0f) m_cameraDistance = 5.0f;
     }
     else if(_event->angleDelta().y() < 0 )
     {
-        // Zoom out - increase camera distance
         m_cameraDistance += zoomFactor;
-        if (m_cameraDistance > 1500.0f) m_cameraDistance = 1500.0f; // Maximum distance (increased for large simulations)
+        if (m_cameraDistance > 1500.0f) m_cameraDistance = 1500.0f;
     }
     
     updateCameraPosition();
@@ -874,44 +786,28 @@ void GLWindow::timerEvent(
             return;
         }
 
-        // Use modern GLM-based update with performance monitoring
         {
             PROFILE_SCOPE("Total Frame Update");
             {
                 PROFILE_SCOPE("Flock Update");
-                
-                // Try GPU-accelerated flocking first
                 if (m_gpuFlockingManager && m_gpuFlockingManager->isEnabled()) {
                     PROFILE_SCOPE("GPU Flocking Update");
-                    
-                    // Convert CPU boid data to GPU format
                     const std::vector<Boid*>& boidList = flock->getBoidList();
                     std::vector<FlockingGraphics::GPUBoidData> gpuBoidData;
                     gpuBoidData.reserve(boidList.size());
-                    
-                    for (Boid* boid : boidList) { // Remove const
+                    for (Boid* boid : boidList) {
                         FlockingGraphics::GPUBoidData gpuBoid;
-                        
-                        // Convert position
                         Vector pos = boid->getPosition();
                         gpuBoid.position = glm::vec3(pos.m_x, pos.m_y, pos.m_z);
-                        
-                        // Convert velocity
                         Vector vel = boid->getVelocity();
                         gpuBoid.velocity = glm::vec3(vel.m_x, vel.m_y, vel.m_z);
-                        
-                        // Set lastPosition (for CPU-style position integration)
                         Vector lastPos = boid->getLastPosition();
                         gpuBoid.lastPosition = glm::vec3(lastPos.m_x, lastPos.m_y, lastPos.m_z);
-                        
-                        // Convert color
                         flock::Color colorModern = boid->getColorModern();
                         gpuBoid.color = glm::vec4(colorModern.r, colorModern.g, colorModern.b, colorModern.a);
-                        
                         gpuBoidData.push_back(gpuBoid);
                     }
                     
-                    // Set up flocking parameters
                     FlockingGraphics::FlockingParameters params;
                     params.separationDistance = static_cast<float>(flock->getBehaviours()->getFlockDistance());
                     params.alignmentDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
@@ -919,13 +815,12 @@ void GLWindow::timerEvent(
                     params.separationForce = static_cast<float>(flock->getBehaviours()->getSeparationForce());
                     params.alignmentForce = static_cast<float>(flock->getBehaviours()->getAlignment());
                     params.cohesionForce = static_cast<float>(flock->getBehaviours()->getCohesionForce());
-                    params.maxSpeed = 2.0f;  // Reduced GPU boid speed for less clustering
-                    params.maxForce = 0.5f;   // FIXED: Match shader force limit
+                    params.maxSpeed = 2.0f;
+                    params.maxForce = 0.5f;
                     params.numBoids = static_cast<int>(boidList.size());
-                    params.deltaTime = 0.016f; // 60 FPS time step for smooth movement
+                    params.deltaTime = 0.016f;
                     params.speedMultiplier = flock->getSpeedMultiplier();
                     
-                    // Debug parameter values (print once)
                     static bool debugPrinted = false;
                     if (!debugPrinted) {
                         std::cout << "GPU Flocking Parameters:" << std::endl;
@@ -942,7 +837,6 @@ void GLWindow::timerEvent(
                         debugPrinted = true;
                     }
                     
-                    // Set bounding box from current bbox
                     if (bbox) {
                         Vector center = bbox->getCenter();
                         float width = bbox->getWidth() / 2.0f;
@@ -952,48 +846,38 @@ void GLWindow::timerEvent(
                         params.boundingBoxMax = glm::vec3(center.m_x + width, center.m_y + height, center.m_z + depth);
                     }
                     
-                    // TODO: Add obstacle support back to GPU flocking
                     // if (obstacle) {
                     //     Vector obsPos = obstacle->getSpherePosition();
                     //     params.obstaclePosition = glm::vec3(obsPos.m_x, obsPos.m_y, obsPos.m_z);
                     //     params.obstacleRadius = static_cast<float>(obstacle->getSphereRadius());
                     // }
                     
-                    // Upload data to GPU and compute flocking
                     m_gpuFlockingManager->updateParameters(params);
                     m_gpuFlockingManager->uploadBoidData(gpuBoidData);
                     m_gpuFlockingManager->computeFlocking();
                     
-                    // Download results and update CPU boids
                     std::vector<FlockingGraphics::GPUBoidData> results = m_gpuFlockingManager->downloadBoidData();
                     
-                    // Apply results back to CPU boids
                     for (size_t i = 0; i < boidList.size() && i < results.size(); i++) {
                         const FlockingGraphics::GPUBoidData& result = results[i];
                         
-                        // Update position
                         Vector newPos(result.position.x, result.position.y, result.position.z);
                         boidList[i]->setPosition(newPos);
                         
-                        // Update velocity
                         Vector newVel(result.velocity.x, result.velocity.y, result.velocity.z);
                         boidList[i]->setVelocity(newVel);
                         
-                        // Update direction based on velocity
                         boidList[i]->boidDirection();
                     }
                     
-                    // Handle collisions on CPU (for now)
                     flock->checkCollisions();
                     
-                    // Print performance info occasionally
                     static int frameCounter = 0;
                     if (++frameCounter % 120 == 0) { // Every 2 seconds at 60 FPS
                         std::cout << "GPU Flocking: " << m_gpuFlockingManager->getLastComputeTime() << "ms for " 
                                   << boidList.size() << " boids" << std::endl;
                     }
                 } else {
-                    // Fall back to CPU flocking
                     flock->update();
                 }
             }
@@ -1010,11 +894,9 @@ void GLWindow::timerEvent(
 //----------------------------------------------------------------------------------------------------------------------
 void GLWindow::updateCameraPosition()
 {
-    // Convert spherical coordinates to Cartesian coordinates
     float radAzimuth = glm::radians(m_cameraAzimuth);
     float radElevation = glm::radians(m_cameraElevation);
     
-    // Calculate camera position relative to target
     float x = m_cameraDistance * cos(radElevation) * cos(radAzimuth);
     float y = m_cameraDistance * sin(radElevation);
     float z = m_cameraDistance * cos(radElevation) * sin(radAzimuth);
@@ -1022,7 +904,6 @@ void GLWindow::updateCameraPosition()
     Vector cameraPos(m_cameraTarget.m_x + x, m_cameraTarget.m_y + y, m_cameraTarget.m_z + z);
     Vector up(0, 1, 0);
     
-    // Update camera
     m_cam->lookAt(cameraPos, m_cameraTarget, up);
 }
 
@@ -1043,36 +924,28 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
 {
     switch (_event->key()) {
         case Qt::Key_P:
-            // Print performance comparison
             printPerformanceComparison();
             break;
         case Qt::Key_R:
-            // Print performance profiler report
             PerformanceProfiler::getInstance().printReport();
             break;
         case Qt::Key_T:
-            // Reset performance profiler statistics
             PerformanceProfiler::getInstance().reset();
             std::cout << "Performance profiler statistics reset." << std::endl;
             break;
         case Qt::Key_M:
-            // Toggle performance monitoring
             setPerformanceMonitoring(!m_performanceMonitor.isEnabled());
             break;
         case Qt::Key_C:
-            // Clear performance data
             m_performanceMonitor.clear();
             break;
         case Qt::Key_Space:
-            // Toggle animation
             m_animate = !m_animate;
             break;
         case Qt::Key_V:
-            // Validate behavior differences
             validateBehaviorDifferences();
             break;
         case Qt::Key_G:
-            // Toggle GPU/CPU flocking modes
             if (m_gpuFlockingManager) {
                 bool wasEnabled = m_gpuFlockingManager->isEnabled();
                 m_gpuFlockingManager->toggleGPUMode();
@@ -1085,7 +958,6 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
             break;
         case Qt::Key_Plus:
         case Qt::Key_Equal:
-            // Add more boids for testing
             if (flock) {
                 for (int i = 0; i < 5; i++) {  // Add 5 sets of 10 = 50 boids
                     flock->addBoids();
@@ -1094,7 +966,6 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
             }
             break;
         case Qt::Key_Minus:
-            // Remove boids for testing
             if (flock) {
                 for (int i = 0; i < 5 && flock->getFlockSize() > 10; i++) {  // Remove 5 sets of 10 = 50 boids
                     flock->removeBoids();
@@ -1103,7 +974,6 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
             }
             break;
         case Qt::Key_1:
-            // Set to 500 boids
             if (flock) {
                 int currentSize = flock->getFlockSize();
                 int target = 500;
@@ -1124,7 +994,6 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
             }
             break;
         case Qt::Key_2:
-            // Set to 1000 boids
             if (flock) {
                 int currentSize = flock->getFlockSize();
                 int target = 1000;
@@ -1145,7 +1014,6 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
             }
             break;
         case Qt::Key_3:
-            // Set to 2000 boids
             if (flock) {
                 int currentSize = flock->getFlockSize();
                 int target = 2000;
@@ -1155,7 +1023,6 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
             }
             break;
         case Qt::Key_4:
-            // Set to 4000 boids
             if (flock) {
                 int currentSize = flock->getFlockSize();
                 int target = 4000;
@@ -1165,7 +1032,6 @@ void GLWindow::keyPressEvent(QKeyEvent *_event)
             }
             break;
         case Qt::Key_0:
-            // Reset to default 200 boids
             if (flock) {
                 int currentSize = flock->getFlockSize();
                 int target = 200;

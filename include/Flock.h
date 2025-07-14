@@ -1,13 +1,13 @@
-// flock.h - Modernized, documented, and cleaned up for maintainability
+// ...existing code...
 #pragma once
 #include <vector>
 #include <string>
 #include "FlockTypes.h"
-#include "boid.h"
+#include "Boid.h"
 #include "modules/graphics/include/BBox.h"
 #include "TransformStack.h"
 #include "Camera.h"
-#include "obstacle.h"
+#include "Obstacle.h"
 #include "Behaviours.h"
 #include "SpatialHashGrid.h"
 
@@ -71,32 +71,19 @@ public:
     /// @brief Set the strength of the repulsion force from obstacles
     void setObstacleRepulsionForce(float force) { m_obstacleRepulsionForce = force; }
 private:
-    /// @brief a dynamic array to contain the boids.
     std::vector <Boid*> m_boidList;
-    /*! flag to indicate if the sphere has been hit by ray */
     bool m_hit;
-    /// @brief the number of boids  are created
     int m_numberOfBoids;
-    /// @brief pointer to object of Behaviour class
     Flock *m_react;
-    /// @brief flag to indicate if we need to do spheresphere checks
     bool m_checkSphereSphere;
-    /// @brief variable to store the boid count
     int _boidId;
-    /// @brief pointer to boid class.
     Boid *_boid;
-    /// @brief a pointer to the bbox.
     BBox *m_bbox;
-    /// @brief our sphere collision method.
     void  checkSphereCollisions();
-    /// @brief a pointer for the obstacle class
     Obstacle *m_obstacle;
-    /// @brief a pointer for the behaviour class
     Behaviours *m_behaviours;
     double m_boidScale;
-    /// @brief variable to store the color of the boid.
     Colour m_boidColour;
-    /// @brief speed multiplier for controlling flock movement speed
     float m_speedMultiplier;
     /// @brief spatial hash grid for efficient neighbor queries (O(N) instead of O(N²))
     flock::SpatialHashGrid m_spatialGrid;

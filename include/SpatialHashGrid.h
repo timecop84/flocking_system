@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 #include "FlockTypes.h"
-#include "boid.h"
+#include "Boid.h"
 
 namespace flock {
 /**

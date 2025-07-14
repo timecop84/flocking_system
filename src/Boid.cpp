@@ -9,7 +9,7 @@
  * @date 2025
  */
 
-#include "boid.h"
+#include "Boid.h"
 #include "Material.h"
 #include "ShaderLib.h"
 #include "Matrix.h"
