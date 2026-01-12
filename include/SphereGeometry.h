@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <GL/gl.h>
+#include <glad/gl.h>
 #include "FlockTypes.h"
 
 namespace FlockingGeometry {

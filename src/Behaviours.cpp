@@ -14,12 +14,12 @@
 
 Behaviours::Behaviours()
 {
-    // Swarm-of-flies behavior parameters - tighter grouping, more chaotic movement
-    m_BehaviourDistance = 15;  // Smaller distance for tighter swarming
-    m_flockDistance = 8;       // Closer separation distance
-    m_seperationForce = 12;    // Higher separation to prevent clustering
-    m_alignment = 3;           // Much lower alignment for chaotic movement
-    m_cohesionForce = 8;       // Higher cohesion to keep swarm together
+    // Classic stable parameters used before the UI migration
+    m_BehaviourDistance = 20;   // Neighbourhood radius
+    m_flockDistance = 12;       // Separation radius
+    m_seperationForce = 3;      // Gentle separation force
+    m_alignment = 10;           // Keep headings aligned
+    m_cohesionForce = 2;        // Moderate cohesion
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Behaviours::Cohesion(int &_boidNumber, std::vector <Boid*> & _boidList)

@@ -400,8 +400,9 @@ void Flock::validateBoundingBoxCollision()
 {
     //create an array of the extents of the bounding box
     float ext[6];
-    ext[0]=ext[1]=(m_bbox->height()/2.0f);
-    ext[2]=ext[3]=(m_bbox->width()/2.0f);
+    // Map to normal order: +X, -X, +Y, -Y, +Z, -Z
+    ext[0]=ext[1]=(m_bbox->width()/2.0f);
+    ext[2]=ext[3]=(m_bbox->height()/2.0f);
     ext[4]=ext[5]=(m_bbox->depth()/2.0f);
     
     Vector point;
@@ -418,10 +419,24 @@ void Flock::validateBoundingBoxCollision()
             GLfloat avoidanceZone = ext[i] * 0.9f;
             if(Distance >= ext[i])
             {
-                GLfloat x = 2 * (s->getVelocity().dot((m_bbox->getNormalArray()[i])));
-                Vector d = m_bbox->getNormalArray()[i] * x;
-                s->setVelocity(s->getNextPosition() - d * 0.8);
-                s->isHit();
+                // Reflect velocity off the plane normal with damping
+                const Vector& normal = m_bbox->getNormalArray()[i];
+                float vn = s->getVelocity().dot(normal);
+                Vector reflected = s->getVelocity() - normal * (2.0f * vn);
+                reflected = reflected * 0.8f; // dampen a bit to avoid runaway
+
+                // Clamp position to the boundary face to prevent tunneling
+                Vector pos = s->getPosition();
+                if (i == 0) pos.m_x =  ext[i]; // +X
+                if (i == 1) pos.m_x = -ext[i]; // -X
+                if (i == 2) pos.m_y =  ext[i]; // +Y
+                if (i == 3) pos.m_y = -ext[i]; // -Y
+                if (i == 4) pos.m_z =  ext[i]; // +Z
+                if (i == 5) pos.m_z = -ext[i]; // -Z
+
+                s->setPosition(pos);
+                s->setVelocity(reflected);
+                s->setHit();
             }
             else if(Distance >= avoidanceZone)
             {

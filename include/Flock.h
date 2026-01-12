@@ -4,7 +4,7 @@
 #include <string>
 #include "FlockTypes.h"
 #include "Boid.h"
-#include "modules/graphics/include/BBox.h"
+#include "BBox.h"
 #include "TransformStack.h"
 #include "Camera.h"
 #include "Obstacle.h"

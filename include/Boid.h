@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 #include <iostream>
-#include <GL/gl.h>
+#include <glad/gl.h>
 #include "FlockTypes.h"
 #include "Vector.h"
 #include "Colour.h"

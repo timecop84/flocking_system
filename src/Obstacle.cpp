@@ -13,8 +13,7 @@
 #include "ShaderLib.h"
 #include "Matrix.h"
 #include "SphereGeometry.h"
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include <glad/gl.h>
 #include <iostream>
 
 Obstacle::Obstacle(Vector spherePosition, GLfloat sphereRadius)

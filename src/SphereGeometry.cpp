@@ -12,7 +12,7 @@
 #include "SphereGeometry.h"
 #include <iostream>
 #include <cmath>
-#include <GL/gl.h>
+#include <glad/gl.h>
 
 namespace FlockingGeometry {
 

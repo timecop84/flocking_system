@@ -92,6 +92,7 @@ desktop.ini
 # Configuration files that might contain sensitive info
 config.ini
 settings.ini
+imgui.ini
 
 # Additional ignores for project cleanup
 # Old/test/example/backup files

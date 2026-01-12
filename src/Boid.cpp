@@ -14,8 +14,7 @@
 #include "ShaderLib.h"
 #include "Matrix.h"
 #include "ModernExample.h"
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include <glad/gl.h>
 #include <cmath>
 
 Boid::Boid(

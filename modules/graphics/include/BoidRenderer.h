@@ -6,7 +6,7 @@
 #include "Boid.h"
 #include "TransformStack.h"
 #include "Camera.h"
-#include "modules/graphics/include/InstancedBoidRenderer.h"
+#include "InstancedBoidRenderer.h"
 
 /**
  * @file BoidRenderer.h

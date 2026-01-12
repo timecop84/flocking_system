@@ -11,7 +11,7 @@ Key features:
 - Multithreaded simulation for improved performance
 - Support for instanced rendering to efficiently display large numbers of boids
 - Modular architecture with separate components for simulation, rendering, and user interface
-- Interactive Qt-based user interface for adjusting simulation and rendering parameters
+- ImGui + GLFW interface for adjusting simulation and rendering parameters
 - Performance monitoring and validation tools
 
 ## Contributors and Acknowledgements
@@ -22,51 +22,32 @@ Key features:
 
 ## Dependencies
 
-- Qt 5 or 6 (for GUI and OpenGL integration)
-- OpenGL 3.3+
-- glad2 (OpenGL Extension Loader)
-- GLM (OpenGL Mathematics)
-- [vcpkg](https://github.com/microsoft/vcpkg)
-- [Chocolatey](https://chocolatey.org/)
-- MinGW (for Windows builds)
-
-
-## Installation
-
-### Using vcpkg (Recommended)
-
-1. Follow the [official vcpkg installation guide](https://github.com/microsoft/vcpkg#quick-start) to set up vcpkg on your system.
-
-2. Install the required libraries:
-   ```powershell
-   vcpkg install qt5-base glm
-   ```
-   Note: glad2 is included in the project as source files, so no separate installation is needed.
-
-3. For integration with CMake, follow the [vcpkg CMake integration instructions](https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration).
+- CMake 3.24+
+- OpenGL 4.5 capable GPU/driver
+- GLM (pulled from `../SandboxGE/external/glm` or `../cloth_solver/external/glm`)
+- GLFW (uses `../cloth_solver/external/glfw` if present, otherwise system `glfw3`)
+- Dear ImGui (uses `../cloth_solver/external/imgui`)
+- glad (bundled in `glad/`)
 
 ## Build Instructions
 
-### Using MinGW and `mingw32-make`
+From the project root:
 
-1. Open a terminal in the project root directory.
-2. Run:
+```bash
+# Configure + build + run
+./build.sh
 
-   ```bash
-   mingw32-make
-   ```
+# Or on Windows
+build.bat
+```
 
-   or use the provided batch file:
-
-   ```bash
-   build.bat (-help for more details)
+You can pass `build`, `rebuild`, `run`, or `clean` as the first argument to control the script behaviour. The CMake build is written to `build/` by default.
 
 
 ## Usage
 
-- Launch the application. The main window provides controls for simulation parameters, rendering options, and obstacle properties.
-- Use the UI to adjust flock size, boid and obstacle appearance, and simulation dynamics in real time.
-- Keyboard shortcuts and additional controls are documented in the application and code comments.
+- Launch the executable (`flock`). The ImGui panel lets you tweak flock size, speeds, obstacle properties, bounding box, and shader settings in real time.
+- Keyboard shortcuts mirror the legacy app: `G` toggles GPU/CPU, `Space` pauses, `+/-` add or remove boids, `1/2/3/4/0` quick set sizes, `R/T` profiler controls.
 
 ## License
 

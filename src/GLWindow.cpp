@@ -9,17 +9,15 @@
  */
 
 #include <glad/gl.h>
+#include <GLFW/glfw3.h>
 #include "Obstacle.h"
 #include <GPUFlockingManager.h>
 #include "GLWindow.h"
-#include <QMainWindow>
-#include <QOpenGLContext>
-#include "MainWindow.h"
 #include "Flock.h"
 #include "Boid.h"
 #include <iostream>
 #include <cmath>
-#include <QSurfaceFormat>
+#include <limits>
 #include "MathUtils.h"
 #include <Camera.h>
 #include <Colour.h>
@@ -41,32 +39,17 @@
 #include "BehaviorValidator.h"
 #include "ShaderConstants.h"
 #include "PerformanceProfiler.h"
-#include <modules/graphics/include/BoidRenderer.h>
+#include <BoidRenderer.h>
 
 
 
 const static float INCREMENT = 1;
 const static float ZOOM = 10.0;
-GLWindow::GLWindow(
-        QWidget *_parent
-        )
-    : QOpenGLWidget(_parent)
+GLWindow::GLWindow()
 {
-    // Configure OpenGL format
-    QSurfaceFormat format;
-    format.setVersion(3, 3);
-    format.setProfile(QSurfaceFormat::CompatibilityProfile);
-    format.setDepthBufferSize(24);
-    format.setStencilBufferSize(8);
-    format.setSamples(4);
-    setFormat(format);
-    
     obstacle = new Obstacle(Vector(0,0,0), 4.0);
     std::cout << "[GLWindow] Created obstacle at address: " << obstacle << std::endl;
 
-    setFocus();
-    setFocusPolicy(Qt::StrongFocus);
-    this->resize(_parent->size());
     m_rotate=false;
     m_translate=false;
     m_pan=false;
@@ -100,7 +83,6 @@ GLWindow::GLWindow(
     std::cout << "Press '3' - Set 2000 boids (TARGET)" << std::endl;
     std::cout << "====================================\n" << std::endl;
     
-    m_sphereUpdateTimer = startTimer(1000 / 60);
     m_animate = true;
     m_backgroundColour.set(0.6f, 0.6f, 0.6f, 1.0f);
     
@@ -117,6 +99,16 @@ GLWindow::~GLWindow()
 int GLWindow::getCurrentBoidSize()
 {
     return flock->getFlockSize();
+}
+
+bool GLWindow::isGPUModeEnabled() const
+{
+    return m_gpuFlockingManager && m_gpuFlockingManager->isEnabled();
+}
+
+int GLWindow::getThreadCount() const
+{
+    return m_boidRenderer ? m_boidRenderer->getNumThreads() : 1;
 }
 
 void GLWindow::resetFlock()
@@ -151,12 +143,13 @@ void GLWindow::setBoidSize(double size)
     }
 }
 
-void GLWindow::setBoidColor(QColor colour)
+void GLWindow::setBoidColor(const glm::vec3& colour)
 {
     Colour colourToSet;
-    colourToSet.set(colour.redF(), colour.greenF(), colour.blueF());
-
-    flock->setColour(colourToSet);
+    colourToSet.set(colour.r, colour.g, colour.b);
+    if (flock) {
+        flock->setColour(colourToSet);
+    }
 }
 
 void GLWindow::setFlockWireframe(bool value)
@@ -175,7 +168,7 @@ void GLWindow::setObstaclePosition(glm::vec3 position)
     if (obstacle) {
         obstacle->setPositionModern(flock::Vec3(position.x, position.y, position.z));
     }
-    update();
+    m_needsRedraw = true;
 }
 
 void GLWindow::setObstacleSize(double size)
@@ -186,16 +179,16 @@ void GLWindow::setObstacleSize(double size)
         m_pendingObstacleSize = size;
         m_hasPendingObstacleSize = true;
     }
-    update();
+    m_needsRedraw = true;
 }
 
-void GLWindow::setObstacleColour(QColor colour)
+void GLWindow::setObstacleColour(const glm::vec3& colour)
 {
     std::cout << "[GLWindow] setObstacleColour: this->obstacle=" << obstacle << std::endl;
     if (obstacle) {
-        obstacle->setColorModern(flock::Color(colour.redF(), colour.greenF(), colour.blueF(), 1.0f));
+        obstacle->setColorModern(flock::Color(colour.r, colour.g, colour.b, 1.0f));
     }
-    update();
+    m_needsRedraw = true;
 }
 
 void GLWindow::setObstacleWireframe(bool value)
@@ -203,7 +196,7 @@ void GLWindow::setObstacleWireframe(bool value)
     if (obstacle) {
         obstacle->setWireframe(value);
     }
-    update();
+    m_needsRedraw = true;
 }
 
 void GLWindow::setSimDistance(double distance)
@@ -240,7 +233,7 @@ void GLWindow::setBackgroundColour(Colour colour)
 {
     m_backgroundColour = colour;
     glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
-    update();
+    m_needsRedraw = true;
 }
 
 void GLWindow::setBBoxSize(glm::vec3 size)
@@ -251,34 +244,32 @@ void GLWindow::setBBoxSize(glm::vec3 size)
 }
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
-void GLWindow::initializeGL()
+void GLWindow::initialize(int width, int height)
 {
-    // Initialize OpenGL functions - required for QOpenGLWidget with QOpenGLFunctions
-    initializeOpenGLFunctions();
+    m_viewportWidth = width;
+    m_viewportHeight = height;
 
-    // Cache GPU renderer name for overlay
-    const GLubyte* renderer = glGetString(GL_RENDERER);
-    if (renderer)
-        m_gpuName = QString::fromUtf8(reinterpret_cast<const char*>(renderer));
-    else
-        m_gpuName = "Unknown GPU";
-
-    glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
-    // enable depth testing for drawing
-    glEnable(GL_DEPTH_TEST);
-    
-    // Initialize glad for OpenGL function loading
-    if (!gladLoadGL([](const char* name) { return QOpenGLContext::currentContext()->getProcAddress(name); })) {
+    if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize glad" << std::endl;
         return;
     }
+
+    glViewport(0, 0, width, height);
+    
+    glClearColor(m_backgroundColour.m_r, m_backgroundColour.m_g, m_backgroundColour.m_b, m_backgroundColour.m_a);
+    glEnable(GL_DEPTH_TEST);
     
     GLint major, minor;
     glGetIntegerv(GL_MAJOR_VERSION, &major);
     glGetIntegerv(GL_MINOR_VERSION, &minor);
     std::cout << "glad initialized successfully with OpenGL " << major << "." << minor << std::endl;
     
-    // Load shaders and set values
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    if (renderer)
+        m_gpuName = reinterpret_cast<const char*>(renderer);
+    else
+        m_gpuName = "Unknown GPU";
+    
     m_shader = ShaderLib::instance();
     
     
@@ -361,7 +352,8 @@ void GLWindow::initializeGL()
     Vector To(0,0,0);
     Vector Up(0,1,0);
     m_cam= new Camera(From,To,Up,PERSPECTIVE);
-    m_cam->setShape(45,(float)720.0/576.0,0.05,2000,PERSPECTIVE);
+    float aspect = (height > 0) ? static_cast<float>(width) / static_cast<float>(height) : 16.0f / 9.0f;
+    m_cam->setShape(45, aspect,0.05,2000,PERSPECTIVE);
     
     updateCameraPosition();
     
@@ -425,7 +417,7 @@ void GLWindow::initializeGL()
     glEnable(GL_DEPTH_TEST);
     
     // Initialize sphere primitive for boid rendering
-    bbox = new BBox(Vector(0,0,0),200,200,200);
+    bbox = new BBox(Vector(0,0,0),120,120,120);
     bbox->setDrawMode(GL_LINE);
     flock = new Flock(bbox, obstacle);
     
@@ -438,6 +430,9 @@ void GLWindow::initializeGL()
     if (!m_gpuFlockingManager->initialize()) {
         std::cerr << "Warning: GPU flocking acceleration failed to initialize, falling back to CPU" << std::endl;
         m_gpuFlockingManager->setEnabled(false);
+    } else {
+        // Start in CPU mode; users can toggle GPU with 'G' if desired
+        m_gpuFlockingManager->setEnabled(false);
     }
     
     if (m_hasPendingBoidSize) {
@@ -448,27 +443,20 @@ void GLWindow::initializeGL()
         obstacle->setSphereRadius(m_pendingObstacleSize);
         m_hasPendingObstacleSize = false;
     }
-    
-    if (auto* mainWindow = qobject_cast<MainWindow*>(parent()->parent())) {
-        mainWindow->initializeUIValues();
-    }
 }
 //----------------------------------------------------------------------------------------------------------------------
-//This virtual function is called whenever the widget has been updateVelocityresized.
-// The new size is passed in width and height.
+// Handle viewport resize
 //----------------------------------------------------------------------------------------------------------------------
-void GLWindow::resizeGL(
-        int _w,
-        int _h
-        )
+void GLWindow::resize(int _w, int _h)
 {
-    // set the viewport for openGL
+    m_viewportWidth = _w;
+    m_viewportHeight = _h;
     glViewport(0,0,_w,_h);
     
-    // Update camera with new aspect ratio (modern approach)
     if (m_cam) {
         m_cam->setShape(45,(float)_w/_h,0.05,2000,PERSPECTIVE);
     }
+    m_needsRedraw = true;
 }
 
 
@@ -492,7 +480,7 @@ void GLWindow::loadMatricesToColourShader(
 }
 //----------------------------------------------------------------------------------------------------------------------
 // ...existing code...
-void GLWindow::paintGL()
+void GLWindow::render()
 {
     PROFILE_SCOPE("Total Frame Render");
     
@@ -555,20 +543,68 @@ void GLWindow::paintGL()
     }
     
     updateFPS();
-    renderFPSText();
     
     FlockingGraphics::FrameCoordinator::getInstance().endFrame();
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-void GLWindow::mouseMoveEvent (
-        QMouseEvent * _event
-        )
+void GLWindow::onMouseMove(double x, double y, bool leftDown, bool rightDown, bool middleDown, bool shift, bool ctrl)
 {
-    if(m_rotate && _event->buttons() == Qt::LeftButton)
+    m_shiftDown = shift;
+    m_ctrlDown = ctrl;
+    m_leftMouseDown = leftDown;
+    m_rightMouseDown = rightDown;
+    m_middleMouseDown = middleDown;
+
+    // Obstacle dragging has priority
+    if (m_obstacleSelected && leftDown) {
+        if (shift) {
+            m_obstacleDragPlane = ObstacleDragPlane::XZ;
+        } else if (ctrl) {
+            m_obstacleDragPlane = ObstacleDragPlane::YZ;
+        } else {
+            m_obstacleDragPlane = ObstacleDragPlane::XY;
+        }
+        float nx = 2.0f * static_cast<float>(x) / static_cast<float>(m_viewportWidth) - 1.0f;
+        float ny = 1.0f - 2.0f * static_cast<float>(y) / static_cast<float>(m_viewportHeight);
+        glm::vec4 rayClip(nx, ny, -1.0f, 1.0f);
+        glm::mat4 proj = m_cam->getProjectionMatrix();
+        glm::mat4 view = m_cam->getViewMatrix();
+        glm::vec4 rayEye = glm::inverse(proj) * rayClip;
+        rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0, 0.0);
+        glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
+        glm::vec3 camPos = m_cam->getEye();
+        glm::vec3 hitPoint{std::numeric_limits<float>::quiet_NaN()};
+        if (m_obstacleDragPlane == ObstacleDragPlane::XY) {
+            float denom = rayWorld.z;
+            if (fabs(denom) > 1e-6f) {
+                float t = (m_obstacleDragPlaneZ - camPos.z) / denom;
+                hitPoint = camPos + t * rayWorld;
+            }
+        } else if (m_obstacleDragPlane == ObstacleDragPlane::XZ) {
+            float denom = rayWorld.y;
+            if (fabs(denom) > 1e-6f) {
+                float t = (m_obstacleDragPlaneZ - camPos.y) / denom;
+                hitPoint = camPos + t * rayWorld;
+            }
+        } else if (m_obstacleDragPlane == ObstacleDragPlane::YZ) {
+            float denom = rayWorld.x;
+            if (fabs(denom) > 1e-6f) {
+                float t = (m_obstacleDragPlaneZ - camPos.x) / denom;
+                hitPoint = camPos + t * rayWorld;
+            }
+        }
+        if (!std::isnan(hitPoint.x) && !std::isnan(hitPoint.y) && !std::isnan(hitPoint.z)) {
+            obstacle->setSpherePosition(Vector(hitPoint.x, hitPoint.y, hitPoint.z));
+            m_needsRedraw = true;
+        }
+        m_lastMousePos = glm::vec2(x, y);
+        return;
+    }
+
+    if(m_rotate && leftDown)
     {
-        int diffx=_event->position().x()-m_origX;
-        int diffy=_event->position().y()-m_origY;
+        int diffx=static_cast<int>(x)-m_origX;
+        int diffy=static_cast<int>(y)-m_origY;
         
         m_cameraAzimuth += diffx * 0.5f;
         m_cameraElevation += diffy * 0.5f;
@@ -581,15 +617,14 @@ void GLWindow::mouseMoveEvent (
         
         updateCameraPosition();
         
-        m_origX = _event->position().x();
-        m_origY = _event->position().y();
-        update();
+        m_origX = static_cast<int>(x);
+        m_origY = static_cast<int>(y);
+        m_needsRedraw = true;
     }
-    // Right mouse button - translate/pan target
-    else if(m_translate && _event->buttons() == Qt::RightButton)
+    else if(m_translate && rightDown)
     {
-        int diffX = (int)(_event->position().x() - m_origXPos);
-        int diffY = (int)(_event->position().y() - m_origYPos);
+        int diffX = static_cast<int>(x) - m_origXPos;
+        int diffY = static_cast<int>(y) - m_origYPos;
         
         float panSpeed = 0.1f;
         m_cameraTarget.m_x += panSpeed * diffX;
@@ -597,83 +632,47 @@ void GLWindow::mouseMoveEvent (
         
         updateCameraPosition();
         
-        m_origXPos=_event->position().x();
-        m_origYPos=_event->position().y();
-        update();
+        m_origXPos=static_cast<int>(x);
+        m_origYPos=static_cast<int>(y);
+        m_needsRedraw = true;
     }
-    // Middle mouse button - pan camera
-    else if(m_pan && _event->buttons() == Qt::MiddleButton)
+    else if(m_pan && middleDown)
     {
-        int diffX = (int)(_event->position().x() - m_origXPos);
-        int diffY = (int)(_event->position().y() - m_origYPos);
+        int diffX = static_cast<int>(x) - m_origXPos;
+        int diffY = static_cast<int>(y) - m_origYPos;
         
-        // Pan the camera target
         float panSpeed = 0.1f;
         m_cameraTarget.m_x += panSpeed * diffX;
         m_cameraTarget.m_y -= panSpeed * diffY;
         
         updateCameraPosition();
         
-        m_origXPos=_event->position().x();
-        m_origYPos=_event->position().y();
-        update();
+        m_origXPos=static_cast<int>(x);
+        m_origYPos=static_cast<int>(y);
+        m_needsRedraw = true;
     }
-    // Obstacle dragging
-    if (m_obstacleSelected && _event->buttons() == Qt::LeftButton) {
-        if (_event->modifiers() & Qt::ShiftModifier) {
-            m_obstacleDragPlane = ObstacleDragPlane::XZ;
-        } else if (_event->modifiers() & Qt::ControlModifier) {
-            m_obstacleDragPlane = ObstacleDragPlane::YZ;
-        } else {
-            m_obstacleDragPlane = ObstacleDragPlane::XY;
-        }
-        float x = 2.0f * _event->position().x() / width() - 1.0f;
-        float y = 1.0f - 2.0f * _event->position().y() / height();
-        glm::vec4 rayClip(x, y, -1.0f, 1.0f);
-        glm::mat4 proj = m_cam->getProjectionMatrix();
-        glm::mat4 view = m_cam->getViewMatrix();
-        glm::vec4 rayEye = glm::inverse(proj) * rayClip;
-        rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0, 0.0);
-        glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
-        glm::vec3 camPos = m_cam->getEye();
-        glm::vec3 hitPoint;
-        if (m_obstacleDragPlane == ObstacleDragPlane::XY) {
-            float denom = rayWorld.z;
-            if (fabs(denom) > 1e-6) {
-                float t = (m_obstacleDragPlaneZ - camPos.z) / denom;
-                hitPoint = camPos + t * rayWorld;
-            }
-        } else if (m_obstacleDragPlane == ObstacleDragPlane::XZ) {
-            float denom = rayWorld.y;
-            if (fabs(denom) > 1e-6) {
-                float t = (m_obstacleDragPlaneZ - camPos.y) / denom;
-                hitPoint = camPos + t * rayWorld;
-            }
-        } else if (m_obstacleDragPlane == ObstacleDragPlane::YZ) {
-            float denom = rayWorld.x;
-            if (fabs(denom) > 1e-6) {
-                float t = (m_obstacleDragPlaneZ - camPos.x) / denom;
-                hitPoint = camPos + t * rayWorld;
-            }
-        }
-        if (!std::isnan(hitPoint.x) && !std::isnan(hitPoint.y) && !std::isnan(hitPoint.z)) {
-            obstacle->setSpherePosition(Vector(hitPoint.x, hitPoint.y, hitPoint.z));
-            update();
-        }
-        m_lastMousePos = _event->pos();
-        return;
-    }
+
+    m_lastMousePos = glm::vec2(x, y);
 }
-//----------------------------------------------------------------------------------------------------------------------
-void GLWindow::mousePressEvent (
-        QMouseEvent * _event
-        )
+
+void GLWindow::onMouseButton(double x, double y, int button, int action, int mods)
 {
-    if (_event->button() == Qt::LeftButton) {
-        // Convert mouse position to normalized device coordinates
-        float x = 2.0f * _event->position().x() / width() - 1.0f;
-        float y = 1.0f - 2.0f * _event->position().y() / height();
-        glm::vec4 rayClip(x, y, -1.0f, 1.0f);
+    m_shiftDown = (mods & GLFW_MOD_SHIFT) != 0;
+    m_ctrlDown = (mods & GLFW_MOD_CONTROL) != 0;
+    bool pressed = action == GLFW_PRESS || action == GLFW_REPEAT;
+
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        m_leftMouseDown = pressed;
+    } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+        m_rightMouseDown = pressed;
+    } else if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
+        m_middleMouseDown = pressed;
+    }
+
+    if (pressed && button == GLFW_MOUSE_BUTTON_LEFT) {
+        float nx = 2.0f * static_cast<float>(x) / static_cast<float>(m_viewportWidth) - 1.0f;
+        float ny = 1.0f - 2.0f * static_cast<float>(y) / static_cast<float>(m_viewportHeight);
+        glm::vec4 rayClip(nx, ny, -1.0f, 1.0f);
         glm::mat4 proj = m_cam->getProjectionMatrix();
         glm::mat4 view = m_cam->getViewMatrix();
         glm::vec4 rayEye = glm::inverse(proj) * rayClip;
@@ -685,199 +684,277 @@ void GLWindow::mousePressEvent (
         float tHit;
         if (intersectRaySphere(camPos, rayWorld, sphereCenter, sphereRadius, tHit)) {
             m_obstacleSelected = true;
-            m_lastMousePos = _event->pos();
+            m_lastMousePos = glm::vec2(x, y);
             glm::vec3 hitPoint = camPos + tHit * rayWorld;
             m_obstacleDragStartWorld = Vector(hitPoint.x, hitPoint.y, hitPoint.z);
-            if (_event->modifiers() & Qt::ShiftModifier) {
+            if (m_shiftDown) {
                 m_obstacleDragPlane = ObstacleDragPlane::XZ;
-                m_obstacleDragPlaneZ = hitPoint.y; // Y fixed
-            } else if (_event->modifiers() & Qt::ControlModifier) {
+                m_obstacleDragPlaneZ = hitPoint.y;
+            } else if (m_ctrlDown) {
                 m_obstacleDragPlane = ObstacleDragPlane::YZ;
-                m_obstacleDragPlaneZ = hitPoint.x; // X fixed
+                m_obstacleDragPlaneZ = hitPoint.x;
             } else {
                 m_obstacleDragPlane = ObstacleDragPlane::XY;
-                m_obstacleDragPlaneZ = hitPoint.z; // Z fixed
+                m_obstacleDragPlaneZ = hitPoint.z;
             }
             return;
         }
-        // Left mouse button - orbital rotation
-        m_origX = _event->position().x();
-        m_origY = _event->position().y();
+        m_origX = static_cast<int>(x);
+        m_origY = static_cast<int>(y);
         m_rotate = true;
     }
-    else if(_event->button() == Qt::RightButton)
+    else if(pressed && button == GLFW_MOUSE_BUTTON_RIGHT)
     {
-        m_origXPos = _event->position().x();
-        m_origYPos = _event->position().y();
+        m_origXPos = static_cast<int>(x);
+        m_origYPos = static_cast<int>(y);
         m_translate = true;
     }
-    else if(_event->button() == Qt::MiddleButton)
+    else if(pressed && button == GLFW_MOUSE_BUTTON_MIDDLE)
     {
-        m_origXPos = _event->position().x();
-        m_origYPos = _event->position().y();
+        m_origXPos = static_cast<int>(x);
+        m_origYPos = static_cast<int>(y);
         m_pan = true;
     }
-}
-//----------------------------------------------------------------------------------------------------------------------
-void GLWindow::mouseReleaseEvent (
-        QMouseEvent * _event
-        )
-{
-    // Left mouse button
-    if (_event->button() == Qt::LeftButton)
-    {
-        m_rotate = false;
-    }
-    // Right mouse button
-    else if (_event->button() == Qt::RightButton)
-    {
-        m_translate = false;
-    }
-    // Middle mouse button
-    else if (_event->button() == Qt::MiddleButton)
-    {
-        m_pan = false;
+
+    if (!pressed) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            m_rotate = false;
+            if (m_obstacleSelected) {
+                m_obstacleSelected = false;
+            }
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+            m_translate = false;
+        } else if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
+            m_pan = false;
+        }
     }
 
-    if (_event->button() == Qt::LeftButton && m_obstacleSelected) {
-        m_obstacleSelected = false;
-        return;
-    }
+    m_lastMousePos = glm::vec2(x, y);
 }
-//----------------------------------------------------------------------------------------------------------------------
-void GLWindow::wheelEvent(QWheelEvent *_event)
+
+void GLWindow::onScroll(double /*xoffset*/, double yoffset)
 {
     float zoomFactor = 10.0f;
     
-    if(_event->angleDelta().y() > 0)
+    if(yoffset > 0)
     {
         m_cameraDistance -= zoomFactor;
         if (m_cameraDistance < 5.0f) m_cameraDistance = 5.0f;
     }
-    else if(_event->angleDelta().y() < 0 )
+    else if(yoffset < 0 )
     {
         m_cameraDistance += zoomFactor;
         if (m_cameraDistance > 1500.0f) m_cameraDistance = 1500.0f;
     }
     
     updateCameraPosition();
-    update();
+    m_needsRedraw = true;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-void GLWindow::timerEvent(
-        QTimerEvent *_event
-        )
+void GLWindow::updateSimulation(float deltaTime)
 {
-
-    if(_event->timerId() == m_sphereUpdateTimer)
-    {
-        if (m_animate !=true)
-        {
-
-
-            return;
-        }
-
-        {
-            PROFILE_SCOPE("Total Frame Update");
-            {
-                PROFILE_SCOPE("Flock Update");
-                if (m_gpuFlockingManager && m_gpuFlockingManager->isEnabled()) {
-                    PROFILE_SCOPE("GPU Flocking Update");
-                    const std::vector<Boid*>& boidList = flock->getBoidList();
-                    std::vector<FlockingGraphics::GPUBoidData> gpuBoidData;
-                    gpuBoidData.reserve(boidList.size());
-                    for (Boid* boid : boidList) {
-                        FlockingGraphics::GPUBoidData gpuBoid;
-                        Vector pos = boid->getPosition();
-                        gpuBoid.position = glm::vec3(pos.m_x, pos.m_y, pos.m_z);
-                        Vector vel = boid->getVelocity();
-                        gpuBoid.velocity = glm::vec3(vel.m_x, vel.m_y, vel.m_z);
-                        Vector lastPos = boid->getLastPosition();
-                        gpuBoid.lastPosition = glm::vec3(lastPos.m_x, lastPos.m_y, lastPos.m_z);
-                        flock::Color colorModern = boid->getColorModern();
-                        gpuBoid.color = glm::vec4(colorModern.r, colorModern.g, colorModern.b, colorModern.a);
-                        gpuBoidData.push_back(gpuBoid);
-                    }
-                    
-                    FlockingGraphics::FlockingParameters params;
-                    params.separationDistance = static_cast<float>(flock->getBehaviours()->getFlockDistance());
-                    params.alignmentDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
-                    params.cohesionDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
-                    params.separationForce = static_cast<float>(flock->getBehaviours()->getSeparationForce());
-                    params.alignmentForce = static_cast<float>(flock->getBehaviours()->getAlignment());
-                    params.cohesionForce = static_cast<float>(flock->getBehaviours()->getCohesionForce());
-                    params.maxSpeed = 2.0f;
-                    params.maxForce = 0.5f;
-                    params.numBoids = static_cast<int>(boidList.size());
-                    params.deltaTime = 0.016f;
-                    params.speedMultiplier = flock->getSpeedMultiplier();
-                    
-                    static bool debugPrinted = false;
-                    if (!debugPrinted) {
-                        std::cout << "GPU Flocking Parameters:" << std::endl;
-                        std::cout << "  separationDistance: " << params.separationDistance << std::endl;
-                        std::cout << "  alignmentDistance: " << params.alignmentDistance << std::endl;
-                        std::cout << "  cohesionDistance: " << params.cohesionDistance << std::endl;
-                        std::cout << "  separationForce: " << params.separationForce << std::endl;
-                        std::cout << "  alignmentForce: " << params.alignmentForce << std::endl;
-                        std::cout << "  cohesionForce: " << params.cohesionForce << std::endl;
-                        std::cout << "  maxSpeed: " << params.maxSpeed << std::endl;
-                        std::cout << "  maxForce: " << params.maxForce << std::endl;
-                        std::cout << "  deltaTime: " << params.deltaTime << std::endl;
-                        std::cout << "  speedMultiplier: " << params.speedMultiplier << std::endl;
-                        debugPrinted = true;
-                    }
-                    
-                    if (bbox) {
-                        Vector center = bbox->getCenter();
-                        float width = bbox->getWidth() / 2.0f;
-                        float height = bbox->getHeight() / 2.0f;
-                        float depth = bbox->getDepth() / 2.0f;
-                        params.boundingBoxMin = glm::vec3(center.m_x - width, center.m_y - height, center.m_z - depth);
-                        params.boundingBoxMax = glm::vec3(center.m_x + width, center.m_y + height, center.m_z + depth);
-                    }
-                    
-                    // if (obstacle) {
-                    //     Vector obsPos = obstacle->getSpherePosition();
-                    //     params.obstaclePosition = glm::vec3(obsPos.m_x, obsPos.m_y, obsPos.m_z);
-                    //     params.obstacleRadius = static_cast<float>(obstacle->getSphereRadius());
-                    // }
-                    
-                    m_gpuFlockingManager->updateParameters(params);
-                    m_gpuFlockingManager->uploadBoidData(gpuBoidData);
-                    m_gpuFlockingManager->computeFlocking();
-                    
-                    std::vector<FlockingGraphics::GPUBoidData> results = m_gpuFlockingManager->downloadBoidData();
-                    
-                    for (size_t i = 0; i < boidList.size() && i < results.size(); i++) {
-                        const FlockingGraphics::GPUBoidData& result = results[i];
-                        
-                        Vector newPos(result.position.x, result.position.y, result.position.z);
-                        boidList[i]->setPosition(newPos);
-                        
-                        Vector newVel(result.velocity.x, result.velocity.y, result.velocity.z);
-                        boidList[i]->setVelocity(newVel);
-                        
-                        boidList[i]->boidDirection();
-                    }
-                    
-                    flock->checkCollisions();
-                    
-                    static int frameCounter = 0;
-                    if (++frameCounter % 120 == 0) { // Every 2 seconds at 60 FPS
-                        std::cout << "GPU Flocking: " << m_gpuFlockingManager->getLastComputeTime() << "ms for " 
-                                  << boidList.size() << " boids" << std::endl;
-                    }
-                } else {
-                    flock->update();
-                }
-            }
-        }
-        update();
+    if (!m_animate) {
+        return;
     }
 
+    PROFILE_SCOPE("Total Frame Update");
+    {
+        PROFILE_SCOPE("Flock Update");
+        float dt = deltaTime > 0.0f ? deltaTime : 0.016f;
+        if (m_gpuFlockingManager && m_gpuFlockingManager->isEnabled()) {
+            PROFILE_SCOPE("GPU Flocking Update");
+            const std::vector<Boid*>& boidList = flock->getBoidList();
+            std::vector<FlockingGraphics::GPUBoidData> gpuBoidData;
+            gpuBoidData.reserve(boidList.size());
+            for (Boid* boid : boidList) {
+                FlockingGraphics::GPUBoidData gpuBoid;
+                Vector pos = boid->getPosition();
+                gpuBoid.position = glm::vec3(pos.m_x, pos.m_y, pos.m_z);
+                Vector vel = boid->getVelocity();
+                gpuBoid.velocity = glm::vec3(vel.m_x, vel.m_y, vel.m_z);
+                Vector lastPos = boid->getLastPosition();
+                gpuBoid.lastPosition = glm::vec3(lastPos.m_x, lastPos.m_y, lastPos.m_z);
+                flock::Color colorModern = boid->getColorModern();
+                gpuBoid.color = glm::vec4(colorModern.r, colorModern.g, colorModern.b, 1.0f);
+                gpuBoidData.push_back(gpuBoid);
+            }
+            
+            FlockingGraphics::FlockingParameters params;
+            params.separationDistance = static_cast<float>(flock->getBehaviours()->getFlockDistance());
+            params.alignmentDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
+            params.cohesionDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
+            params.separationForce = static_cast<float>(flock->getBehaviours()->getSeparationForce());
+            params.alignmentForce = static_cast<float>(flock->getBehaviours()->getAlignment());
+            params.cohesionForce = static_cast<float>(flock->getBehaviours()->getCohesionForce());
+            params.maxSpeed = 2.0f;
+            params.maxForce = 0.5f;
+            params.numBoids = static_cast<int>(boidList.size());
+            params.deltaTime = dt;
+            params.speedMultiplier = flock->getSpeedMultiplier();
+            
+            if (bbox) {
+                Vector center = bbox->getCenter();
+                float width = bbox->getWidth() / 2.0f;
+                float height = bbox->getHeight() / 2.0f;
+                float depth = bbox->getDepth() / 2.0f;
+                params.boundingBoxMin = glm::vec3(center.m_x - width, center.m_y - height, center.m_z - depth);
+                params.boundingBoxMax = glm::vec3(center.m_x + width, center.m_y + height, center.m_z + depth);
+            }
+            
+            m_gpuFlockingManager->updateParameters(params);
+            m_gpuFlockingManager->uploadBoidData(gpuBoidData);
+            m_gpuFlockingManager->computeFlocking();
+            
+            std::vector<FlockingGraphics::GPUBoidData> results = m_gpuFlockingManager->downloadBoidData();
+            
+            for (size_t i = 0; i < boidList.size() && i < results.size(); i++) {
+                const FlockingGraphics::GPUBoidData& result = results[i];
+                
+                Vector newPos(result.position.x, result.position.y, result.position.z);
+                boidList[i]->setPosition(newPos);
+                
+                Vector newVel(result.velocity.x, result.velocity.y, result.velocity.z);
+                boidList[i]->setVelocity(newVel);
+                
+                boidList[i]->boidDirection();
+            }
+            
+            flock->checkCollisions();
+        } else {
+            flock->update();
+        }
+    }
+
+    m_needsRedraw = true;
+}
+
+void GLWindow::onKey(int key, int action)
+{
+    if (action != GLFW_PRESS) {
+        return;
+    }
+
+    switch (key) {
+        case GLFW_KEY_P:
+            printPerformanceComparison();
+            break;
+        case GLFW_KEY_R:
+            PerformanceProfiler::getInstance().printReport();
+            break;
+        case GLFW_KEY_T:
+            PerformanceProfiler::getInstance().reset();
+            std::cout << "Performance profiler statistics reset." << std::endl;
+            break;
+        case GLFW_KEY_M:
+            setPerformanceMonitoring(!m_performanceMonitor.isEnabled());
+            break;
+        case GLFW_KEY_C:
+            m_performanceMonitor.clear();
+            break;
+        case GLFW_KEY_SPACE:
+            m_animate = !m_animate;
+            break;
+        case GLFW_KEY_V:
+            validateBehaviorDifferences();
+            break;
+        case GLFW_KEY_G:
+            if (m_gpuFlockingManager) {
+                bool wasEnabled = m_gpuFlockingManager->isEnabled();
+                m_gpuFlockingManager->toggleGPUMode();
+                std::cout << "Switched from " << (wasEnabled ? "GPU" : "CPU") 
+                          << " to " << (m_gpuFlockingManager->isEnabled() ? "GPU" : "CPU") 
+                          << " flocking mode" << std::endl;
+            } else {
+                std::cout << "GPU flocking manager not available" << std::endl;
+            }
+            break;
+        case GLFW_KEY_KP_ADD:
+        case GLFW_KEY_EQUAL:
+            if (flock) {
+                for (int i = 0; i < 5; i++) {
+                    flock->addBoids();
+                }
+                std::cout << "Added boids. Total: " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case GLFW_KEY_KP_SUBTRACT:
+        case GLFW_KEY_MINUS:
+            if (flock) {
+                for (int i = 0; i < 5 && flock->getFlockSize() > 10; i++) {
+                    flock->removeBoids();
+                }
+                std::cout << "Removed boids. Total: " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case GLFW_KEY_1:
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 500;
+                std::cout << "Setting flock size from " << currentSize << " to " << target << std::endl;
+                
+                if (currentSize < target) {
+                    while (flock->getFlockSize() < target) {
+                        flock->addBoids();
+                    }
+                } else if (currentSize > target) {
+                    while (flock->getFlockSize() > target) {
+                        flock->removeBoids();
+                    }
+                }
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case GLFW_KEY_2:
+            if (flock) {
+                int currentSize = flock->getFlockSize();
+                int target = 1000;
+                std::cout << "Setting flock size from " << currentSize << " to " << target << std::endl;
+                
+                if (currentSize < target) {
+                    while (flock->getFlockSize() < target) {
+                        flock->addBoids();
+                    }
+                } else if (currentSize > target) {
+                    while (flock->getFlockSize() > target) {
+                        flock->removeBoids();
+                    }
+                }
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case GLFW_KEY_3:
+            if (flock) {
+                int target = 2000;
+                std::cout << "Setting flock size to " << target << " - TARGET!" << std::endl;
+                flock->setFlockSize(target);
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case GLFW_KEY_4:
+            if (flock) {
+                int target = 4000;
+                std::cout << "Setting flock size to " << target << " - MASSIVE!" << std::endl;
+                flock->setFlockSize(target);
+                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        case GLFW_KEY_0:
+            if (flock) {
+                int target = 200;
+                std::cout << "Resetting flock size to " << target << " (default)" << std::endl;
+                
+                while (flock->getFlockSize() < target) {
+                    flock->addBoids();
+                }
+                while (flock->getFlockSize() > target) {
+                    flock->removeBoids();
+                }
+                std::cout << "Flock size reset to " << flock->getFlockSize() << std::endl;
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -910,144 +987,6 @@ void GLWindow::printPerformanceComparison()
 void GLWindow::setPerformanceMonitoring(bool enabled)
 {
     m_performanceMonitor.setEnabled(enabled);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void GLWindow::keyPressEvent(QKeyEvent *_event)
-{
-    switch (_event->key()) {
-        case Qt::Key_P:
-            printPerformanceComparison();
-            break;
-        case Qt::Key_R:
-            PerformanceProfiler::getInstance().printReport();
-            break;
-        case Qt::Key_T:
-            PerformanceProfiler::getInstance().reset();
-            std::cout << "Performance profiler statistics reset." << std::endl;
-            break;
-        case Qt::Key_M:
-            setPerformanceMonitoring(!m_performanceMonitor.isEnabled());
-            break;
-        case Qt::Key_C:
-            m_performanceMonitor.clear();
-            break;
-        case Qt::Key_Space:
-            m_animate = !m_animate;
-            break;
-        case Qt::Key_V:
-            validateBehaviorDifferences();
-            break;
-        case Qt::Key_G:
-            if (m_gpuFlockingManager) {
-                bool wasEnabled = m_gpuFlockingManager->isEnabled();
-                m_gpuFlockingManager->toggleGPUMode();
-                std::cout << "Switched from " << (wasEnabled ? "GPU" : "CPU") 
-                          << " to " << (m_gpuFlockingManager->isEnabled() ? "GPU" : "CPU") 
-                          << " flocking mode" << std::endl;
-            } else {
-                std::cout << "GPU flocking manager not available" << std::endl;
-            }
-            break;
-        case Qt::Key_Plus:
-        case Qt::Key_Equal:
-            if (flock) {
-                for (int i = 0; i < 5; i++) {  // Add 5 sets of 10 = 50 boids
-                    flock->addBoids();
-                }
-                std::cout << "Added boids. Total: " << flock->getFlockSize() << std::endl;
-            }
-            break;
-        case Qt::Key_Minus:
-            if (flock) {
-                for (int i = 0; i < 5 && flock->getFlockSize() > 10; i++) {  // Remove 5 sets of 10 = 50 boids
-                    flock->removeBoids();
-                }
-                std::cout << "Removed boids. Total: " << flock->getFlockSize() << std::endl;
-            }
-            break;
-        case Qt::Key_1:
-            if (flock) {
-                int currentSize = flock->getFlockSize();
-                int target = 500;
-                std::cout << "Setting flock size from " << currentSize << " to " << target << std::endl;
-                
-                if (currentSize < target) {
-                    // Add boids
-                    while (flock->getFlockSize() < target) {
-                        flock->addBoids();
-                    }
-                } else if (currentSize > target) {
-                    // Remove boids
-                    while (flock->getFlockSize() > target) {
-                        flock->removeBoids();
-                    }
-                }
-                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
-            }
-            break;
-        case Qt::Key_2:
-            if (flock) {
-                int currentSize = flock->getFlockSize();
-                int target = 1000;
-                std::cout << "Setting flock size from " << currentSize << " to " << target << std::endl;
-                
-                if (currentSize < target) {
-                    // Add boids
-                    while (flock->getFlockSize() < target) {
-                        flock->addBoids();
-                    }
-                } else if (currentSize > target) {
-                    // Remove boids
-                    while (flock->getFlockSize() > target) {
-                        flock->removeBoids();
-                    }
-                }
-                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
-            }
-            break;
-        case Qt::Key_3:
-            if (flock) {
-                int currentSize = flock->getFlockSize();
-                int target = 2000;
-                std::cout << "Setting flock size from " << currentSize << " to " << target << " - TARGET!" << std::endl;
-                flock->setFlockSize(target);
-                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
-            }
-            break;
-        case Qt::Key_4:
-            if (flock) {
-                int currentSize = flock->getFlockSize();
-                int target = 4000;
-                std::cout << "Setting flock size from " << currentSize << " to " << target << " - MASSIVE!" << std::endl;
-                flock->setFlockSize(target);
-                std::cout << "Flock size set to " << flock->getFlockSize() << std::endl;
-            }
-            break;
-        case Qt::Key_0:
-            if (flock) {
-                int currentSize = flock->getFlockSize();
-                int target = 200;
-                std::cout << "Resetting flock size from " << currentSize << " to " << target << " (default)" << std::endl;
-                
-                if (currentSize < target) {
-                    // Add boids
-                    while (flock->getFlockSize() < target) {
-                        flock->addBoids();
-                    }
-                } else if (currentSize > target) {
-                    // Remove boids
-                    while (flock->getFlockSize() > target) {
-                        flock->removeBoids();
-                    }
-                }
-                std::cout << "Flock size reset to " << flock->getFlockSize() << std::endl;
-            }
-            break;
-        default:
-            QOpenGLWidget::keyPressEvent(_event);
-            break;
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1202,7 +1141,7 @@ void GLWindow::setObstacleSpecular(double r, double g, double b)
     m_obstacleSpecularR = r;
     m_obstacleSpecularG = g;
     m_obstacleSpecularB = b;
-    update(); // Trigger a redraw
+    m_needsRedraw = true;
 }
 
 void GLWindow::setObstacleDiffuse(double r, double g, double b)
@@ -1216,7 +1155,7 @@ void GLWindow::setObstacleDiffuse(double r, double g, double b)
         obstacle->setColour(colourToSet);
         obstacle->setColorModern(flock::Color(r, g, b, 1.0f));
     }
-    update(); // Trigger a redraw
+    m_needsRedraw = true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1255,11 +1194,6 @@ void GLWindow::setShowFPS(bool show) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-float GLWindow::getCurrentFPS() const {
-    return m_currentFPS;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 void GLWindow::updateFPS() {
     m_frameCount++;
     
@@ -1274,99 +1208,12 @@ void GLWindow::updateFPS() {
     }
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-void GLWindow::renderFPSText() {
-    if (!m_showFPS) return;
-    // Terminal FPS/boid count debug output and automatic profiling report removed.
-    // Profiling report is now only printed on demand (e.g., when pressing 'T').
-}
-
-void GLWindow::renderFPSOverlay() {
-    if (!m_showFPS) return;
-    
-    // This method will be called from paintEvent using QPainter
-    // The actual text rendering will be done there
-}
-
-void GLWindow::paintEvent(QPaintEvent *event) {
-    // First, perform the standard OpenGL rendering
-    QOpenGLWidget::paintEvent(event);
-
-    // Then, draw the FPS overlay using QPainter
-    if (m_showFPS) {
-        QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
-
-        // Set up the font for the FPS text
-        QFont font = painter.font();
-        font.setPointSize(12);
-        font.setBold(true);
-        painter.setFont(font);
-
-        // Prepare the FPS text
-        QString fpsText = QString("FPS: %1").arg(m_currentFPS, 0, 'f', 1);
-        QString boidText = QString("Boids: %1").arg(flock ? flock->getFlockSize() : 0);
-        QString modeText;
-        if (m_gpuFlockingManager && m_gpuFlockingManager->isEnabled()) {
-            modeText = QString("Mode: GPU - %1").arg(m_gpuName);
-        } else {
-            modeText = "Mode: CPU";
-        }
-
-        // Calculate text metrics
-        QFontMetrics fm(font);
-        int textWidth = qMax(qMax(fm.horizontalAdvance(fpsText), fm.horizontalAdvance(boidText)), fm.horizontalAdvance(modeText));
-        int textHeight = fm.height();
-
-        // Draw semi-transparent background (dark theme, more modern look)
-        int padding = 8;
-        int bgWidth = textWidth + 2 * padding;
-        int bgHeight = 3 * textHeight + 4 * padding;
-        QRect bgRect(10, 10, bgWidth, bgHeight);
-        // Use a deep blue-gray for the background
-        painter.fillRect(bgRect, QColor(24, 28, 40, 220));
-
-        // Draw border with a subtle blue accent
-        painter.setPen(QPen(QColor(80, 160, 255), 2));
-        painter.drawRect(bgRect);
-
-        // Draw FPS text
-        QColor textColor = Qt::white;
-        if (m_currentFPS >= 50.0f) {
-            textColor = QColor(120, 255, 180); // soft green
-        } else if (m_currentFPS >= 30.0f) {
-            textColor = QColor(255, 220, 120); // soft yellow
-        } else {
-            textColor = QColor(255, 120, 120); // soft red
-        }
-        painter.setPen(textColor);
-        painter.drawText(10 + padding, 10 + padding + textHeight, fpsText);
-
-        // Draw boid count in a cool blue
-        painter.setPen(QColor(120, 180, 255));
-        painter.drawText(10 + padding, 10 + 2 * padding + 2 * textHeight, boidText);
-
-        // Draw GPU/CPU mode and GPU name in a subtle gray
-        painter.setPen(QColor(180, 200, 220));
-        painter.drawText(10 + padding, 10 + 3 * padding + 3 * textHeight, modeText);
-
-        // Draw CPU thread count if in CPU mode
-        if (!m_gpuFlockingManager || !m_gpuFlockingManager->isEnabled()) {
-            QString threadText = QString("CPU Threads: %1").arg(m_boidRenderer ? m_boidRenderer->getNumThreads() : 1);
-            painter.setPen(QColor(180, 200, 220));
-            painter.drawText(10 + padding, 10 + 4 * padding + 4 * textHeight, threadText);
-        }
-
-        painter.end();
-    }
-}
-
 void GLWindow::setObstacleEnabled(bool _enabled)
 {
     m_obstacleEnabled = _enabled;
     // Also control the collision checking in the flock
     setObstacleCollisionEnabled(_enabled);
-    update(); // Force a repaint to show/hide the obstacle
+    m_needsRedraw = true;
 }
 
 void GLWindow::setObstacleAvoidanceRadiusScale(float scale)

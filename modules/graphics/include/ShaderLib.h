@@ -7,8 +7,6 @@
 #include <memory>
 #include <set>
 #include "FlockTypes.h"
-
-class QOpenGLFunctions;
 /**
  * @file ShaderLib.h
  * @brief Modern OpenGL Shader Library using raw OpenGL calls.
@@ -63,12 +61,8 @@ public:
         
         unsigned int getProgramId() const { return m_programId; }
         
-        // Set OpenGL functions reference
-        void setOpenGLFunctions(QOpenGLFunctions* gl) { m_gl = gl; }
-        
     private:
         unsigned int m_programId;
-        QOpenGLFunctions* m_gl = nullptr;
         int getUniformLocation(const std::string& name);
     };
     
@@ -110,9 +104,6 @@ private:
     
     // Singleton instance
     static ShaderLib* s_instance;
-    
-    // OpenGL functions
-    QOpenGLFunctions* m_gl = nullptr;
     
     // Storage for shaders and programs using raw OpenGL IDs
     std::unordered_map<std::string, unsigned int> m_shaders;        // Shader object IDs

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <string>
 #include <glm/glm.hpp>
 
 // Forward declarations for OpenGL types

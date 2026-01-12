@@ -4,8 +4,8 @@
 #endif
 #include <ShaderLib.h>
 #include <Material.h>
-#include <modules/graphics/include/InstancedBoidRenderer.h>
-#include <modules/graphics/include/UBOStructures.h>
+#include <InstancedBoidRenderer.h>
+#include <UBOStructures.h>
 #include <glm/glm.hpp>
 #include <vector>
 #include <iostream>
