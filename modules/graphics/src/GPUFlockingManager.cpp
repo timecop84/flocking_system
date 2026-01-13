@@ -209,7 +209,7 @@ void main() {
         position = vec3(0.0, 0.0, 0.0);
     }
     if (any(isnan(velocity)) || any(isinf(velocity))) {
-        velocity = vec3(0.1, 0.1, 0.0);
+        velocity = vec3(0.1, 0.1, 0.1);
     }
     
     // Behavior accumulators - match CPU algorithm exactly
@@ -219,7 +219,6 @@ void main() {
     
     int cohesionCount = 0;
     int alignmentCount = 0;
-    int separationCount = 0;
     
     // Squared distances for optimization - match CPU exactly
     float behaviorDistanceSq = cohesionDistance * cohesionDistance;  // CPU uses cohesionDistance for both
@@ -248,14 +247,9 @@ void main() {
         
         // SEPARATION: Check if within flock distance
         if (distanceSq < flockDistanceSq && distanceSq > 0.001) {
-            float distance = sqrt(distanceSq);
-            vec3 diff = position - neighborPos;
-            if (length(diff) > 0.0001) {
-                diff = normalize(diff);
-                diff /= distance;
-                separation += diff;
-                separationCount++;
-            }
+            float separationStrength = (flockDistanceSq - distanceSq) / flockDistanceSq;
+            vec3 separationForce = boidDistance * separationStrength;
+            separation += separationForce;
         }
     }
     
@@ -286,21 +280,15 @@ void main() {
         alignmentSum = vec3(0.0);
     }
 
-    // SEPARATION: Finalize calculation - match CPU exactly
-    if (separationCount > 0) {
-        separation /= float(separationCount);
-        if (length(separation) > 0.0001) {
-            separation = normalize(separation);
-        } else {
-            separation = vec3(0.0);
-        }
-        separation *= separationForce;
+    // SEPARATION: Finalize calculation - linear falloff like CPU
+    if (length(separation) > 0.0001) {
+        // keep raw vector; scale below
     } else {
         separation = vec3(0.0);
     }
     
     // BEHAVIOR SETUP: Combine forces exactly like CPU
-    vec3 separationSet = separation;
+    vec3 separationSet = separation * separationForce;
     vec3 cohesionSet = coherence * cohesionForce;
     vec3 alignmentSet = alignmentSum * alignmentForce;
     
@@ -309,10 +297,20 @@ void main() {
     
     vec3 behaviourSetup = separationSet + cohesionSet + alignmentSet + randomJitter;
     
-    // Force limit - match CPU exactly
-    if (length(behaviourSetup) > 0.5) {  // FIXED: CPU uses 0.5, not 1.0
-        if (length(behaviourSetup) > 0.0001) {
-            behaviourSetup = normalize(behaviourSetup) * 0.5;  // FIXED: CPU uses 0.5
+    // Gentle repulsion from world origin to avoid center collapse (match CPU)
+    if (length(position) < 20.0) {
+        vec3 dir = normalize(position + vec3(0.001));
+        behaviourSetup += dir * -0.2;
+    }
+
+    // Apply mild damping like CPU
+    behaviourSetup -= velocity * 0.025;
+
+    // Force limit - match CPU (1.5)
+    float bhLen = length(behaviourSetup);
+    if (bhLen > 1.5) {
+        if (bhLen > 0.0001) {
+            behaviourSetup = normalize(behaviourSetup) * 1.5;
         } else {
             behaviourSetup = vec3(0.0);
         }
@@ -358,17 +356,17 @@ void main() {
     // Update position using average of velocity and newDirection
     vec3 nextMovement = (velocity + newDirection) * 0.5;
     if (any(isnan(nextMovement)) || any(isinf(nextMovement))) {
-        nextMovement = vec3(0.1, 0.1, 0.0);
+        nextMovement = vec3(0.1, 0.1, 0.1);
     }
     position += nextMovement;
     
     // Final safety checks before writing results
     if (any(isnan(position)) || any(isinf(position))) {
         position = vec3(0.0, 0.0, 0.0);
-        velocity = vec3(0.1, 0.1, 0.0);
+        velocity = vec3(0.1, 0.1, 0.1);
     }
     if (any(isnan(velocity)) || any(isinf(velocity))) {
-        velocity = vec3(0.1, 0.1, 0.0);
+        velocity = vec3(0.1, 0.1, 0.1);
     }
     if (any(isnan(behaviourSetup)) || any(isinf(behaviourSetup))) {
         behaviourSetup = vec3(0.0, 0.0, 0.0);

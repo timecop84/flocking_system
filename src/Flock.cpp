@@ -156,16 +156,16 @@ void Flock::resetBoids()
 void Flock::update()
 {
     PROFILE_SCOPE("Flock::update");
-    
+
     // High-performance flocking update using spatial partitioning
     // This reduces complexity from O(N²) to approximately O(N)
-    
+
     // Handle collisions using legacy system for compatibility
     {
         PROFILE_SCOPE("Collision Detection");
         checkCollisions();
     }
-    
+
     // Step 1: Build spatial hash grid for efficient neighbor queries
     {
         PROFILE_SCOPE("Spatial Grid Build");
@@ -174,27 +174,27 @@ void Flock::update()
             m_spatialGrid.addBoid(m_boidList[i], i);
         }
     }
-    
+
+    static std::uint64_t s_frameCounter = 0;
+    ++s_frameCounter;
+
     // Step 2: Apply optimized flocking behavior to all boids
     {
         PROFILE_SCOPE("Flocking Behavior Update");
-        
+
         // Cache behavior distances for faster access
         const float behaviorDistance = static_cast<float>(m_behaviours->getBehaviourDistance());
         const float flockDistance = static_cast<float>(m_behaviours->getFlockDistance());
-        
+
         // Cache behavior forces for faster access
         const float separationForce = static_cast<float>(m_behaviours->getSeparationForce());
         const float cohesionForce = static_cast<float>(m_behaviours->getCohesionForce());
         const float alignmentForce = static_cast<float>(m_behaviours->getAlignment());
-        
+
         // Optimization: Pre-calculate squared distances to avoid sqrt() calls
         const float behaviorDistanceSq = behaviorDistance * behaviorDistance;
         const float flockDistanceSq = flockDistance * flockDistance;
-        
-        // Early termination limits for better performance with large flocks
-        // const int maxNeighborsForBehavior = 15; // Removed - process all neighbors for natural behavior
-        
+
         // OPTIMIZATION: Pre-cache all boid positions and velocities in glm format to reduce conversions
         const size_t boidCount = m_boidList.size();
         std::vector<glm::vec3> boidPositions(boidCount);
@@ -212,22 +212,22 @@ void Flock::update()
             Boid *boid = m_boidList[boidIndex];
             // Use pre-cached positions (significant performance improvement)
             const glm::vec3& glmCurrentPos = boidPositions[boidIndex];
-            
+
             // Get nearby boids using spatial partitioning
             std::vector<std::pair<Boid*, int>> nearbyBoids = m_spatialGrid.getNearbyBoids(glmCurrentPos, std::max(behaviorDistance, flockDistance));
-            
+
             // Early exit if no neighbors (optimization for sparse areas)
             if(nearbyBoids.empty()) {
                 continue;
             }
-            
+
             // Initialize behavior accumulators
             glm::vec3 coherence(0.0f);
             glm::vec3 alignmentSum(0.0f);
             glm::vec3 separation(0.0f);
             int cohesionCount = 0; // Start with 0, only count actual neighbors
             int alignmentCount = 0; // Start with 0, only count actual neighbors
-            
+
             // SINGLE PASS: Calculate all behaviors simultaneously with optimized distance checks
             for(const auto& boidPair : nearbyBoids) {
                 const int neighborIndex = boidPair.second;
@@ -236,35 +236,35 @@ void Flock::update()
                     // Use pre-cached positions and velocities (avoid repeated conversions)
                     const glm::vec3& glmNeighborPos = boidPositions[neighborIndex];
                     const glm::vec3& glmNeighborVel = boidVelocities[neighborIndex];
-                    
+
                     // Calculate distance vector once per neighbor
                     glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
-                    
+
                     // Use squared distance to avoid expensive sqrt() calls
                     float distanceSq = glm::dot(boidDistance, boidDistance);
-                    
+
                     // COHESION & ALIGNMENT: Check if within behavior distance (squared)
                     if(distanceSq < behaviorDistanceSq && distanceSq > 0.001f) // Avoid division by zero
                     {
                         coherence += glmNeighborPos;
                         cohesionCount++;
-                        
+
                         // ALIGNMENT: Same distance check, so calculate here
                         alignmentSum += glmNeighborVel;
                         alignmentCount++;
                     }
-                    
+
                     // SEPARATION: Check if within flock distance (squared)
                     if(distanceSq < flockDistanceSq && distanceSq > 0.001f)
                     {
                         // Apply distance-based separation force (no sqrt needed)
                         float separationStrength = (flockDistanceSq - distanceSq) / flockDistanceSq;
-                        glm::vec3 separationForce = boidDistance * separationStrength;
-                        separation += separationForce;
+                        glm::vec3 separationForceVec = boidDistance * separationStrength;
+                        separation += separationForceVec;
                     }
                 }
             }
-            
+
             // COHESION: Finalize calculation (compute centroid first, then direction)
             if (cohesionCount > 0) {
                 coherence /= static_cast<float>(cohesionCount);
@@ -277,7 +277,7 @@ void Flock::update()
             } else {
                 coherence = glm::vec3(0.0f);
             }
-            
+
             // ALIGNMENT: Finalize calculation with reduced influence for chaotic movement
             if (alignmentCount > 0) {
                 alignmentSum /= static_cast<float>(alignmentCount);
@@ -292,25 +292,38 @@ void Flock::update()
             } else {
                 alignmentSum = glm::vec3(0.0f);
             }
-            
+
             // BEHAVIOR SETUP: Combine all forces with swarm-style weighting
             glm::vec3 separationSet = separation * separationForce;
             glm::vec3 cohesionSet = coherence * cohesionForce;
             glm::vec3 alignmentSet = alignmentSum * alignmentForce;
-            
-            // Thread-safe random jitter for fly-like chaotic movement
-            // Use OpenMP thread id to seed a per-thread RNG
-            static thread_local std::mt19937 rng(static_cast<unsigned int>(time(nullptr)) + omp_get_thread_num());
-            std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+
+            // Deterministic per-boid jitter (independent of thread scheduling)
+            auto hashStep = [](std::uint64_t &state){
+                state ^= state >> 30;
+                state *= 0xBF58476D1CE4E5B9ull;
+                state ^= state >> 27;
+                state *= 0x94D049BB133111EBull;
+                state ^= state >> 31;
+                return state;
+            };
+            auto nextUnit = [&](std::uint64_t &state){
+                hashStep(state);
+                // use upper bits for good dispersion
+                return static_cast<float>((state >> 40) & 0xFFFF) / 65535.0f;
+            };
+
+            std::uint64_t jitterState = (s_frameCounter * 0x9E3779B97F4A7C15ull) ^
+                                         (static_cast<std::uint64_t>(boidIndex) * 0xBF58476D1CE4E5B9ull);
             glm::vec3 randomJitter(
-                dist(rng),
-                dist(rng),
-                dist(rng)
+                nextUnit(jitterState) * 2.0f - 1.0f,
+                nextUnit(jitterState) * 2.0f - 1.0f,
+                nextUnit(jitterState) * 2.0f - 1.0f
             );
             randomJitter *= 1.5f;  // Reduced from 3.0f for more subtle chaos
-            
+
             glm::vec3 behaviourSetup = separationSet + cohesionSet + alignmentSet + randomJitter;
-            
+
             // Allow for more chaotic movement - higher force limit
             if (glm::length(behaviourSetup) > 1.5f)  // Increased from 0.5f for more dynamic movement
             {
@@ -321,13 +334,13 @@ void Flock::update()
                     behaviourSetup = glm::vec3(0.0f);
                 }
             }
-            
+
             // Convert back to ngl format and apply using exact legacy sequence
             Vector nglBehaviourSetup(behaviourSetup.x, behaviourSetup.y, behaviourSetup.z);
-            
+
             // Apply speed multiplier to the behavior forces
             nglBehaviourSetup = nglBehaviourSetup * m_speedMultiplier;
-            
+
             // Update boid using exact legacy interface sequence
             boid->updateVelocity(nglBehaviourSetup);
             boid->velocityConstraint();
@@ -400,9 +413,8 @@ void Flock::validateBoundingBoxCollision()
 {
     //create an array of the extents of the bounding box
     float ext[6];
-    // Map to normal order: +X, -X, +Y, -Y, +Z, -Z
-    ext[0]=ext[1]=(m_bbox->width()/2.0f);
-    ext[2]=ext[3]=(m_bbox->height()/2.0f);
+    ext[0]=ext[1]=(m_bbox->height()/2.0f);
+    ext[2]=ext[3]=(m_bbox->width()/2.0f);
     ext[4]=ext[5]=(m_bbox->depth()/2.0f);
     
     Vector point;
@@ -419,23 +431,18 @@ void Flock::validateBoundingBoxCollision()
             GLfloat avoidanceZone = ext[i] * 0.9f;
             if(Distance >= ext[i])
             {
-                // Reflect velocity off the plane normal with damping
-                const Vector& normal = m_bbox->getNormalArray()[i];
-                float vn = s->getVelocity().dot(normal);
-                Vector reflected = s->getVelocity() - normal * (2.0f * vn);
-                reflected = reflected * 0.8f; // dampen a bit to avoid runaway
+                GLfloat x = 2 * (s->getVelocity().dot((m_bbox->getNormalArray()[i])));
+                Vector d = m_bbox->getNormalArray()[i] * x;
+                // Reflect current velocity, with damping, to avoid using stale per-frame movement deltas.
+                s->setVelocity((s->getVelocity() - d) * 0.8f);
 
-                // Clamp position to the boundary face to prevent tunneling
-                Vector pos = s->getPosition();
-                if (i == 0) pos.m_x =  ext[i]; // +X
-                if (i == 1) pos.m_x = -ext[i]; // -X
-                if (i == 2) pos.m_y =  ext[i]; // +Y
-                if (i == 3) pos.m_y = -ext[i]; // -Y
-                if (i == 4) pos.m_z =  ext[i]; // +Z
-                if (i == 5) pos.m_z = -ext[i]; // -Z
-
-                s->setPosition(pos);
-                s->setVelocity(reflected);
+                // Push back inside the bounds without injecting a large impulse (keeps lastPosition in sync).
+                const GLfloat penetration = Distance - ext[i];
+                if (penetration > 0.0f)
+                {
+                    point -= (m_bbox->getNormalArray()[i] * penetration);
+                    s->setPositionNoImpulse(point);
+                }
                 s->setHit();
             }
             else if(Distance >= avoidanceZone)
@@ -493,14 +500,14 @@ void  Flock::checkSphereCollisions()
         GLfloat collisionRadius = obstacleRadius * m_obstacleCollisionRadiusScale;
         if (distance < avoidanceRadius && distance > 0.0001f) {
             Vector repulsionDir = boidPos - obstaclePos;
-            repulsionDir.normalize();
+            repulsionDir.normalizeIP();
             GLfloat forceStrength = (avoidanceRadius - distance) / avoidanceRadius;
             forceStrength = forceStrength * forceStrength;
             Vector repulsionForce = repulsionDir * (forceStrength * m_obstacleRepulsionForce);
             m_boidList.at(Current)->addVelocity(repulsionForce);
             if (distance < collisionRadius) {
                 Vector newPos = obstaclePos + (repulsionDir * collisionRadius);
-                m_boidList.at(Current)->setPosition(newPos);
+                m_boidList.at(Current)->setPositionNoImpulse(newPos);
                 m_boidList.at(Current)->setHit();
             }
         }

@@ -34,11 +34,19 @@ namespace FlockingGraphics {
 
 /**
  * @file GLWindow.h
- * @brief Core rendering and simulation controller for the flocking system (non-Qt).
+ * @brief Core rendering and simulation controller for the ImGui-based flocking system.
  */
 class GLWindow
 {
 public:
+    struct BoidStats {
+        int count = 0;
+        int nanCount = 0;
+        glm::vec3 min{0.0f};
+        glm::vec3 max{0.0f};
+        glm::vec3 avg{0.0f};
+    };
+
     GLWindow();
     ~GLWindow();
 
@@ -53,6 +61,7 @@ public:
     void onKey(int key, int action);
 
     int getCurrentBoidSize();
+    BoidStats getBoidStats() const;
     float getCurrentFPS() const { return m_currentFPS; }
     bool isGPUModeEnabled() const;
     int getThreadCount() const;
@@ -162,7 +171,7 @@ private:
     double m_obstacleDiffuseR = 1.0;
     double m_obstacleDiffuseG = 0.8;
     double m_obstacleDiffuseB = 0.4;
-    bool m_obstacleEnabled = true;
+    bool m_obstacleEnabled = false;  // Start with obstacle disabled to avoid collision issues
 
     std::unique_ptr<BoidRenderer> m_boidRenderer;
     std::unique_ptr<ObstacleRenderer> m_obstacleRenderer;

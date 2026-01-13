@@ -10,8 +10,7 @@
 /**
  * @file ShaderLib.h
  * @brief Modern OpenGL Shader Library using raw OpenGL calls.
- *
- * Replaces Qt's wrapper with direct OpenGL shader management for better compatibility and control.
+ * Uses direct OpenGL shader management with no external GUI framework dependencies.
  * Uses FlockTypes.h for type aliases and helpers.
  *
  * @author Dennis Toufexis

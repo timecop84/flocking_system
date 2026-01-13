@@ -28,9 +28,17 @@ public:
     inline Vector getPosition() const { return m_position; }
     inline Vector getLastPosition() const { return m_lastPosition; }
     inline void setPosition(Vector position) { m_position = position; }
+    inline void setPositionNoImpulse(const Vector& position) {
+        m_position = position;
+        m_lastPosition = position;
+        m_newDirection.set(0.0f, 0.0f, 0.0f);
+        m_nextPosition.set(0.0f, 0.0f, 0.0f);
+    }
     inline Vector getNextPosition() const { return m_nextPosition; }
     inline void setVelocity(Vector v) { m_velocity = v; }
     inline Vector getVelocity() { return m_velocity; }
+    inline float getMaxVelocity() const { return m_maxVelocity; }
+    inline float getMinVelocity() const { return m_minVelocity; }
     inline void setMaxVelocity(GLfloat maxVelocity) { m_maxVelocity = maxVelocity; }
     inline void setMinVelocity(GLfloat minVelocity) { m_minVelocity = minVelocity; }
     void updateVelocity(Vector direction);

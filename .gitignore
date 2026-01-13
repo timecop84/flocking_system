@@ -1,36 +1,30 @@
-# Qt/MinGW Build Files and Generated Content
-
-# Build directories
+# Build outputs
 build/
 bin/
 release/
 debug/
 obj/
 
-# Qt generated files
-moc/
-.qmake.stash
+# Generated makefiles
 Makefile
 Makefile.Debug
 Makefile.Release
 object_script.*
 
-# Documentation generated files (Doxygen)
+# Documentation outputs
 html/
 latex/
 *.tmp
 
-# IDE and Editor files
-.qtc_clangd/
+# IDE and editor files
 .vscode/
 .vs/
-*.pro.user
-*.pro.user.*
 *.vcxproj.user
 *.suo
 *.sdf
 *.opensdf
 *.sln.docstates
+*.cbp
 
 # Compiler and build artifacts
 *.o
@@ -38,9 +32,6 @@ latex/
 *.exe
 *.dll
 *.lib
-
-# GitHub workflow/instructions
-.github/instructions
 *.a
 *.so
 *.dylib
@@ -50,12 +41,11 @@ latex/
 *.idb
 *.map
 
-# Qt Creator files
+# CMake cache/build files
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
-*.cbp
 
 # Video output files (simulation recordings)
 *.ogv
@@ -75,7 +65,7 @@ Thumbs.db
 # Log files
 *.log
 
-# Archive files (unless specifically needed)
+# Archive files
 *.zip
 *.tar.gz
 *.rar
@@ -89,13 +79,12 @@ Thumbs.db
 .directory
 desktop.ini
 
-# Configuration files that might contain sensitive info
+# Configuration files that should stay local
 config.ini
 settings.ini
 imgui.ini
 
 # Additional ignores for project cleanup
-# Old/test/example/backup files
 BOUNDARY_COLLISION_FIXES.md
 DEBUG_MATRIX_TRANSLATION.md
 GPU_COMPUTE_FIXES_SUMMARY.md
@@ -104,18 +93,7 @@ OBSTACLE_TOGGLE_TEST.md
 OPTIONAL_UI_ENHANCEMENTS.txt
 example_usage.cpp
 performance_test.cpp
-Doxyfile.bak
 ui_mainwindow.h
-
-
 
 # Remove backup directory if present
 __backup_before_cleanup/
-
-# Keep these important files:
-# - Source code (src/, include/)
-# - Project file (flock.pro)
-# - README.md
-# - Doxyfile (documentation config)
-# - UI files (ui/)
-# - Shaders (shaders/)

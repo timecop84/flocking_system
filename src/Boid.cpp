@@ -14,6 +14,7 @@
 #include "ShaderLib.h"
 #include "Matrix.h"
 #include "ModernExample.h"
+#include "MathUtils.h"
 #include <glad/gl.h>
 #include <cmath>
 
@@ -25,12 +26,33 @@ Boid::Boid(
         )
 {
     m_position = position;
+    m_lastPosition = position;
     m_direction = direction;
     m_scale.set(1.0f, 1.0f, 1.0f);
     m_colour.set(1.0f, 0.0f, 0.5f, 1.0f);
-    m_velocity.set(0.3f, 0.3f, 0.1f);  // Initialize at min velocity level
+    m_newDirection.set(0.0f, 0.0f, 0.0f);
+    // Note: despite the name, m_nextPosition is used as a "next movement" vector in collision code.
+    m_nextPosition.set(0.0f, 0.0f, 0.0f);
     m_maxVelocity = 0.9;
     m_minVelocity = 0.3;
+
+    // Initialize velocity from the provided spawn direction.
+    // The old code used a constant velocity for every boid, which strongly encourages planar collapse.
+    Vector v = direction;
+    if (v.lengthSquared() < 0.0001f) {
+        glm::vec3 rv = math::utils::randomUnitVector();
+        v.set(rv.x, rv.y, rv.z);
+    }
+    v.normalizeIP();
+    // Avoid near-planar seeds: ensure Z component has some magnitude
+    if (std::abs(v.m_z) < 0.25f) {
+        float sign = (math::utils::randomFloat(-1.0f, 1.0f) >= 0.0f) ? 1.0f : -1.0f;
+        v.m_z = 0.25f * sign;
+        v.normalizeIP();
+    }
+    const float speed = math::utils::randomFloat(m_minVelocity, m_maxVelocity);
+    m_velocity = v * speed;
+
     m_wireframe = false;
     m_size = 1;
 }
@@ -100,35 +122,43 @@ void Boid::updateVelocity(Vector direction)
 //----------------------------------------------------------------------------------------------------------------------
 void Boid::boidDirection()
 {
+    // Previous-frame movement (delta position)
     m_newDirection = m_position - m_lastPosition;
     
     // Safety check for NaN values in velocity and direction
     if (std::isnan(m_velocity.m_x) || std::isnan(m_velocity.m_y) || std::isnan(m_velocity.m_z))
     {
-        m_velocity.set(0.1f, 0.1f, 0.0f);
+        glm::vec3 rv = math::utils::randomUnitVector();
+        m_velocity.set(rv.x * 0.15f, rv.y * 0.15f, rv.z * 0.15f);
     }
     if (std::isnan(m_newDirection.m_x) || std::isnan(m_newDirection.m_y) || std::isnan(m_newDirection.m_z))
     {
         m_newDirection.set(0.0f, 0.0f, 0.0f);
     }
     
-    Vector nextMovement = (m_velocity + m_newDirection) * 0.5f;  // More reasonable multiplier
+    Vector nextMovement = (m_velocity + m_newDirection) * 0.5f;  // Smoothed integration
     
     // Safety check for NaN values in the final movement calculation
     if (std::isnan(nextMovement.m_x) || std::isnan(nextMovement.m_y) || std::isnan(nextMovement.m_z))
     {
-        nextMovement.set(0.1f, 0.1f, 0.0f);
+        glm::vec3 rv = math::utils::randomUnitVector();
+        nextMovement.set(rv.x * 0.15f, rv.y * 0.15f, rv.z * 0.15f);
     }
     
-    m_position += nextMovement;
+    // Store the *movement delta* for collision/response code (see validateBoundingBoxCollision / reverse())
+    m_nextPosition = nextMovement;
+
+    // CRITICAL: update last position BEFORE integrating movement
     m_lastPosition.set(m_position);
+    m_position += nextMovement;
     
     // Final safety check for position
     if (std::isnan(m_position.m_x) || std::isnan(m_position.m_y) || std::isnan(m_position.m_z))
     {
         // Reset to a safe position near origin
         m_position.set(0.0f, 0.0f, 0.0f);
-        m_velocity.set(0.1f, 0.1f, 0.0f);
+        glm::vec3 rv = math::utils::randomUnitVector();
+        m_velocity.set(rv.x * 0.15f, rv.y * 0.15f, rv.z * 0.15f);
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -142,7 +172,7 @@ void Boid::velocityConstraint()
         // If velocity is extremely high, clamp it more aggressively
         if(velocityLength > 0.0001f)  // Avoid division by zero
         {
-            m_velocity.normalize();
+            m_velocity.normalizeIP();
             m_velocity = m_velocity * m_maxVelocity;
         }
     }
@@ -150,7 +180,7 @@ void Boid::velocityConstraint()
     {
         if(velocityLength > 0.0001f)  // Avoid division by zero
         {
-            m_velocity.normalize();
+            m_velocity.normalizeIP();
             m_velocity = m_velocity * m_maxVelocity;
         }
     }
@@ -158,13 +188,14 @@ void Boid::velocityConstraint()
     {
         if(velocityLength > 0.0001f)  // Avoid division by zero
         {
-            m_velocity.normalize();
+            m_velocity.normalizeIP();
             m_velocity = m_velocity * m_minVelocity;
         }
         else
         {
             // If velocity is essentially zero, give it a small default velocity
-            m_velocity.set(0.1f, 0.1f, 0.0f);
+            glm::vec3 rv = math::utils::randomUnitVector();
+            m_velocity.set(rv.x * m_minVelocity, rv.y * m_minVelocity, rv.z * m_minVelocity);
         }
     }
     
@@ -172,7 +203,8 @@ void Boid::velocityConstraint()
     if (std::isnan(m_velocity.m_x) || std::isnan(m_velocity.m_y) || std::isnan(m_velocity.m_z))
     {
         // Reset to a small default velocity if NaN detected
-        m_velocity.set(0.1f, 0.1f, 0.0f);
+        glm::vec3 rv = math::utils::randomUnitVector();
+        m_velocity.set(rv.x * m_minVelocity, rv.y * m_minVelocity, rv.z * m_minVelocity);
     }
 }
 Boid::~Boid(){}

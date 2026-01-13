@@ -101,6 +101,47 @@ int GLWindow::getCurrentBoidSize()
     return flock->getFlockSize();
 }
 
+GLWindow::BoidStats GLWindow::getBoidStats() const
+{
+    BoidStats stats;
+    if (!flock) {
+        return stats;
+    }
+
+    const std::vector<Boid*>& boids = flock->getBoidList();
+    stats.count = static_cast<int>(boids.size());
+    if (boids.empty()) {
+        return stats;
+    }
+
+    glm::vec3 minV(std::numeric_limits<float>::infinity());
+    glm::vec3 maxV(-std::numeric_limits<float>::infinity());
+    glm::vec3 sum(0.0f);
+    int validCount = 0;
+
+    for (const Boid* b : boids) {
+        if (!b) continue;
+        Vector p = b->getPosition();
+        if (std::isnan(p.m_x) || std::isnan(p.m_y) || std::isnan(p.m_z)) {
+            stats.nanCount++;
+            continue;
+        }
+        glm::vec3 gp(p.m_x, p.m_y, p.m_z);
+        minV = glm::min(minV, gp);
+        maxV = glm::max(maxV, gp);
+        sum += gp;
+        validCount++;
+    }
+
+    if (validCount > 0) {
+        stats.min = minV;
+        stats.max = maxV;
+        stats.avg = sum / static_cast<float>(validCount);
+    }
+
+    return stats;
+}
+
 bool GLWindow::isGPUModeEnabled() const
 {
     return m_gpuFlockingManager && m_gpuFlockingManager->isEnabled();
@@ -417,7 +458,7 @@ void GLWindow::initialize(int width, int height)
     glEnable(GL_DEPTH_TEST);
     
     // Initialize sphere primitive for boid rendering
-    bbox = new BBox(Vector(0,0,0),120,120,120);
+    bbox = new BBox(Vector(0,0,0),200,200,200);
     bbox->setDrawMode(GL_LINE);
     flock = new Flock(bbox, obstacle);
     
@@ -780,14 +821,22 @@ void GLWindow::updateSimulation(float deltaTime)
             }
             
             FlockingGraphics::FlockingParameters params;
-            params.separationDistance = static_cast<float>(flock->getBehaviours()->getFlockDistance());
-            params.alignmentDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
-            params.cohesionDistance = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
-            params.separationForce = static_cast<float>(flock->getBehaviours()->getSeparationForce());
+            // Align GPU parameters to the current CPU integrator weights
+            const float behaviourDist = static_cast<float>(flock->getBehaviours()->getBehaviourDistance());
+            const float flockDist = static_cast<float>(flock->getBehaviours()->getFlockDistance());
+            params.separationDistance = flockDist;
+            params.alignmentDistance = behaviourDist;
+            params.cohesionDistance = behaviourDist;
+            params.separationForce = static_cast<float>(flock->getBehaviours()->getSeparationForce()) * 1.4f;
+            params.cohesionForce = static_cast<float>(flock->getBehaviours()->getCohesionForce()) * 0.35f;
             params.alignmentForce = static_cast<float>(flock->getBehaviours()->getAlignment());
-            params.cohesionForce = static_cast<float>(flock->getBehaviours()->getCohesionForce());
-            params.maxSpeed = 2.0f;
-            params.maxForce = 0.5f;
+            // Match CPU speed clamp (Boid max velocity)
+            float maxV = 0.9f;
+            if (!boidList.empty()) {
+                maxV = boidList.front()->getMaxVelocity();
+            }
+            params.maxSpeed = maxV;
+            params.maxForce = 1.5f; // CPU accel clamp
             params.numBoids = static_cast<int>(boidList.size());
             params.deltaTime = dt;
             params.speedMultiplier = flock->getSpeedMultiplier();

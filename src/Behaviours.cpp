@@ -14,12 +14,13 @@
 
 Behaviours::Behaviours()
 {
-    // Classic stable parameters used before the UI migration
-    m_BehaviourDistance = 20;   // Neighbourhood radius
-    m_flockDistance = 12;       // Separation radius
-    m_seperationForce = 3;      // Gentle separation force
-    m_alignment = 10;           // Keep headings aligned
-    m_cohesionForce = 2;        // Moderate cohesion
+    // Default values - will be overridden by UI on startup
+    m_BehaviourDistance = 20;  // Neighbourhood distance
+    m_flockDistance = 5;       // Separation distance
+    m_seperationForce = 10;    // Strong separation to keep boids spread
+    m_alignment = 0;           // Disabled by default - causes sheet formation!
+    m_cohesionForce = 1.5;     // Low cohesion prevents tight clustering
+    m_alignmentForce.set(0, 0, 0); // ensure deterministic start
 }
 //----------------------------------------------------------------------------------------------------------------------
 void Behaviours::Cohesion(int &_boidNumber, std::vector <Boid*> & _boidList)
@@ -43,13 +44,16 @@ void Behaviours::Cohesion(int &_boidNumber, std::vector <Boid*> & _boidList)
     }
     m_coherence /= count;
     m_coherence = (m_coherence - _boidList.at(_boidNumber)->getPosition());
-    m_coherence.normalize();
+    m_coherence.normalizeIP();  // Use in-place normalize!
 }
 
 
 //----------------------------------------------------------------------------------------------------------------------
 void Behaviours::Alignment(int &_boidNumber, std::vector<Boid*> &_boidList)
 {
+    // Reset accumulator every call to avoid carrying garbage between frames/boids
+    m_alignmentForce.set(0, 0, 0);
+
     int count = 1;
     m_boidDistance.set(0, 0, 0);
 
@@ -69,7 +73,7 @@ void Behaviours::Alignment(int &_boidNumber, std::vector<Boid*> &_boidList)
 
     if (m_alignmentForce.length() > m_BehaviourDistance)
     {
-        m_alignmentForce.normalize();
+        m_alignmentForce.normalizeIP();  // Use in-place normalize!
     }
 
     m_alignmentForce /= count;
@@ -97,7 +101,7 @@ void Behaviours::Seperation(int &_boidNumber, std::vector<Boid*> &_boidList)
     }
     if (m_boidDistance.length() > m_flockDistance)
     {
-        m_boidDistance.normalize();
+        m_boidDistance.normalizeIP();  // Use in-place normalize!
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -123,7 +127,7 @@ Vector Behaviours::BehaviourSetup()
 
     if (m_behaviourSetup.length() > 0.5)
     {
-        m_behaviourSetup.normalize();
+        m_behaviourSetup.normalizeIP();  // Use in-place normalize!
         m_behaviourSetup *= 0.5;
     }
 

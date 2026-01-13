@@ -43,7 +43,7 @@ public:
     /// @brief Update the flock (modern GLM-based logic)
     void update();
     /// @brief Get the current flock size
-    int getFlockSize() const { return m_numberOfBoids; }
+    int getFlockSize() const { return static_cast<int>(m_boidList.size()); }
     void setFlockSize(int size);
     void setBoidSize(double size);
     void setColour(Colour colour);

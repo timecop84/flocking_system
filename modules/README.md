@@ -208,7 +208,6 @@ transforms.popMatrix();            // Restore previous transform
 
 - **OpenGL**: For graphics functionality
 - **GLM**: For additional math operations (optional)
-- **Qt6**: For some utility classes (can be made optional)
 
 ## 📝 License
 

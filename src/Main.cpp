@@ -22,7 +22,7 @@ struct UIState {
     bool flockWireframe = false;
     float speedMultiplier = 1.0f;
 
-    bool obstacleEnabled = true;
+    bool obstacleEnabled = false;  // Start disabled to prevent collision issues at spawn
     ImVec4 obstacleColour = {1.0f, 0.8f, 0.4f, 1.0f};
     ImVec4 obstacleSpecular = {1.0f, 1.0f, 1.0f, 1.0f};
     ImVec4 obstacleDiffuse = {1.0f, 0.8f, 0.4f, 1.0f};
@@ -34,10 +34,10 @@ struct UIState {
     float repulsionForce = 0.45f;
 
     float simDistance = 20.0f;
-    float flockDistance = 4.0f;
-    float cohesion = 2.0f;
-    float separation = 9.0f;
-    float alignment = 10.0f;
+    float flockDistance = 5.0f;
+    float cohesion = 3.0f;       // Moderate cohesion for grouping
+    float separation = 5.0f;     // Balanced separation
+    float alignment = 2.0f;      // Low alignment for natural movement
 
     float bboxSize = 120.0f;
     ImVec4 backgroundColour = {0.6f, 0.6f, 0.6f, 1.0f};
@@ -192,9 +192,23 @@ int main() {
         ImGui::Text("FPS: %.1f | Boids: %d | Mode: %s", app.getCurrentFPS(), app.getCurrentBoidSize(),
                     app.isGPUModeEnabled() ? "GPU" : "CPU");
         ImGui::Text("Threads: %d | GPU: %s", app.getThreadCount(), app.getGPUName().c_str());
+
+        {
+            auto stats = app.getBoidStats();
+            ImGui::Text("Pos min: (%.2f, %.2f, %.2f)", stats.min.x, stats.min.y, stats.min.z);
+            ImGui::Text("Pos max: (%.2f, %.2f, %.2f)", stats.max.x, stats.max.y, stats.max.z);
+            ImGui::Text("Pos avg: (%.2f, %.2f, %.2f) | NaNs: %d", stats.avg.x, stats.avg.y, stats.avg.z, stats.nanCount);
+        }
         ImGui::Separator();
 
         if (ImGui::CollapsingHeader("Flock", ImGuiTreeNodeFlags_DefaultOpen)) {
+            // RESET BUTTON - prominent at top
+            if (ImGui::Button("RESET FLOCK", ImVec2(-1, 30))) {
+                app.resetFlock();
+                ui.boidCount = app.getCurrentBoidSize();
+            }
+            ImGui::Spacing();
+            
             ImGui::SliderInt("Boid Count", &ui.boidCount, 20, 4000);
             if (ImGui::Button("Apply Count")) {
                 app.applyFlock(ui.boidCount);
