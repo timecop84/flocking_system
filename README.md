@@ -2,23 +2,14 @@
 
 ## Overview
 
-This project is a real-time, interactive 3D flocking simulation, modernized to use current OpenGL standards and practices. The codebase is a significant update of an original project developed at Bournemouth University (MSc Computer Animation and Visual Effects, NCCA). The system models the collective behavior of autonomous agents ("boids") using classic flocking algorithms, with a focus on modularity, extensibility, and real-time performance.
+This project is a real-time, interactive 3D flocking simulation built on modern OpenGL. It is a cleaned-up, GPU-aware evolution of a Bournemouth University NCCA project. Boids flock using the classic cohesion/alignment/separation rules, wrapped in a modular layout that splits simulation, rendering, and input for easier hacking.
 
-Key features:
-
-- Real-time rendering of boids and obstacles using OpenGL shaders and uniform buffer objects (UBOs)
-- GPU-accelerated simulation. (Compute Shader)
-- Multithreaded simulation for improved performance
-- Support for instanced rendering to efficiently display large numbers of boids
-- Modular architecture with separate components for simulation, rendering, and user interface
-- ImGui + GLFW interface for adjusting simulation and rendering parameters
-- Performance monitoring and validation tools
-
-## Contributors and Acknowledgements
-
-- The boid concept and flocking algorithm are based on the seminal work of Craig Reynolds.
-- Original project and modernization: Dennis Toufexis (Bournemouth University, NCCA, 2011)
-- Additional contributions and dependencies are listed in the codebase and documentation.
+- Key features:
+  - Real-time OpenGL rendering with UBO-backed shaders
+  - CPU and compute-shader GPU simulation paths (toggle with `G`)
+  - Instanced boid rendering for large flocks
+  - ImGui + GLFW controls for all sim/render knobs
+  - Performance/profiler and behavior validator helpers
 
 ## Dependencies
 
@@ -48,6 +39,22 @@ You can pass `build`, `rebuild`, `run`, or `clean` as the first argument to cont
 
 - Launch the executable (`flock`). The ImGui panel lets you tweak flock size, speeds, obstacle properties, bounding box, and shader settings in real time.
 - Keyboard shortcuts mirror the legacy app: `G` toggles GPU/CPU, `Space` pauses, `+/-` add or remove boids, `1/2/3/4/0` quick set sizes, `R/T` profiler controls.
+
+## Code map (quick start for contributors)
+
+- `src/GLWindow.cpp` — application wiring, startup, and simulation loop control
+- `src/Input.cpp` — GLFW input callbacks (camera orbit/pan/zoom, obstacle drag, hotkeys)
+- `modules/graphics/src/Render.cpp` — per-frame rendering and UBO updates
+- `src/Flock.cpp` — boid storage, neighbor queries, flock rule application, collisions
+- `src/Boid.cpp` — per-boid integration and drawing
+- `src/Behaviours.cpp` — cohesion/alignment/separation force calculations
+- `modules/graphics/src/GPUFlockingManager.cpp` — compute-shader flocking path
+
+## Contributors and Acknowledgements
+
+- Boid concept and flocking rules from Craig Reynolds
+- Original project and modernization: Dennis Toufexis (Bournemouth University, NCCA, 2011)
+- Additional contributors and dependencies are noted inline and in project history
 
 ## License
 

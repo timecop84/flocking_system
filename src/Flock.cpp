@@ -1,12 +1,5 @@
-/**
- * @file flock.cpp
- * @brief Implementation of the Flock class for the flocking simulation.
- *
- * Handles flock logic, boid management, and collision detection. Uses modern C++ and FlockTypes.h for clarity and maintainability.
- *
- * @author Dennis Toufexis
- * @date 2025
- */
+// Flock.cpp
+// Owns the boid list, runs neighbor queries, applies flocking rules, and keeps boids inside the world/obstacle bounds.
 
 #include "Flock.h"
 #include "Matrix.h"
@@ -26,15 +19,22 @@ constexpr float OBSTACLE_REPULSION_FORCE = 0.45f;
 //----------------------------------------------------------------------------------------------------------------------
 const static int s_extents=5;
 //----------------------------------------------------------------------------------------------------------------------
-Flock::Flock(BBox *bbox, Obstacle *obstacle) : m_spatialGrid(15.0f) // Cell size optimized for typical flock behavior distances
+Flock::Flock(BBox *bbox, Obstacle *obstacle)
+    : m_boidList()
+    , m_hit(false)
+    , m_numberOfBoids(200)
+    , m_react(nullptr)
+    , m_checkSphereSphere(true)
+    , _boidId(0)
+    , _boid(nullptr)
+    , m_bbox(bbox)
+    , m_obstacle(obstacle)
+    , m_behaviours(new Behaviours())
+    , m_boidScale(1.0)
+    , m_boidColour()
+    , m_speedMultiplier(1.0f)
+    , m_spatialGrid(15.0f) // Cell size optimized for typical flock behavior distances
 {
-    m_behaviours = new Behaviours();
-    m_bbox = bbox;
-    m_numberOfBoids = 200;
-    m_checkSphereSphere=true;
-    m_obstacle = obstacle;
-    m_speedMultiplier = 1.0f;
-
     // Seed random number generator for swarm randomness
     srand(static_cast<unsigned int>(time(nullptr)));
     
@@ -44,6 +44,14 @@ Flock::Flock(BBox *bbox, Obstacle *obstacle) : m_spatialGrid(15.0f) // Cell size
     std::cout << "=======================================" << std::endl;
 
     resetBoids();
+}
+//----------------------------------------------------------------------------------------------------------------------
+Flock::~Flock()
+{
+    clearBoidList();
+    delete m_behaviours;
+    m_behaviours = nullptr;
+    // m_bbox and m_obstacle are non-owning
 }
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -126,15 +134,18 @@ void Flock::removeBoids()
     {
         for (int i = 0; i < 10; i++)
         {
-            m_boidList.pop_back();
-            --m_numberOfBoids;
+            if (!m_boidList.empty()) {
+                delete m_boidList.back();
+                m_boidList.pop_back();
+                --m_numberOfBoids;
+            }
         }
     }
 }
 //-----------------------------------------------------------------------------------------------------------------------
 void Flock::resetBoids()
 {
-    m_boidList.clear();
+    clearBoidList();
     Vector dir;
     for(int i=0; i<m_numberOfBoids; ++i)
     {
@@ -197,13 +208,13 @@ void Flock::update()
 
         // OPTIMIZATION: Pre-cache all boid positions and velocities in glm format to reduce conversions
         const size_t boidCount = m_boidList.size();
-        std::vector<glm::vec3> boidPositions(boidCount);
-        std::vector<glm::vec3> boidVelocities(boidCount);
+        m_cachedPositions.resize(boidCount);
+        m_cachedVelocities.resize(boidCount);
         for(size_t i = 0; i < boidCount; i++) {
             Vector pos = m_boidList[i]->getPosition();
             Vector vel = m_boidList[i]->getVelocity();
-            boidPositions[i] = glm::vec3(pos.m_x, pos.m_y, pos.m_z);
-            boidVelocities[i] = glm::vec3(vel.m_x, vel.m_y, vel.m_z);
+            m_cachedPositions[i] = glm::vec3(pos.m_x, pos.m_y, pos.m_z);
+            m_cachedVelocities[i] = glm::vec3(vel.m_x, vel.m_y, vel.m_z);
         }
         // Parallelize the main per-boid update loop
         #pragma omp parallel for schedule(static)
@@ -211,7 +222,7 @@ void Flock::update()
         {
             Boid *boid = m_boidList[boidIndex];
             // Use pre-cached positions (significant performance improvement)
-            const glm::vec3& glmCurrentPos = boidPositions[boidIndex];
+            const glm::vec3& glmCurrentPos = m_cachedPositions[boidIndex];
 
             // Get nearby boids using spatial partitioning
             std::vector<std::pair<Boid*, int>> nearbyBoids = m_spatialGrid.getNearbyBoids(glmCurrentPos, std::max(behaviorDistance, flockDistance));
@@ -234,8 +245,8 @@ void Flock::update()
                 if(neighborIndex != boidIndex) // Don't include self
                 {
                     // Use pre-cached positions and velocities (avoid repeated conversions)
-                    const glm::vec3& glmNeighborPos = boidPositions[neighborIndex];
-                    const glm::vec3& glmNeighborVel = boidVelocities[neighborIndex];
+                    const glm::vec3& glmNeighborPos = m_cachedPositions[neighborIndex];
+                    const glm::vec3& glmNeighborVel = m_cachedVelocities[neighborIndex];
 
                     // Calculate distance vector once per neighbor
                     glm::vec3 boidDistance = glmCurrentPos - glmNeighborPos;
@@ -559,6 +570,7 @@ void Flock::setFlockSize(int targetSize)
         // Remove excess boids
         int toRemove = currentSize - targetSize;
         for (int i = 0; i < toRemove; ++i) {
+            if (m_boidList.empty()) break;
             delete m_boidList.back();
             m_boidList.pop_back();
             if ((i+1) % 500 == 0) std::cout << "[Flock] Removed " << (i+1) << "/" << toRemove << " boids..." << std::endl;
@@ -568,4 +580,11 @@ void Flock::setFlockSize(int targetSize)
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
+void Flock::clearBoidList()
+{
+    for (Boid* boid : m_boidList) {
+        delete boid;
+    }
+    m_boidList.clear();
+}
 

@@ -1,13 +1,5 @@
-// boid.cpp - Modernized and documented for maintainability
-/**
- * @file boid.cpp
- * @brief Implementation of the Boid class for the flocking simulation.
- *
- * Handles individual boid logic, rendering, and state management. Uses modern C++ and FlockTypes.h for clarity and maintainability.
- *
- * @author Dennis Toufexis
- * @date 2025
- */
+// Boid.cpp
+// Implements a single agent: owns its position/velocity, integrates motion, and draws a sphere via the modern pipeline.
 
 #include "Boid.h"
 #include "Material.h"

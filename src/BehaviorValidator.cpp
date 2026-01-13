@@ -1,13 +1,5 @@
-// BehaviorValidator.cpp - Modernized and documented for maintainability
-/**
- * @file BehaviorValidator.cpp
- * @brief Implementation of the BehaviorValidator class for flocking validation and debugging.
- *
- * Provides tools to compare legacy and modern flocking behaviors. Uses FlockTypes.h for clarity and maintainability.
- *
- * @author Dennis Toufexis
- * @date 2025
- */
+// BehaviorValidator.cpp
+// Compares legacy and modern force calculations side-by-side to spot regressions in flocking behavior.
 
 #include "BehaviorValidator.h"
 #include "Behaviours.h"
@@ -21,11 +13,13 @@ bool BehaviorValidator::validateBoidCalculation(int boidIndex,
         return false;
     }
     
-    // Calculate legacy forces
-    legacyBehaviours->Cohesion(boidIndex, const_cast<std::vector<Boid*>&>(boidList));
-    legacyBehaviours->Alignment(boidIndex, const_cast<std::vector<Boid*>&>(boidList));
-    legacyBehaviours->Seperation(boidIndex, const_cast<std::vector<Boid*>&>(boidList));
-    FlockingForces legacyForces = extractLegacyForces(legacyBehaviours);
+    // Calculate legacy forces on a copy to avoid mutating shared state
+    Behaviours behaviourCopy = *legacyBehaviours;
+    std::vector<Boid*> boidListCopy(boidList.begin(), boidList.end());
+    behaviourCopy.Cohesion(boidIndex, boidListCopy);
+    behaviourCopy.Alignment(boidIndex, boidListCopy);
+    behaviourCopy.Seperation(boidIndex, boidListCopy);
+    FlockingForces legacyForces = extractLegacyForces(&behaviourCopy);
     
     // Calculate modern forces
     FlockingForces modernForces = calculateModernFlockingForces(boidIndex, boidList,
@@ -57,11 +51,13 @@ void BehaviorValidator::logDetailedComparison(int boidIndex,
     std::cout << "Behaviour Distance: " << legacyBehaviours->getBehaviourDistance() << std::endl;
     std::cout << "Flock Distance: " << legacyBehaviours->getFlockDistance() << std::endl;
     
-    // Calculate legacy forces
-    legacyBehaviours->Cohesion(boidIndex, const_cast<std::vector<Boid*>&>(boidList));
-    legacyBehaviours->Alignment(boidIndex, const_cast<std::vector<Boid*>&>(boidList));
-    legacyBehaviours->Seperation(boidIndex, const_cast<std::vector<Boid*>&>(boidList));
-    FlockingForces legacyForces = extractLegacyForces(legacyBehaviours);
+    // Calculate legacy forces on a copy to avoid mutating shared state
+    Behaviours behaviourCopy = *legacyBehaviours;
+    std::vector<Boid*> boidListCopy(boidList.begin(), boidList.end());
+    behaviourCopy.Cohesion(boidIndex, boidListCopy);
+    behaviourCopy.Alignment(boidIndex, boidListCopy);
+    behaviourCopy.Seperation(boidIndex, boidListCopy);
+    FlockingForces legacyForces = extractLegacyForces(&behaviourCopy);
     
     // Calculate modern forces
     FlockingForces modernForces = calculateModernFlockingForces(boidIndex, boidList,

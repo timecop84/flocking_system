@@ -1,14 +1,6 @@
 
-/**
- * @file UBOCache.cpp
- * @brief Implementation of a caching system for Uniform Buffer Objects (UBOs) in the flocking simulation renderer.
- *
- * This file provides logic to efficiently update OpenGL UBOs for matrices, materials, and lights, minimizing redundant GPU uploads.
- * The cache tracks changes and only updates the GPU when data has actually changed, improving rendering performance.
- *
- * @author Dennis Toufexis
- * @date 2025
- */
+// UBOCache.cpp
+// Minimal UBO cache: tracks matrix/material/lighting blocks and only pushes them to GPU when the data changes.
 
 #include "../include/UBOCache.h"
 #include "../include/ShaderLib.h"
@@ -18,12 +10,6 @@
 UBOCache* UBOCache::s_instance = nullptr;
 
 
-/**
- * @brief Get the singleton instance of the UBOCache.
- *
- * Ensures only one cache exists for the lifetime of the application.
- * @return Pointer to the UBOCache instance.
- */
 UBOCache* UBOCache::instance() {
     if (!s_instance) {
         s_instance = new UBOCache();
@@ -32,12 +18,6 @@ UBOCache* UBOCache::instance() {
 }
 
 
-/**
- * @brief Set the matrix data for the UBO cache.
- *
- * Marks the matrix UBO as dirty if the data has changed.
- * @param matrices The new matrix block to cache.
- */
 void UBOCache::setMatrixData(const FlockingShaders::MatrixBlock& matrices) {
     if (!matricesEqual(m_cachedMatrix, matrices)) {
         m_cachedMatrix = matrices;
@@ -46,31 +26,18 @@ void UBOCache::setMatrixData(const FlockingShaders::MatrixBlock& matrices) {
 }
 
 
-/**
- * @brief Update the matrix UBO on the GPU if the cached data is dirty.
- *
- * Only performs the update if the data has changed since the last upload.
- * @return True if the UBO was updated, false otherwise.
- */
 bool UBOCache::updateMatrixUBOIfDirty() {
     if (!m_matrixDirty) {
         m_stats.matrixSkipped++;
         return false;
     }
-    // TODO: Actually update OpenGL UBO when we have proper UBO management
-    // For now, just mark as clean
+    ShaderLib::instance()->updateUBO("MatrixUBO", &m_cachedMatrix, sizeof(FlockingShaders::MatrixBlock));
     m_matrixDirty = false;
     m_stats.matrixUpdates++;
     return true;
 }
 
 
-/**
- * @brief Set the material data for the UBO cache.
- *
- * Marks the material UBO as dirty if the data has changed.
- * @param material The new material block to cache.
- */
 void UBOCache::setMaterialData(const FlockingShaders::MaterialBlock& material) {
     if (!materialsEqual(m_cachedMaterial, material)) {
         m_cachedMaterial = material;
@@ -79,32 +46,19 @@ void UBOCache::setMaterialData(const FlockingShaders::MaterialBlock& material) {
 }
 
 
-/**
- * @brief Update the material UBO on the GPU if the cached data is dirty.
- *
- * Only performs the update if the data has changed since the last upload.
- * @return True if the UBO was updated, false otherwise.
- */
 bool UBOCache::updateMaterialUBOIfDirty() {
     if (!m_materialDirty) {
         m_stats.materialSkipped++;
         return false;
     }
-    // TODO: Actually update OpenGL UBO when we have proper UBO management
-    // For now, just mark as clean
+    ShaderLib::instance()->updateUBO("MaterialUBO", &m_cachedMaterial, sizeof(FlockingShaders::MaterialBlock));
     m_materialDirty = false;
     m_stats.materialUpdates++;
     return true;
 }
 
 
-/**
- * @brief Set the light data for the UBO cache.
- *
- * Marks the light UBO as dirty if the data has changed.
- * @param light The new light block to cache.
- */
-void UBOCache::setLightData(const FlockingShaders::LightBlock& light) {
+void UBOCache::setLightData(const FlockingShaders::LightingBlock& light) {
     if (!lightsEqual(m_cachedLight, light)) {
         m_cachedLight = light;
         m_lightDirty = true;
@@ -117,8 +71,7 @@ bool UBOCache::updateLightUBOIfDirty() {
         return false;
     }
     
-    // TODO: Actually update OpenGL UBO when we have proper UBO management
-    // For now, just mark as clean
+    ShaderLib::instance()->updateUBO("LightingUBO", &m_cachedLight, sizeof(FlockingShaders::LightingBlock));
     m_lightDirty = false;
     m_stats.lightUpdates++;
     return true;
@@ -150,13 +103,9 @@ bool UBOCache::materialsEqual(const FlockingShaders::MaterialBlock& a, const Flo
            a.shininess == b.shininess;
 }
 
-bool UBOCache::lightsEqual(const FlockingShaders::LightBlock& a, const FlockingShaders::LightBlock& b) const {
-    return a.position == b.position &&
-           a.ambient == b.ambient &&
-           a.diffuse == b.diffuse &&
-           a.specular == b.specular &&
-           a.constantAttenuation == b.constantAttenuation &&
-           a.linearAttenuation == b.linearAttenuation &&
-           a.quadraticAttenuation == b.quadraticAttenuation &&
-           a.spotCosCutoff == b.spotCosCutoff;
+bool UBOCache::lightsEqual(const FlockingShaders::LightingBlock& a, const FlockingShaders::LightingBlock& b) const {
+    return a.lightPos == b.lightPos &&
+           a.viewPos == b.viewPos &&
+           a.lightColor == b.lightColor &&
+           a.shininess == b.shininess;
 }

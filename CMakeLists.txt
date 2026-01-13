@@ -53,6 +53,7 @@ set(IMGUI_SOURCES
 set(FLOCKING_SOURCES
     src/main.cpp
     src/GLWindow.cpp
+    src/Input.cpp
     src/boid.cpp
     src/flock.cpp
     src/obstacle.cpp
@@ -79,6 +80,7 @@ set(FLOCKING_SOURCES
     modules/graphics/src/BoidRenderer.cpp
     modules/graphics/src/ObstacleRenderer.cpp
     modules/graphics/src/GPUFlockingManager.cpp
+    modules/graphics/src/Render.cpp
 )
 
 add_executable(flock ${FLOCKING_SOURCES} ${IMGUI_SOURCES})

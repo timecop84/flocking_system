@@ -1,13 +1,5 @@
-// Behaviours.cpp - Modernized and documented for maintainability
-/**
- * @file Behaviours.cpp
- * @brief Implementation of the Behaviours class for flocking logic.
- *
- * Encapsulates cohesion, alignment, separation, and modern flocking force calculations. Uses FlockTypes.h for clarity and maintainability.
- *
- * @author Dennis Toufexis
- * @date 2025
- */
+// Behaviours.cpp
+// Calculates cohesion, alignment, and separation forces for a given boid using both legacy and GLM helpers.
 
 #include "Behaviours.h"
 #include "FlockTypes.h"  // Add modern types
@@ -22,6 +14,7 @@ Behaviours::Behaviours()
     m_cohesionForce = 1.5;     // Low cohesion prevents tight clustering
     m_alignmentForce.set(0, 0, 0); // ensure deterministic start
 }
+Behaviours::~Behaviours() = default;
 //----------------------------------------------------------------------------------------------------------------------
 void Behaviours::Cohesion(int &_boidNumber, std::vector <Boid*> & _boidList)
 {

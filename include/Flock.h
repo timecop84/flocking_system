@@ -38,8 +38,6 @@ public:
     void validateBoundingBoxCollision();
     /// @brief Check for collisions
     void checkCollisions();
-    /// @brief Calculate the final velocity for the flock
-    Vector finalFlockVelocity();
     /// @brief Update the flock (modern GLM-based logic)
     void update();
     /// @brief Get the current flock size
@@ -70,6 +68,10 @@ public:
     void setObstacleCollisionRadiusScale(float scale) { m_obstacleCollisionRadiusScale = scale; }
     /// @brief Set the strength of the repulsion force from obstacles
     void setObstacleRepulsionForce(float force) { m_obstacleRepulsionForce = force; }
+    /// @brief Update the bounding box pointer when the owner recreates it
+    void setBoundingBox(BBox* bbox) { m_bbox = bbox; }
+    /// @brief Delete and clear all boids
+    void clearBoidList();
 private:
     std::vector <Boid*> m_boidList;
     bool m_hit;
@@ -78,14 +80,18 @@ private:
     bool m_checkSphereSphere;
     int _boidId;
     Boid *_boid;
+    /// @note non-owning pointer; GLWindow owns the BBox
     BBox *m_bbox;
     void  checkSphereCollisions();
+    /// @note non-owning pointer; GLWindow owns the obstacle
     Obstacle *m_obstacle;
     Behaviours *m_behaviours;
     double m_boidScale;
     Colour m_boidColour;
     float m_speedMultiplier;
-    /// @brief spatial hash grid for efficient neighbor queries (O(N) instead of O(N²))
+    std::vector<glm::vec3> m_cachedPositions;
+    std::vector<glm::vec3> m_cachedVelocities;
+    /// @brief spatial hash grid for efficient neighbor queries (O(N) instead of O(N^2))
     flock::SpatialHashGrid m_spatialGrid;
     /// @brief do the actual sphereSphere collisions
     /// @param[in] _pos1 the position of the first sphere

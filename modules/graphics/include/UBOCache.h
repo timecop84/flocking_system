@@ -29,7 +29,7 @@ public:
     bool updateMaterialUBOIfDirty();
     
     // Light UBO with dirty checking
-    void setLightData(const FlockingShaders::LightBlock& light);
+    void setLightData(const FlockingShaders::LightingBlock& light);
     bool updateLightUBOIfDirty();
     
     // Force updates (useful for debugging)
@@ -55,7 +55,7 @@ private:
     // Cached data with dirty flags
     FlockingShaders::MatrixBlock m_cachedMatrix;
     FlockingShaders::MaterialBlock m_cachedMaterial;
-    FlockingShaders::LightBlock m_cachedLight;
+    FlockingShaders::LightingBlock m_cachedLight;
     
     bool m_matrixDirty = true;
     bool m_materialDirty = true;
@@ -66,5 +66,5 @@ private:
     // Comparison helpers
     bool matricesEqual(const FlockingShaders::MatrixBlock& a, const FlockingShaders::MatrixBlock& b) const;
     bool materialsEqual(const FlockingShaders::MaterialBlock& a, const FlockingShaders::MaterialBlock& b) const;
-    bool lightsEqual(const FlockingShaders::LightBlock& a, const FlockingShaders::LightBlock& b) const;
+    bool lightsEqual(const FlockingShaders::LightingBlock& a, const FlockingShaders::LightingBlock& b) const;
 };
